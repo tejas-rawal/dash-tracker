@@ -1,24 +1,25 @@
 {
-	"name": "typescript-starter",
-	"version": "1.0.0",
+	"name": "dash-tracker",
+	"version": "0.1.0",
 	"private": true,
-	"description": "My personal TypeScript starter template.",
+	"description": "DASH bus tracker app",
 	"keywords": [
-		"typescript",
-		"starter"
+		"dash",
+		"bus",
+		"tracker"
 	],
 	"bugs": {
-		"url": "https://github.com/jonahsnider/typescript-starter/issues"
+		"url": "https://github.com/tejas-rawal/dash-tracker/issues"
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/jonahsnider/typescript-starter.git"
+		"url": "git+https://github.com/tejas-rawal/dash-tracker.git"
 	},
 	"license": "Apache-2.0",
 	"author": {
-		"name": "Jonah Snider",
-		"email": "jonah@jonahsnider.com",
-		"url": "https://jonahsnider.com"
+		"name": "Tejas Rawal",
+		"email": "trawal90@gmail.com",
+		"url": "https://google.com"
 	},
 	"type": "module",
 	"exports": "./dist/index.js",
