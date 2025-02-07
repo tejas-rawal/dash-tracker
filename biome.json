@@ -10,7 +10,7 @@
 	"javascript": {
 		"formatter": {
 			"jsxQuoteStyle": "single",
-			"quoteStyle": "single"
+			"quoteStyle": "double"
 		}
 	},
 	"json": {
