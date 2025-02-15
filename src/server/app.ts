@@ -21,6 +21,14 @@ const logger = winston.createLogger({
   transports: [new winston.transports.Console()]
 });
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   logger.info(`Server is running on port ${port}`);
+});
+
+// gracefull shutdown
+process.on('SIGTERM', () => {
+  server.close(() => {
+    logger.info('Server is gracefully shutting down');
+    process.exit(0);
+  });
 });
