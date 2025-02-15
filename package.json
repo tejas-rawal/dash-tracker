@@ -31,15 +31,18 @@
 		"format": "prettier --check .",
 		"format:write": "prettier --check . --write",
 		"test": "vitest --run --typecheck",
-		"test:coverage": "vitest --run --typecheck --coverage"
+		"test:coverage": "vitest --run --typecheck --coverage",
+		"start-server": "ts-node src/server/app.ts",
+		"dev-server": "nodemon --exec ts-node src/server/app.ts"
 	},
-	"type": "module",
 	"types": "./dist/index.d.ts",
 	"dependencies": {
 		"@types/express": "^5.0.0",
-    "express": "^4.21.2",
-    "nodemon": "^3.1.9",
-		"ts-node": "^10.9.2"
+		"@types/winston": "^2.4.4",
+		"express": "^4.21.2",
+		"nodemon": "^3.1.9",
+		"ts-node": "^10.9.2",
+		"winston": "^3.17.0"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",

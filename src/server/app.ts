@@ -1,15 +1,26 @@
 import express from 'express';
-import routes from './api/routes';
+import { router } from './api/routes';
+import winston from 'winston';
 
 const app = express();
-const port = 5000;
+const port = 3000;
 
 // Middleware to parse JSON
 app.use(express.json());
 
+app.get('/', (_req, res) => {
+	res.jsonp({ message: 'Hello World' });
+});
+
 // V1 API
-app.use('/api/v1', routes);
+app.use('/api/v1', router);
+
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.simple(),
+  transports: [new winston.transports.Console()]
+});
 
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  logger.info(`Server is running on port ${port}`);
 });
