@@ -25,7 +25,7 @@ const server = app.listen(port, () => {
   logger.info(`Server is running on port ${port}`);
 });
 
-// gracefull shutdown
+// graceful shutdown
 process.on('SIGTERM', () => {
   server.close(() => {
     logger.info('Server is gracefully shutting down');
