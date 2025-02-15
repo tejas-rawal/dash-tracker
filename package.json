@@ -1,30 +1,29 @@
 {
 	"name": "dash-tracker",
-	"version": "0.1.0",
-	"private": true,
+	"version": "0.0.1",
+	"author": {
+		"name": "Tejas Rawal",
+		"url": "https://dashbus.obaweb.org/tracker"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/tejas-rawal/dash-tracker.git"
+	},
+	"main": "./dist/index.js",
+	"exports": "./dist/index.js",
+	"bugs": {
+		"url": "https://github.com/tejas-rawal/dash-tracker/issues"
+	},
 	"description": "DASH bus tracker app",
 	"keywords": [
 		"dash",
 		"bus",
 		"tracker"
 	],
-	"bugs": {
-		"url": "https://github.com/tejas-rawal/dash-tracker/issues"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/tejas-rawal/dash-tracker.git"
-	},
 	"license": "Apache-2.0",
-	"author": {
-		"name": "Tejas Rawal",
-		"email": "trawal90@gmail.com",
-		"url": "https://google.com"
-	},
-	"type": "module",
-	"exports": "./dist/index.js",
-	"main": "./dist/index.js",
-	"types": "./dist/index.d.ts",
+	"packageManager": "bun@1.0.31",
+	"prettier": "@jonahsnider/prettier-config",
+	"private": true,
 	"scripts": {
 		"lint": "biome check .",
 		"lint:fix": "biome check . --apply-unsafe",
@@ -32,9 +31,19 @@
 		"format": "prettier --check .",
 		"format:write": "prettier --check . --write",
 		"test": "vitest --run --typecheck",
-		"test:coverage": "vitest --run --typecheck --coverage"
+		"test:coverage": "vitest --run --typecheck --coverage",
+		"start-server": "ts-node src/server/app.ts",
+		"dev-server": "nodemon --exec ts-node src/server/app.ts"
 	},
-	"prettier": "@jonahsnider/prettier-config",
+	"types": "./dist/index.d.ts",
+	"dependencies": {
+		"@types/express": "^5.0.0",
+		"@types/winston": "^2.4.4",
+		"express": "^4.21.2",
+		"nodemon": "^3.1.9",
+		"ts-node": "^10.9.2",
+		"winston": "^3.17.0"
+	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
 		"@jonahsnider/prettier-config": "1.1.2",
@@ -45,8 +54,7 @@
 		"prettier": "3.3.3",
 		"prettier-plugin-packagejson": "2.5.3",
 		"tsx": "4.19.2",
-		"typescript": "5.6.3",
+		"typescript": "^5.7.3",
 		"vitest": "2.1.5"
-	},
-	"packageManager": "bun@1.0.31"
+	}
 }
