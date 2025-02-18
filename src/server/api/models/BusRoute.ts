@@ -1,8 +1,13 @@
-export class BusRoute {
-	// attributes
-	//   id { type: 'string', required: true },
-	//   longName: { type: 'string', required: true },
-	//   shortName: { type: 'string', required: true },
-	//   name: { type: 'string', required: true },
-	//   type: { type: 'string', required: false }
-};
+enum RouteType {
+	Tram = "0",
+	Subway = "1",
+	Rail = "2"
+}
+
+export interface BusRoute {
+	id: string;
+	longName: string;
+	shortName: string;
+	name: string;
+	type: RouteType;
+}

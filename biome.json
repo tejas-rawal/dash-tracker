@@ -26,7 +26,11 @@
 			},
 			"style": {
 				"all": true,
-				"noParameterProperties": "off"
+				"noParameterProperties": "off",
+				"noDefaultExport": "off"
+			},
+			"suspicious": {
+				"noExplicitAny": "info"
 			}
 		}
 	}
