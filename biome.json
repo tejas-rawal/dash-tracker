@@ -1,37 +1,39 @@
 {
-	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-	"files": {
-		"ignore": ["node_modules", "dist", "coverage", "**/package.json"]
-	},
-	"formatter": {
-		"formatWithErrors": true,
-		"lineWidth": 120
-	},
-	"javascript": {
-		"formatter": {
-			"jsxQuoteStyle": "single",
-			"quoteStyle": "double"
-		}
-	},
-	"json": {
-		"parser": {
-			"allowComments": true
-		}
-	},
-	"linter": {
-		"rules": {
-			"recommended": true,
-			"nursery": {
-				"all": false
-			},
-			"style": {
-				"all": true,
-				"noParameterProperties": "off",
-				"noDefaultExport": "off"
-			},
-			"suspicious": {
-				"noExplicitAny": "info"
-			}
-		}
-	}
+    "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+    "files": {
+        "ignore": ["node_modules", "dist", "coverage", "**/package.json"]
+    },
+    "formatter": {
+        "formatWithErrors": true,
+        "lineWidth": 120,
+        "indentStyle": "space",
+        "indentWidth": 4
+    },
+    "javascript": {
+        "formatter": {
+            "jsxQuoteStyle": "single",
+            "quoteStyle": "double"
+        }
+    },
+    "json": {
+        "parser": {
+            "allowComments": true
+        }
+    },
+    "linter": {
+        "rules": {
+            "recommended": true,
+            "nursery": {
+                "all": false
+            },
+            "style": {
+                "all": true,
+                "noParameterProperties": "off",
+                "noDefaultExport": "off"
+            },
+            "suspicious": {
+                "noExplicitAny": "info"
+            }
+        }
+    }
 }
