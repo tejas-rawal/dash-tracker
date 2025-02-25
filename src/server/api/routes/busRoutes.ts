@@ -1,8 +1,9 @@
 import { Router } from 'express';
-import { getAllRoutes } from '../controllers/BusRouteController';
+import { getAllRoutes, getRoute } from '../controllers/BusRouteController';
 
 const router = Router();
 
 router.get('/all', getAllRoutes);
+router.get('/:shortName', getRoute);
 
 export default router;

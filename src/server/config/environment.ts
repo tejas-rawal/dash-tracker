@@ -6,7 +6,7 @@ dotenv.config();
 export const environment = {
   dashApi: {
     baseUrl: process.env.DASH_API_BASE_URL,
-		agency: process.env.DASH_API_AGENCY,
+    agency: process.env.DASH_API_AGENCY,
     apiKey: process.env.DASH_API_KEY,
   },
 
