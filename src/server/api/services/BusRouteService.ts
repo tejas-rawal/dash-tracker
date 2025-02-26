@@ -1,6 +1,4 @@
-import axios from '../../config/axios';
-import { environment } from '../../config/environment';
-import { logger } from '../../app';
+import { axios, environment, logger } from '../../config';
 import type { BusRoute, BusStop } from '../models';
 
 const { agency } = environment.dashApi;

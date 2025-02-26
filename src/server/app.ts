@@ -1,7 +1,6 @@
 import express from 'express';
-import winston from 'winston';
 import router from './api/routes';
-import { environment } from './config/environment'
+import { environment, logger } from './config'
 
 const app = express();
 const port = environment.server.port;
@@ -15,12 +14,6 @@ app.get('/', (_req, res) => {
 
 // V1 API
 app.use('/api/v1', router);
-
-export const logger = winston.createLogger({
-    level: 'info',
-    format: winston.format.simple(),
-    transports: [new winston.transports.Console()]
-});
 
 const server = app.listen(port, () => {
     logger.info(`Server is running on port ${port}`);
