@@ -19,6 +19,10 @@ export class BusStop {
       this.lon = data.lon;
     }
 
+    /**
+     * Returns the lat-long location of the stop as an object.
+     * @returns An object with `lat` and `lon` properties.
+     */
     getLocation(): { lat: number, lon: number } {
       return { lat: this.lat, lon: this.lon };
     }
