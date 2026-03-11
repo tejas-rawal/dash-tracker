@@ -1,65 +1,33 @@
-import { axios, environment, logger } from '../../config';
 import type { BusRoute, BusStop } from '../models';
+import { BusDataRepository } from '../repositories';
+import { NotFoundError } from '../errors';
 
-const { agency } = environment.dashApi;
+const repository = BusDataRepository.getInstance();
 
-export async function getAgencyRoutes(): Promise<BusRoute[]> {
-    try {
-        const apiUrl = `/info/${agency}/routes?verbose=true`;
-        logger.info(`api URL: ${apiUrl}`);
-        const response = await axios.get(apiUrl);
-        const { data: { routes }} = response.data;
-        return serializeRoutes(routes);
-    } catch (error: unknown) {
-        const message = error instanceof Error ? error.message: 'Unknown error';
-        throw new Error(`Failed to fetch routes: ${message}`);
+export function getAgencyRoutes(): BusRoute[] {
+    return repository.getAllRoutes();
+}
+
+export function getAgencyRoute(shortName: string): BusRoute {
+    const route = repository.getRouteByShortName(shortName);
+    if (!route) {
+        throw new NotFoundError(`Route not found: ${shortName}`);
     }
+    return route;
 }
 
-export async function getAgencyRoute(shortName: string): Promise<BusRoute> {
-    try {
-        const apiUrl = `/info/${agency}/routes?route=${shortName}&verbose=true`;
-        logger.info(`api URL: ${apiUrl}`);
-        const response = await axios.get(apiUrl);
-        const { data: { routes }} = response.data;
-        return serializeRoute(routes[0]);
-    } catch (error: unknown) {
-        const message = error instanceof Error ? error.message: 'Unknown error';
-        throw new Error(`Failed to fetch route: ${message}`);
+export function getAgencyStop(stopId: string): BusStop {
+    const stop = repository.getStopById(stopId);
+    if (!stop) {
+        throw new NotFoundError(`Stop not found: ${stopId}`);
     }
+    return stop;
 }
 
-function serializeStop(stop: any): BusStop {
-    return {
-        id: stop.id,
-        name: stop.name,
-        code: stop.code,
-        lat: stop.lat,
-        lon: stop.lon
-    };
+export function getAgencyStops(): BusStop[] {
+    return repository.getAllStops();
 }
 
-function serializeRoute(route: any): BusRoute {
-    return {
-        id: route.id,
-        longName: route.longName || '',
-        shortName: route.shortName || '',
-        name: route.name || '',
-        type: route.type,
-        directions: route.directions?.map((direction: any) => ({
-            id: direction.id,
-            title: direction.title,
-            stops: direction.stops?.map((stop: any) => serializeStop(stop)) || [],
-            headSigns: direction.headSigns
-        })) || []
-    };
-}
-
-function serializeRoutes(routes: unknown[]): BusRoute[] {
-    // Check if data exists and has the expected structure
-    if (!routes || routes.length === 0) {
-        return [];
-    }
-
-    return routes.map((route: any): BusRoute => serializeRoute(route));
+export function getRoutesForStop(stopId: string): BusRoute[] {
+    return repository.getRoutesForStop(stopId);
 }

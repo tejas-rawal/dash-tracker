@@ -126,3 +126,6 @@ dist
 
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
+
+# Internal planing docs
+docs/

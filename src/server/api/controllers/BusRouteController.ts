@@ -1,26 +1,27 @@
 import type { Request, RequestHandler, Response } from 'express';
 import { getAgencyRoutes, getAgencyRoute } from '../services/BusRouteService';
+import { NotFoundError } from '../errors';
 
-export const getAllRoutes: RequestHandler = async (_req: Request, res: Response) => {
+export const getAllRoutes: RequestHandler = (_req: Request, res: Response) => {
     try {
-        const routes = await getAgencyRoutes();
+        const routes = getAgencyRoutes();
         res.json(routes);
     } catch (error: unknown) {
-        res.status(500).json({
-            error: 'Request Failed',
+        res.status(error instanceof NotFoundError ? 404 : 500).json({
+            error: error instanceof NotFoundError ? 'Not Found' : 'Request Failed',
             details: error instanceof Error ? error.message : 'Unknown error'
         });
     }
 }
 
-export const getRoute: RequestHandler = async (req: Request, res: Response) => {
+export const getRoute: RequestHandler = (req: Request, res: Response) => {
     try {
         const { shortName } = req.params;
-        const route = await getAgencyRoute(shortName);
+        const route = getAgencyRoute(shortName);
         res.json(route);
     } catch (error: unknown) {
-        res.status(500).json({
-            error: 'Request Failed',
+        res.status(error instanceof NotFoundError ? 404 : 500).json({
+            error: error instanceof NotFoundError ? 'Not Found' : 'Request Failed',
             details: error instanceof Error ? error.message : 'Unknown error'
         });
     }
