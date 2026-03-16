@@ -3,7 +3,9 @@ import { NotFoundError, UpstreamApiError } from "../errors";
 import type { BusStop } from "../models";
 import type {
     DashApiResponse,
+    DashDestination,
     DashPredictionData,
+    Destination,
     PredictionOptions,
     RoutePrediction,
     StopPredictionsResponse,
@@ -41,6 +43,20 @@ async function fetchFromDashApi(stopId: string, options: PredictionOptions): Pro
     return response.data as DashApiResponse;
 }
 
+function mapToDestinations(destinations: DashDestination[]): Destination[] {
+    return destinations.map((dest) => ({
+        directionId: dest.directionId,
+        headsign: dest.headsign,
+        predictions: dest.predictions.map((pred) => ({
+            min: pred.min,
+            sec: pred.sec,
+            time: pred.time,
+            tripId: pred.tripId,
+            vehicleId: pred.vehicleId,
+        })),
+    }));
+}
+
 function mapToRoutePredictions(predictionsData: DashPredictionData[]): RoutePrediction[] {
     return predictionsData.map((item) => ({
         routeId: item.routeId,
@@ -49,7 +65,7 @@ function mapToRoutePredictions(predictionsData: DashPredictionData[]): RoutePred
         stopId: item.stopId,
         stopName: item.stopName,
         stopCode: item.stopCode,
-        destinations: item.destinations,
+        destinations: mapToDestinations(item.destinations),
     }));
 }
 
