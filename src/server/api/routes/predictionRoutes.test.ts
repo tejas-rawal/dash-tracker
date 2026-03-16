@@ -1,6 +1,6 @@
 import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
-import { NotFoundError } from "../errors";
+import { NotFoundError, UpstreamApiError } from "../errors";
 import type { StopPredictionsResponse } from "../models/Prediction";
 
 vi.mock("../services/PredictionService", () => ({
@@ -146,6 +146,23 @@ describe("GET /api/v1/predictions", () => {
         expect(response.body).toMatchObject({
             error: "Request Failed",
             details: "upstream failure",
+        });
+    });
+
+    it("responds with 502 when the service throws an UpstreamApiError", async () => {
+        // Arrange
+        vi.mocked(getPredictionsForStop).mockRejectedValue(
+            new UpstreamApiError("DASH API returned success: false for stop stop-1"),
+        );
+
+        // Act
+        const response = await request(app).get("/api/v1/predictions?stop=stop-1");
+
+        // Assert
+        expect(response.status).toBe(502);
+        expect(response.body).toMatchObject({
+            error: "Bad Gateway",
+            details: "DASH API returned success: false for stop stop-1",
         });
     });
 
