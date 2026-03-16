@@ -7,7 +7,7 @@ function parseNumberParam(raw: unknown): number | undefined {
         return undefined;
     }
     const parsed = Number(raw);
-    return Number.isInteger(parsed) && parsed > 0 ? parsed : Number.NaN;
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 function resolveErrorStatus(error: unknown): number {
@@ -31,8 +31,9 @@ export const getPredictions: RequestHandler = async (req: Request, res: Response
         return;
     }
 
-    const number = parseNumberParam(req.query.number);
-    if (Number.isNaN(number)) {
+    const rawNumber = req.query.number;
+    const number = parseNumberParam(rawNumber);
+    if (rawNumber !== undefined && number === undefined) {
         res.status(400).json({ error: "Bad Request", details: "number parameter must be a positive integer" });
         return;
     }
