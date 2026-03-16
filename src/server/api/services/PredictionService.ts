@@ -1,5 +1,6 @@
 import { axios, environment, logger } from "../../config";
 import { NotFoundError } from "../errors";
+import type { BusStop } from "../models";
 import type {
     DashApiResponse,
     DashPredictionData,
@@ -11,11 +12,12 @@ import { BusDataRepository } from "../repositories";
 
 const repository = BusDataRepository.getInstance();
 
-function validateStopExists(stopId: string): void {
+function getValidatedStop(stopId: string): BusStop {
     const stop = repository.getStopById(stopId);
     if (!stop) {
         throw new NotFoundError(`Stop not found: ${stopId}`);
     }
+    return stop;
 }
 
 function buildDashApiUrl(stopId: string, options: PredictionOptions): string {
@@ -55,7 +57,7 @@ export async function getPredictionsForStop(
     stopId: string,
     options: PredictionOptions = {},
 ): Promise<StopPredictionsResponse> {
-    validateStopExists(stopId);
+    const stop = getValidatedStop(stopId);
 
     const dashResponse = await fetchFromDashApi(stopId, options);
 
@@ -63,16 +65,14 @@ export async function getPredictionsForStop(
         throw new Error(`DASH API returned success: false for stop ${stopId}`);
     }
 
-    const stop = repository.getStopById(stopId);
-
     return {
         success: true,
         data: {
             agencyKey: dashResponse.data.agencyKey,
             stop: {
                 id: stopId,
-                name: stop?.name ?? "",
-                code: stop?.code ?? 0,
+                name: stop.name,
+                code: stop.code,
             },
             routes: mapToRoutePredictions(dashResponse.data.predictionsData),
         },
