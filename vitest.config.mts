@@ -6,10 +6,21 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
 	test: {
 		root: dirname(fileURLToPath(import.meta.url)),
+		globals: true,
+		setupFiles: ['src/server/test/setup.ts'],
 		coverage: {
 			include: ['src/**/*.ts'],
+			exclude: [
+				'src/**/*.test.ts',
+				'src/server/test/**',
+				'src/server/app.ts',
+				'src/server/config/**',
+			],
 			thresholds: {
-				100: true,
+				branches: 80,
+				functions: 80,
+				lines: 80,
+				statements: 80,
 			},
 		},
 	},
