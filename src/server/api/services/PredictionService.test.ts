@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { NotFoundError } from "../errors";
+import { NotFoundError, UpstreamApiError } from "../errors";
 import type { DashApiResponse, DashPredictionData } from "../models/Prediction";
 
 vi.mock("../repositories/BusDataRepository", () => {
@@ -230,7 +230,7 @@ describe("PredictionService", () => {
             await expect(getPredictionsForStop("stop-1")).rejects.toThrow("network error");
         });
 
-        it("throws when the DASH API returns success: false", async () => {
+        it("throws an UpstreamApiError when the DASH API returns success: false", async () => {
             // Arrange
             mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
             const failResponse: DashApiResponse = {
@@ -240,7 +240,20 @@ describe("PredictionService", () => {
             mockAxiosGet.mockResolvedValue({ data: failResponse });
 
             // Act & Assert
-            await expect(getPredictionsForStop("stop-1")).rejects.toThrow();
+            await expect(getPredictionsForStop("stop-1")).rejects.toThrow(UpstreamApiError);
+        });
+
+        it("includes the stop id in the UpstreamApiError message when DASH API returns success: false", async () => {
+            // Arrange
+            mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
+            const failResponse: DashApiResponse = {
+                ...makeDashApiResponse(),
+                success: false,
+            };
+            mockAxiosGet.mockResolvedValue({ data: failResponse });
+
+            // Act & Assert
+            await expect(getPredictionsForStop("stop-1")).rejects.toThrow("stop-1");
         });
     });
 });

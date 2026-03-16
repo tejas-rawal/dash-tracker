@@ -1,5 +1,5 @@
 import { axios, environment, logger } from "../../config";
-import { NotFoundError } from "../errors";
+import { NotFoundError, UpstreamApiError } from "../errors";
 import type { BusStop } from "../models";
 import type {
     DashApiResponse,
@@ -62,7 +62,7 @@ export async function getPredictionsForStop(
     const dashResponse = await fetchFromDashApi(stopId, options);
 
     if (!dashResponse.success) {
-        throw new Error(`DASH API returned success: false for stop ${stopId}`);
+        throw new UpstreamApiError(`DASH API returned success: false for stop ${stopId}`);
     }
 
     return {

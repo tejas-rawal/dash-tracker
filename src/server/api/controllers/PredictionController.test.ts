@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { describe, expect, it, vi } from "vitest";
-import { NotFoundError } from "../errors";
+import { NotFoundError, UpstreamApiError } from "../errors";
 import type { StopPredictionsResponse } from "../models/Prediction";
 
 vi.mock("../services/PredictionService", () => ({
@@ -208,6 +208,39 @@ describe("PredictionController", () => {
             expect(res.json).toHaveBeenCalledWith({
                 error: "Request Failed",
                 details: "upstream failure",
+            });
+        });
+
+        it("responds with 502 when the service throws an UpstreamApiError", async () => {
+            // Arrange
+            vi.mocked(getPredictionsForStop).mockRejectedValue(
+                new UpstreamApiError("DASH API returned success: false for stop stop-1"),
+            );
+            const req = makeMockReq({ stop: "stop-1" });
+            const res = makeMockRes();
+
+            // Act
+            await getPredictions(req, res, vi.fn());
+
+            // Assert
+            expect(res.status).toHaveBeenCalledWith(502);
+        });
+
+        it("responds with a Bad Gateway error body when the service throws an UpstreamApiError", async () => {
+            // Arrange
+            vi.mocked(getPredictionsForStop).mockRejectedValue(
+                new UpstreamApiError("DASH API returned success: false for stop stop-1"),
+            );
+            const req = makeMockReq({ stop: "stop-1" });
+            const res = makeMockRes();
+
+            // Act
+            await getPredictions(req, res, vi.fn());
+
+            // Assert
+            expect(res.json).toHaveBeenCalledWith({
+                error: "Bad Gateway",
+                details: "DASH API returned success: false for stop stop-1",
             });
         });
 

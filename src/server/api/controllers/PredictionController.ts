@@ -1,5 +1,5 @@
 import type { Request, RequestHandler, Response } from "express";
-import { NotFoundError } from "../errors";
+import { NotFoundError, UpstreamApiError } from "../errors";
 import { getPredictionsForStop } from "../services/PredictionService";
 
 function parseNumberParam(raw: unknown): number | undefined {
@@ -14,12 +14,22 @@ function resolveErrorStatus(error: unknown): number {
     if (error instanceof NotFoundError) {
         return 404;
     }
+    if (error instanceof UpstreamApiError) {
+        return 502;
+    }
     return 500;
 }
 
 function resolveErrorBody(error: unknown): { error: string; details: string } {
     const details = error instanceof Error ? error.message : "Unknown error";
-    const label = error instanceof NotFoundError ? "Not Found" : "Request Failed";
+    let label: string;
+    if (error instanceof NotFoundError) {
+        label = "Not Found";
+    } else if (error instanceof UpstreamApiError) {
+        label = "Bad Gateway";
+    } else {
+        label = "Request Failed";
+    }
     return { error: label, details };
 }
 
