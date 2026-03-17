@@ -2,32 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { NotFoundError } from '../errors';
 import { BusRoute, BusStop, RouteType } from '../models';
 import { RouteDirection } from '../models/RouteDirection';
-
-vi.mock('../repositories/BusDataRepository', () => {
-    const mockInstance = {
-        getAllRoutes: vi.fn(),
-        getRouteByShortName: vi.fn(),
-        getStopById: vi.fn(),
-        getAllStops: vi.fn(),
-        getRoutesForStop: vi.fn(),
-    };
-    return {
-        BusDataRepository: {
-            getInstance: vi.fn(() => mockInstance),
-        },
-    };
-});
-
-import { BusDataRepository } from '../repositories/BusDataRepository';
-import {
-    getAgencyRoute,
-    getAgencyRoutes,
-    getAgencyStop,
-    getAgencyStops,
-    getRoutesForStop,
-} from './BusRouteService';
-
-const mockRepo = vi.mocked(BusDataRepository.getInstance(), true);
+import { createBusRouteService } from './BusRouteService';
 
 const makeStop = (id = 'stop-1') =>
     new BusStop({ id, name: `Stop ${id}`, code: 101, lat: 38.8, lon: -77.1 });
@@ -44,12 +19,22 @@ const makeRoute = (shortName = '1A') =>
         ],
     });
 
+const makeMockRepo = () => ({
+    getAllRoutes: vi.fn(),
+    getRouteByShortName: vi.fn(),
+    getStopById: vi.fn(),
+    getAllStops: vi.fn(),
+    getRoutesForStop: vi.fn(),
+});
+
 describe('BusRouteService', () => {
     describe('getAgencyRoutes', () => {
         it('returns all routes from the repository', () => {
             // Arrange
+            const mockRepo = makeMockRepo();
             const routes = [makeRoute('1A'), makeRoute('2B')];
             mockRepo.getAllRoutes.mockReturnValue(routes);
+            const { getAgencyRoutes } = createBusRouteService(mockRepo as never);
 
             // Act
             const result = getAgencyRoutes();
@@ -61,7 +46,9 @@ describe('BusRouteService', () => {
 
         it('returns an empty array when the repository has no routes', () => {
             // Arrange
+            const mockRepo = makeMockRepo();
             mockRepo.getAllRoutes.mockReturnValue([]);
+            const { getAgencyRoutes } = createBusRouteService(mockRepo as never);
 
             // Act
             const result = getAgencyRoutes();
@@ -74,8 +61,10 @@ describe('BusRouteService', () => {
     describe('getAgencyRoute', () => {
         it('returns the route matching the given short name', () => {
             // Arrange
+            const mockRepo = makeMockRepo();
             const route = makeRoute('1A');
             mockRepo.getRouteByShortName.mockReturnValue(route);
+            const { getAgencyRoute } = createBusRouteService(mockRepo as never);
 
             // Act
             const result = getAgencyRoute('1A');
@@ -87,7 +76,9 @@ describe('BusRouteService', () => {
 
         it('throws a NotFoundError when no route matches the short name', () => {
             // Arrange
+            const mockRepo = makeMockRepo();
             mockRepo.getRouteByShortName.mockReturnValue(undefined);
+            const { getAgencyRoute } = createBusRouteService(mockRepo as never);
 
             // Act & Assert
             expect(() => getAgencyRoute('UNKNOWN')).toThrowError(NotFoundError);
@@ -95,7 +86,9 @@ describe('BusRouteService', () => {
 
         it('includes the short name in the NotFoundError message', () => {
             // Arrange
+            const mockRepo = makeMockRepo();
             mockRepo.getRouteByShortName.mockReturnValue(undefined);
+            const { getAgencyRoute } = createBusRouteService(mockRepo as never);
 
             // Act & Assert
             expect(() => getAgencyRoute('UNKNOWN')).toThrowError('Route not found: UNKNOWN');
@@ -105,8 +98,10 @@ describe('BusRouteService', () => {
     describe('getAgencyStop', () => {
         it('returns the stop matching the given stop id', () => {
             // Arrange
+            const mockRepo = makeMockRepo();
             const stop = makeStop('stop-42');
             mockRepo.getStopById.mockReturnValue(stop);
+            const { getAgencyStop } = createBusRouteService(mockRepo as never);
 
             // Act
             const result = getAgencyStop('stop-42');
@@ -118,7 +113,9 @@ describe('BusRouteService', () => {
 
         it('throws a NotFoundError when no stop matches the given id', () => {
             // Arrange
+            const mockRepo = makeMockRepo();
             mockRepo.getStopById.mockReturnValue(undefined);
+            const { getAgencyStop } = createBusRouteService(mockRepo as never);
 
             // Act & Assert
             expect(() => getAgencyStop('missing-stop')).toThrowError(NotFoundError);
@@ -126,7 +123,9 @@ describe('BusRouteService', () => {
 
         it('includes the stop id in the NotFoundError message', () => {
             // Arrange
+            const mockRepo = makeMockRepo();
             mockRepo.getStopById.mockReturnValue(undefined);
+            const { getAgencyStop } = createBusRouteService(mockRepo as never);
 
             // Act & Assert
             expect(() => getAgencyStop('missing-stop')).toThrowError('Stop not found: missing-stop');
@@ -136,8 +135,10 @@ describe('BusRouteService', () => {
     describe('getAgencyStops', () => {
         it('returns all stops from the repository', () => {
             // Arrange
+            const mockRepo = makeMockRepo();
             const stops = [makeStop('s1'), makeStop('s2')];
             mockRepo.getAllStops.mockReturnValue(stops);
+            const { getAgencyStops } = createBusRouteService(mockRepo as never);
 
             // Act
             const result = getAgencyStops();
@@ -149,7 +150,9 @@ describe('BusRouteService', () => {
 
         it('returns an empty array when the repository has no stops', () => {
             // Arrange
+            const mockRepo = makeMockRepo();
             mockRepo.getAllStops.mockReturnValue([]);
+            const { getAgencyStops } = createBusRouteService(mockRepo as never);
 
             // Act
             const result = getAgencyStops();
@@ -162,8 +165,10 @@ describe('BusRouteService', () => {
     describe('getRoutesForStop', () => {
         it('returns all routes containing the given stop id', () => {
             // Arrange
+            const mockRepo = makeMockRepo();
             const routes = [makeRoute('1A'), makeRoute('2B')];
             mockRepo.getRoutesForStop.mockReturnValue(routes);
+            const { getRoutesForStop } = createBusRouteService(mockRepo as never);
 
             // Act
             const result = getRoutesForStop('stop-1');
@@ -175,7 +180,9 @@ describe('BusRouteService', () => {
 
         it('returns an empty array when no routes contain the given stop', () => {
             // Arrange
+            const mockRepo = makeMockRepo();
             mockRepo.getRoutesForStop.mockReturnValue([]);
+            const { getRoutesForStop } = createBusRouteService(mockRepo as never);
 
             // Act
             const result = getRoutesForStop('orphan-stop');

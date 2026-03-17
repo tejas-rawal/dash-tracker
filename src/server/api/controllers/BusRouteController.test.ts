@@ -3,14 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { NotFoundError } from '../errors';
 import { BusRoute, BusStop, RouteType } from '../models';
 import { RouteDirection } from '../models/RouteDirection';
-
-vi.mock('../services/BusRouteService', () => ({
-    getAgencyRoutes: vi.fn(),
-    getAgencyRoute: vi.fn(),
-}));
-
-import { getAgencyRoute, getAgencyRoutes } from '../services/BusRouteService';
-import { getAllRoutes, getRoute } from './BusRouteController';
+import { createBusRouteController } from './BusRouteController';
 
 const makeStop = () =>
     new BusStop({ id: 'stop-1', name: 'Main St', code: 101, lat: 38.8, lon: -77.1 });
@@ -39,12 +32,22 @@ const makeMockRes = () => {
 const makeMockReq = (params: Record<string, string> = {}) =>
     ({ params } as unknown as Request);
 
+const makeMockService = () => ({
+    getAgencyRoutes: vi.fn(),
+    getAgencyRoute: vi.fn(),
+    getAgencyStop: vi.fn(),
+    getAgencyStops: vi.fn(),
+    getRoutesForStop: vi.fn(),
+});
+
 describe('BusRouteController', () => {
     describe('getAllRoutes', () => {
         it('responds with the list of routes returned by the service', () => {
             // Arrange
+            const mockService = makeMockService();
             const routes = [makeRoute('1A'), makeRoute('2B')];
-            vi.mocked(getAgencyRoutes).mockReturnValue(routes);
+            mockService.getAgencyRoutes.mockReturnValue(routes);
+            const { getAllRoutes } = createBusRouteController(mockService);
             const req = makeMockReq();
             const res = makeMockRes();
 
@@ -57,7 +60,9 @@ describe('BusRouteController', () => {
 
         it('responds with an empty array when the service returns no routes', () => {
             // Arrange
-            vi.mocked(getAgencyRoutes).mockReturnValue([]);
+            const mockService = makeMockService();
+            mockService.getAgencyRoutes.mockReturnValue([]);
+            const { getAllRoutes } = createBusRouteController(mockService);
             const req = makeMockReq();
             const res = makeMockRes();
 
@@ -70,7 +75,9 @@ describe('BusRouteController', () => {
 
         it('responds with status 500 when the service throws a generic error', () => {
             // Arrange
-            vi.mocked(getAgencyRoutes).mockImplementation(() => { throw new Error('DB failure'); });
+            const mockService = makeMockService();
+            mockService.getAgencyRoutes.mockImplementation(() => { throw new Error('DB failure'); });
+            const { getAllRoutes } = createBusRouteController(mockService);
             const req = makeMockReq();
             const res = makeMockRes();
 
@@ -83,7 +90,9 @@ describe('BusRouteController', () => {
 
         it('responds with a Request Failed error body when the service throws a generic error', () => {
             // Arrange
-            vi.mocked(getAgencyRoutes).mockImplementation(() => { throw new Error('DB failure'); });
+            const mockService = makeMockService();
+            mockService.getAgencyRoutes.mockImplementation(() => { throw new Error('DB failure'); });
+            const { getAllRoutes } = createBusRouteController(mockService);
             const req = makeMockReq();
             const res = makeMockRes();
 
@@ -99,7 +108,9 @@ describe('BusRouteController', () => {
 
         it('responds with status 404 when the service throws a NotFoundError', () => {
             // Arrange
-            vi.mocked(getAgencyRoutes).mockImplementation(() => { throw new NotFoundError('not found'); });
+            const mockService = makeMockService();
+            mockService.getAgencyRoutes.mockImplementation(() => { throw new NotFoundError('not found'); });
+            const { getAllRoutes } = createBusRouteController(mockService);
             const req = makeMockReq();
             const res = makeMockRes();
 
@@ -112,7 +123,9 @@ describe('BusRouteController', () => {
 
         it('responds with a Not Found error body when the service throws a NotFoundError', () => {
             // Arrange
-            vi.mocked(getAgencyRoutes).mockImplementation(() => { throw new NotFoundError('not found'); });
+            const mockService = makeMockService();
+            mockService.getAgencyRoutes.mockImplementation(() => { throw new NotFoundError('not found'); });
+            const { getAllRoutes } = createBusRouteController(mockService);
             const req = makeMockReq();
             const res = makeMockRes();
 
@@ -128,8 +141,10 @@ describe('BusRouteController', () => {
 
         it('responds with unknown error details when a non-Error is thrown', () => {
             // Arrange
+            const mockService = makeMockService();
             // biome-ignore lint/style/useThrowOnlyError: intentionally testing non-Error throw path
-            vi.mocked(getAgencyRoutes).mockImplementation(() => { throw 'string error'; });
+            mockService.getAgencyRoutes.mockImplementation(() => { throw 'string error'; });
+            const { getAllRoutes } = createBusRouteController(mockService);
             const req = makeMockReq();
             const res = makeMockRes();
 
@@ -146,8 +161,10 @@ describe('BusRouteController', () => {
     describe('getRoute', () => {
         it('responds with the route matching the shortName param', () => {
             // Arrange
+            const mockService = makeMockService();
             const route = makeRoute('1A');
-            vi.mocked(getAgencyRoute).mockReturnValue(route);
+            mockService.getAgencyRoute.mockReturnValue(route);
+            const { getRoute } = createBusRouteController(mockService);
             const req = makeMockReq({ shortName: '1A' });
             const res = makeMockRes();
 
@@ -155,13 +172,15 @@ describe('BusRouteController', () => {
             getRoute(req, res, vi.fn());
 
             // Assert
-            expect(getAgencyRoute).toHaveBeenCalledWith('1A');
+            expect(mockService.getAgencyRoute).toHaveBeenCalledWith('1A');
             expect(res.json).toHaveBeenCalledWith(route);
         });
 
         it('responds with status 404 when the service throws a NotFoundError', () => {
             // Arrange
-            vi.mocked(getAgencyRoute).mockImplementation(() => { throw new NotFoundError('Route not found: X'); });
+            const mockService = makeMockService();
+            mockService.getAgencyRoute.mockImplementation(() => { throw new NotFoundError('Route not found: X'); });
+            const { getRoute } = createBusRouteController(mockService);
             const req = makeMockReq({ shortName: 'X' });
             const res = makeMockRes();
 
@@ -174,7 +193,9 @@ describe('BusRouteController', () => {
 
         it('responds with a Not Found error body when the service throws a NotFoundError', () => {
             // Arrange
-            vi.mocked(getAgencyRoute).mockImplementation(() => { throw new NotFoundError('Route not found: X'); });
+            const mockService = makeMockService();
+            mockService.getAgencyRoute.mockImplementation(() => { throw new NotFoundError('Route not found: X'); });
+            const { getRoute } = createBusRouteController(mockService);
             const req = makeMockReq({ shortName: 'X' });
             const res = makeMockRes();
 
@@ -190,7 +211,9 @@ describe('BusRouteController', () => {
 
         it('responds with status 500 when the service throws a generic error', () => {
             // Arrange
-            vi.mocked(getAgencyRoute).mockImplementation(() => { throw new Error('internal'); });
+            const mockService = makeMockService();
+            mockService.getAgencyRoute.mockImplementation(() => { throw new Error('internal'); });
+            const { getRoute } = createBusRouteController(mockService);
             const req = makeMockReq({ shortName: '1A' });
             const res = makeMockRes();
 
@@ -203,8 +226,10 @@ describe('BusRouteController', () => {
 
         it('responds with unknown error details when a non-Error is thrown', () => {
             // Arrange
+            const mockService = makeMockService();
             // biome-ignore lint/style/useThrowOnlyError: intentionally testing non-Error throw path
-            vi.mocked(getAgencyRoute).mockImplementation(() => { throw 42; });
+            mockService.getAgencyRoute.mockImplementation(() => { throw 42; });
+            const { getRoute } = createBusRouteController(mockService);
             const req = makeMockReq({ shortName: '1A' });
             const res = makeMockRes();
 

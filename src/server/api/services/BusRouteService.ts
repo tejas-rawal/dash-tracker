@@ -1,33 +1,43 @@
 import type { BusRoute, BusStop } from '../models';
-import { BusDataRepository } from '../repositories';
+import type { BusDataRepository } from '../repositories';
 import { NotFoundError } from '../errors';
 
-const repository = BusDataRepository.getInstance();
-
-export function getAgencyRoutes(): BusRoute[] {
-    return repository.getAllRoutes();
+export interface BusRouteService {
+    getAgencyRoutes(): BusRoute[];
+    getAgencyRoute(shortName: string): BusRoute;
+    getAgencyStop(stopId: string): BusStop;
+    getAgencyStops(): BusStop[];
+    getRoutesForStop(stopId: string): BusRoute[];
 }
 
-export function getAgencyRoute(shortName: string): BusRoute {
-    const route = repository.getRouteByShortName(shortName);
-    if (!route) {
-        throw new NotFoundError(`Route not found: ${shortName}`);
+export function createBusRouteService(repository: BusDataRepository): BusRouteService {
+    function getAgencyRoutes(): BusRoute[] {
+        return repository.getAllRoutes();
     }
-    return route;
-}
 
-export function getAgencyStop(stopId: string): BusStop {
-    const stop = repository.getStopById(stopId);
-    if (!stop) {
-        throw new NotFoundError(`Stop not found: ${stopId}`);
+    function getAgencyRoute(shortName: string): BusRoute {
+        const route = repository.getRouteByShortName(shortName);
+        if (!route) {
+            throw new NotFoundError(`Route not found: ${shortName}`);
+        }
+        return route;
     }
-    return stop;
-}
 
-export function getAgencyStops(): BusStop[] {
-    return repository.getAllStops();
-}
+    function getAgencyStop(stopId: string): BusStop {
+        const stop = repository.getStopById(stopId);
+        if (!stop) {
+            throw new NotFoundError(`Stop not found: ${stopId}`);
+        }
+        return stop;
+    }
 
-export function getRoutesForStop(stopId: string): BusRoute[] {
-    return repository.getRoutesForStop(stopId);
+    function getAgencyStops(): BusStop[] {
+        return repository.getAllStops();
+    }
+
+    function getRoutesForStop(stopId: string): BusRoute[] {
+        return repository.getRoutesForStop(stopId);
+    }
+
+    return { getAgencyRoutes, getAgencyRoute, getAgencyStop, getAgencyStops, getRoutesForStop };
 }
