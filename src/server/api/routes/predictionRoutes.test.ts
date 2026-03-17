@@ -4,11 +4,15 @@ import { NotFoundError, UpstreamApiError } from "../errors";
 import type { StopPredictionsResponse } from "../models/Prediction";
 
 vi.mock("../services/PredictionService", () => ({
-    getPredictionsForStop: vi.fn(),
+    createPredictionService: vi.fn(() => ({
+        getPredictionsForStop: vi.fn(),
+    })),
 }));
 
 import app from "../../test/app";
-import { getPredictionsForStop } from "../services/PredictionService";
+import { createPredictionService } from "../services/PredictionService";
+
+const getMockService = () => vi.mocked(createPredictionService).mock.results[0]?.value;
 
 const makeStopPredictionsResponse = (stopId = "stop-1"): StopPredictionsResponse => ({
     success: true,
@@ -71,7 +75,7 @@ describe("GET /api/v1/predictions", () => {
     it("responds with 200 and the predictions payload on success", async () => {
         // Arrange
         const payload = makeStopPredictionsResponse("stop-1");
-        vi.mocked(getPredictionsForStop).mockResolvedValue(payload);
+        getMockService().getPredictionsForStop.mockResolvedValue(payload);
 
         // Act
         const response = await request(app).get("/api/v1/predictions?stop=stop-1");
@@ -88,40 +92,40 @@ describe("GET /api/v1/predictions", () => {
 
     it("passes the stop id to the service", async () => {
         // Arrange
-        vi.mocked(getPredictionsForStop).mockResolvedValue(makeStopPredictionsResponse("stop-42"));
+        getMockService().getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse("stop-42"));
 
         // Act
         await request(app).get("/api/v1/predictions?stop=stop-42");
 
         // Assert
-        expect(getPredictionsForStop).toHaveBeenCalledWith("stop-42", expect.any(Object));
+        expect(getMockService().getPredictionsForStop).toHaveBeenCalledWith("stop-42", expect.any(Object));
     });
 
     it("passes the parsed number option to the service", async () => {
         // Arrange
-        vi.mocked(getPredictionsForStop).mockResolvedValue(makeStopPredictionsResponse());
+        getMockService().getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse());
 
         // Act
         await request(app).get("/api/v1/predictions?stop=stop-1&number=5");
 
         // Assert
-        expect(getPredictionsForStop).toHaveBeenCalledWith("stop-1", expect.objectContaining({ number: 5 }));
+        expect(getMockService().getPredictionsForStop).toHaveBeenCalledWith("stop-1", expect.objectContaining({ number: 5 }));
     });
 
     it("passes the route option to the service", async () => {
         // Arrange
-        vi.mocked(getPredictionsForStop).mockResolvedValue(makeStopPredictionsResponse());
+        getMockService().getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse());
 
         // Act
         await request(app).get("/api/v1/predictions?stop=stop-1&route=1A");
 
         // Assert
-        expect(getPredictionsForStop).toHaveBeenCalledWith("stop-1", expect.objectContaining({ route: "1A" }));
+        expect(getMockService().getPredictionsForStop).toHaveBeenCalledWith("stop-1", expect.objectContaining({ route: "1A" }));
     });
 
     it("responds with 404 when the service throws a NotFoundError", async () => {
         // Arrange
-        vi.mocked(getPredictionsForStop).mockRejectedValue(new NotFoundError("Stop not found: stop-1"));
+        getMockService().getPredictionsForStop.mockRejectedValue(new NotFoundError("Stop not found: stop-1"));
 
         // Act
         const response = await request(app).get("/api/v1/predictions?stop=stop-1");
@@ -136,7 +140,7 @@ describe("GET /api/v1/predictions", () => {
 
     it("responds with 500 when the service throws a generic error", async () => {
         // Arrange
-        vi.mocked(getPredictionsForStop).mockRejectedValue(new Error("upstream failure"));
+        getMockService().getPredictionsForStop.mockRejectedValue(new Error("upstream failure"));
 
         // Act
         const response = await request(app).get("/api/v1/predictions?stop=stop-1");
@@ -151,7 +155,7 @@ describe("GET /api/v1/predictions", () => {
 
     it("responds with 502 when the service throws an UpstreamApiError", async () => {
         // Arrange
-        vi.mocked(getPredictionsForStop).mockRejectedValue(
+        getMockService().getPredictionsForStop.mockRejectedValue(
             new UpstreamApiError("DASH API returned success: false for stop stop-1"),
         );
 
@@ -168,7 +172,7 @@ describe("GET /api/v1/predictions", () => {
 
     it("returns route data including destinations and predictions", async () => {
         // Arrange
-        vi.mocked(getPredictionsForStop).mockResolvedValue(makeStopPredictionsResponse());
+        getMockService().getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse());
 
         // Act
         const response = await request(app).get("/api/v1/predictions?stop=stop-1");

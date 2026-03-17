@@ -2,13 +2,7 @@ import type { Request, Response } from "express";
 import { describe, expect, it, vi } from "vitest";
 import { NotFoundError, UpstreamApiError } from "../errors";
 import type { StopPredictionsResponse } from "../models/Prediction";
-
-vi.mock("../services/PredictionService", () => ({
-    getPredictionsForStop: vi.fn(),
-}));
-
-import { getPredictionsForStop } from "../services/PredictionService";
-import { getPredictions } from "./PredictionController";
+import { createPredictionController } from "./PredictionController";
 
 const makeMockRes = () => {
     const res = {
@@ -30,10 +24,16 @@ const makeStopPredictionsResponse = (stopId = "stop-1"): StopPredictionsResponse
     },
 });
 
+const makeMockService = () => ({
+    getPredictionsForStop: vi.fn(),
+});
+
 describe("PredictionController", () => {
     describe("getPredictions", () => {
         it("responds with 400 when the stop query parameter is missing", async () => {
             // Arrange
+            const mockService = makeMockService();
+            const { getPredictions } = createPredictionController(mockService);
             const req = makeMockReq({});
             const res = makeMockRes();
 
@@ -46,6 +46,8 @@ describe("PredictionController", () => {
 
         it("responds with a descriptive error body when stop is missing", async () => {
             // Arrange
+            const mockService = makeMockService();
+            const { getPredictions } = createPredictionController(mockService);
             const req = makeMockReq({});
             const res = makeMockRes();
 
@@ -61,7 +63,8 @@ describe("PredictionController", () => {
 
         it("responds with 400 when the number parameter is not a positive integer", async () => {
             // Arrange
-            vi.mocked(getPredictionsForStop).mockResolvedValue(makeStopPredictionsResponse());
+            const mockService = makeMockService();
+            const { getPredictions } = createPredictionController(mockService);
             const req = makeMockReq({ stop: "stop-1", number: "abc" });
             const res = makeMockRes();
 
@@ -74,6 +77,8 @@ describe("PredictionController", () => {
 
         it("responds with a descriptive error body when number is not a positive integer", async () => {
             // Arrange
+            const mockService = makeMockService();
+            const { getPredictions } = createPredictionController(mockService);
             const req = makeMockReq({ stop: "stop-1", number: "0" });
             const res = makeMockRes();
 
@@ -89,7 +94,9 @@ describe("PredictionController", () => {
 
         it("calls the service with the stop id when stop is valid", async () => {
             // Arrange
-            vi.mocked(getPredictionsForStop).mockResolvedValue(makeStopPredictionsResponse());
+            const mockService = makeMockService();
+            mockService.getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse());
+            const { getPredictions } = createPredictionController(mockService);
             const req = makeMockReq({ stop: "stop-1" });
             const res = makeMockRes();
 
@@ -97,12 +104,14 @@ describe("PredictionController", () => {
             await getPredictions(req, res, vi.fn());
 
             // Assert
-            expect(getPredictionsForStop).toHaveBeenCalledWith("stop-1", expect.any(Object));
+            expect(mockService.getPredictionsForStop).toHaveBeenCalledWith("stop-1", expect.any(Object));
         });
 
         it("passes parsed number option to the service", async () => {
             // Arrange
-            vi.mocked(getPredictionsForStop).mockResolvedValue(makeStopPredictionsResponse());
+            const mockService = makeMockService();
+            mockService.getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse());
+            const { getPredictions } = createPredictionController(mockService);
             const req = makeMockReq({ stop: "stop-1", number: "5" });
             const res = makeMockRes();
 
@@ -110,12 +119,14 @@ describe("PredictionController", () => {
             await getPredictions(req, res, vi.fn());
 
             // Assert
-            expect(getPredictionsForStop).toHaveBeenCalledWith("stop-1", { number: 5, route: undefined });
+            expect(mockService.getPredictionsForStop).toHaveBeenCalledWith("stop-1", { number: 5, route: undefined });
         });
 
         it("passes route option to the service when provided", async () => {
             // Arrange
-            vi.mocked(getPredictionsForStop).mockResolvedValue(makeStopPredictionsResponse());
+            const mockService = makeMockService();
+            mockService.getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse());
+            const { getPredictions } = createPredictionController(mockService);
             const req = makeMockReq({ stop: "stop-1", route: "1A" });
             const res = makeMockRes();
 
@@ -123,13 +134,15 @@ describe("PredictionController", () => {
             await getPredictions(req, res, vi.fn());
 
             // Assert
-            expect(getPredictionsForStop).toHaveBeenCalledWith("stop-1", { number: undefined, route: "1A" });
+            expect(mockService.getPredictionsForStop).toHaveBeenCalledWith("stop-1", { number: undefined, route: "1A" });
         });
 
         it("responds with 200 and the predictions response body on success", async () => {
             // Arrange
+            const mockService = makeMockService();
             const payload = makeStopPredictionsResponse("stop-1");
-            vi.mocked(getPredictionsForStop).mockResolvedValue(payload);
+            mockService.getPredictionsForStop.mockResolvedValue(payload);
+            const { getPredictions } = createPredictionController(mockService);
             const req = makeMockReq({ stop: "stop-1" });
             const res = makeMockRes();
 
@@ -142,7 +155,9 @@ describe("PredictionController", () => {
 
         it("does not call status when the service succeeds", async () => {
             // Arrange
-            vi.mocked(getPredictionsForStop).mockResolvedValue(makeStopPredictionsResponse());
+            const mockService = makeMockService();
+            mockService.getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse());
+            const { getPredictions } = createPredictionController(mockService);
             const req = makeMockReq({ stop: "stop-1" });
             const res = makeMockRes();
 
@@ -155,7 +170,9 @@ describe("PredictionController", () => {
 
         it("responds with 404 when the service throws a NotFoundError", async () => {
             // Arrange
-            vi.mocked(getPredictionsForStop).mockRejectedValue(new NotFoundError("Stop not found: stop-1"));
+            const mockService = makeMockService();
+            mockService.getPredictionsForStop.mockRejectedValue(new NotFoundError("Stop not found: stop-1"));
+            const { getPredictions } = createPredictionController(mockService);
             const req = makeMockReq({ stop: "stop-1" });
             const res = makeMockRes();
 
@@ -168,7 +185,9 @@ describe("PredictionController", () => {
 
         it("responds with a Not Found error body when the service throws a NotFoundError", async () => {
             // Arrange
-            vi.mocked(getPredictionsForStop).mockRejectedValue(new NotFoundError("Stop not found: stop-1"));
+            const mockService = makeMockService();
+            mockService.getPredictionsForStop.mockRejectedValue(new NotFoundError("Stop not found: stop-1"));
+            const { getPredictions } = createPredictionController(mockService);
             const req = makeMockReq({ stop: "stop-1" });
             const res = makeMockRes();
 
@@ -184,7 +203,9 @@ describe("PredictionController", () => {
 
         it("responds with 500 when the service throws a generic error", async () => {
             // Arrange
-            vi.mocked(getPredictionsForStop).mockRejectedValue(new Error("upstream failure"));
+            const mockService = makeMockService();
+            mockService.getPredictionsForStop.mockRejectedValue(new Error("upstream failure"));
+            const { getPredictions } = createPredictionController(mockService);
             const req = makeMockReq({ stop: "stop-1" });
             const res = makeMockRes();
 
@@ -197,7 +218,9 @@ describe("PredictionController", () => {
 
         it("responds with a Request Failed error body when the service throws a generic error", async () => {
             // Arrange
-            vi.mocked(getPredictionsForStop).mockRejectedValue(new Error("upstream failure"));
+            const mockService = makeMockService();
+            mockService.getPredictionsForStop.mockRejectedValue(new Error("upstream failure"));
+            const { getPredictions } = createPredictionController(mockService);
             const req = makeMockReq({ stop: "stop-1" });
             const res = makeMockRes();
 
@@ -213,9 +236,11 @@ describe("PredictionController", () => {
 
         it("responds with 502 when the service throws an UpstreamApiError", async () => {
             // Arrange
-            vi.mocked(getPredictionsForStop).mockRejectedValue(
+            const mockService = makeMockService();
+            mockService.getPredictionsForStop.mockRejectedValue(
                 new UpstreamApiError("DASH API returned success: false for stop stop-1"),
             );
+            const { getPredictions } = createPredictionController(mockService);
             const req = makeMockReq({ stop: "stop-1" });
             const res = makeMockRes();
 
@@ -228,9 +253,11 @@ describe("PredictionController", () => {
 
         it("responds with a Bad Gateway error body when the service throws an UpstreamApiError", async () => {
             // Arrange
-            vi.mocked(getPredictionsForStop).mockRejectedValue(
+            const mockService = makeMockService();
+            mockService.getPredictionsForStop.mockRejectedValue(
                 new UpstreamApiError("DASH API returned success: false for stop stop-1"),
             );
+            const { getPredictions } = createPredictionController(mockService);
             const req = makeMockReq({ stop: "stop-1" });
             const res = makeMockRes();
 
@@ -246,7 +273,9 @@ describe("PredictionController", () => {
 
         it("responds with unknown error details when a non-Error is thrown", async () => {
             // Arrange
-            vi.mocked(getPredictionsForStop).mockRejectedValue("string error");
+            const mockService = makeMockService();
+            mockService.getPredictionsForStop.mockRejectedValue("string error");
+            const { getPredictions } = createPredictionController(mockService);
             const req = makeMockReq({ stop: "stop-1" });
             const res = makeMockRes();
 
