@@ -26,10 +26,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. `package.json` has no `prettier` field and no `prettier` / `@jonahsnider/prettier-config` / `prettier-plugin-packagejson` entries in `dependencies` or `devDependencies`; lockfile(s) reflect the removal
   3. No Prettier config or ignore files remain in the repo (`.prettierrc`, `.prettierignore`), and no other checked-in tooling file (e.g. editor settings) still names Prettier as the active formatter
   4. `biome.json`'s formatter settings (line width, indent, quote style) match what Prettier previously enforced, so the switch changes tooling, not the intended style
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 01-01: Remove Prettier (dependency, config, plugin, editor references) and update package.json scripts to the Biome-only flow
+- [ ] 01-01-PLAN.md — Remove Prettier (dependency, config, plugin, editor references) and update package.json scripts to the Biome-only flow
 
 ### Phase 2: Full-Repo Reformat
 **Goal**: The whole codebase conforms to the new Biome-only formatter, with the resulting diff isolated in a single, purely cosmetic commit.
