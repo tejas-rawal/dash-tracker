@@ -48,11 +48,11 @@ Plans:
   3. The mass reformat is committed on its own, containing only formatting changes and no functional/logic edits — separate from the Phase 1 tooling/config commit
   4. `bun run build` and `bun run test` both still pass unchanged after the reformat, confirming the change was purely cosmetic
 
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
 
-- [ ] 02-01: Run Biome formatter across the full repo and land the resulting diff as an isolated commit
+- [ ] 02-01-PLAN.md — Run Biome formatter across the full repo and land the resulting diff as an isolated commit
 
 ## Progress
 
