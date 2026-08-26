@@ -3,6 +3,7 @@ import { NotFoundError } from "../errors";
 import { BusRoute, BusStop, RouteType } from "../models";
 import { RouteDirection } from "../models/RouteDirection";
 import { createStopService } from "./StopService";
+import { haversineDistanceMiles } from "./distance";
 
 const makeStop = (id = "stop-1") => new BusStop({ id, name: `Stop ${id}`, code: 101, lat: 38.8, lon: -77.1 });
 
@@ -18,7 +19,14 @@ const makeRoute = (shortName = "1A", directions: RouteDirection[] = []) =>
 
 const makeMockRepo = () => ({
     getRouteByShortName: vi.fn(),
+    getAllStops: vi.fn(),
 });
+
+// DC (~38.9), origin, for nearby-search fixtures.
+const ORIGIN = { lat: 38.9, lng: -77.0 };
+
+const makeStopAt = (id: string, lat: number, lon: number) =>
+    new BusStop({ id, name: `Stop ${id}`, code: 101, lat, lon });
 
 describe("StopService", () => {
     describe("getStopsForRoute", () => {
@@ -131,6 +139,128 @@ describe("StopService", () => {
 
             // Assert
             expect(result).toEqual([]);
+        });
+    });
+
+    describe("getNearbyStops", () => {
+        it("defaults to radius 0.5 miles and count 10 when options are omitted", () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            const nearStop = makeStopAt("near", ORIGIN.lat, ORIGIN.lng);
+            mockRepo.getAllStops.mockReturnValue([nearStop]);
+            const { getNearbyStops } = createStopService(mockRepo as never);
+
+            // Act
+            const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng);
+
+            // Assert
+            expect(result).toEqual([
+                { id: "near", name: "Stop near", code: 101, lat: ORIGIN.lat, lon: ORIGIN.lng, distance: 0 },
+            ]);
+        });
+
+        it("returns results sorted ascending by distance", () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            const far = makeStopAt("far", ORIGIN.lat + 0.02, ORIGIN.lng);
+            const near = makeStopAt("near", ORIGIN.lat, ORIGIN.lng);
+            const mid = makeStopAt("mid", ORIGIN.lat + 0.01, ORIGIN.lng);
+            mockRepo.getAllStops.mockReturnValue([far, near, mid]);
+            const { getNearbyStops } = createStopService(mockRepo as never);
+
+            // Act
+            const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng, { radius: 5 });
+
+            // Assert
+            expect(result.map((stop) => stop.id)).toEqual(["near", "mid", "far"]);
+        });
+
+        it("excludes a stop farther than the given radius", () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            const near = makeStopAt("near", ORIGIN.lat, ORIGIN.lng);
+            const far = makeStopAt("far", ORIGIN.lat + 0.5, ORIGIN.lng);
+            mockRepo.getAllStops.mockReturnValue([near, far]);
+            const { getNearbyStops } = createStopService(mockRepo as never);
+
+            // Act
+            const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng, { radius: 2 });
+
+            // Assert
+            expect(result.map((stop) => stop.id)).toEqual(["near"]);
+        });
+
+        it("caps results at 50 even when count: 100 is requested (D-07 hard cap)", () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            const stops = Array.from({ length: 60 }, (_, i) => makeStopAt(`stop-${i}`, ORIGIN.lat, ORIGIN.lng));
+            mockRepo.getAllStops.mockReturnValue(stops);
+            const { getNearbyStops } = createStopService(mockRepo as never);
+
+            // Act
+            const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng, { count: 100 });
+
+            // Assert
+            expect(result).toHaveLength(50);
+        });
+
+        it("respects a requested count within the allowed range", () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            const stops = Array.from({ length: 20 }, (_, i) => makeStopAt(`stop-${i}`, ORIGIN.lat, ORIGIN.lng));
+            mockRepo.getAllStops.mockReturnValue(stops);
+            const { getNearbyStops } = createStopService(mockRepo as never);
+
+            // Act
+            const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng, { count: 5 });
+
+            // Assert
+            expect(result).toHaveLength(5);
+        });
+
+        it("returns an empty array when no stops are within the effective radius", () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            const far = makeStopAt("far", ORIGIN.lat + 10, ORIGIN.lng);
+            mockRepo.getAllStops.mockReturnValue([far]);
+            const { getNearbyStops } = createStopService(mockRepo as never);
+
+            // Act
+            const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng);
+
+            // Assert
+            expect(result).toEqual([]);
+        });
+
+        it("returns an empty array when the repository has zero stops", () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            mockRepo.getAllStops.mockReturnValue([]);
+            const { getNearbyStops } = createStopService(mockRepo as never);
+
+            // Act
+            const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng);
+
+            // Assert
+            expect(result).toEqual([]);
+        });
+
+        it("computes distance via haversineDistanceMiles rounded to 2 decimal places", () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            const stop = makeStopAt("stop-1", ORIGIN.lat + 0.01, ORIGIN.lng + 0.01);
+            mockRepo.getAllStops.mockReturnValue([stop]);
+            const { getNearbyStops } = createStopService(mockRepo as never);
+            const expectedDistance = haversineDistanceMiles(
+                { lat: ORIGIN.lat, lon: ORIGIN.lng },
+                { lat: ORIGIN.lat + 0.01, lon: ORIGIN.lng + 0.01 },
+            );
+
+            // Act
+            const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng, { radius: 5 });
+
+            // Assert
+            expect(result[0]?.distance).toBe(expectedDistance);
         });
     });
 });
