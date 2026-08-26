@@ -1,10 +1,10 @@
-import request from 'supertest';
-import { describe, expect, it, vi } from 'vitest';
-import { NotFoundError } from '../errors';
-import { BusRoute, BusStop, RouteType } from '../models';
-import { RouteDirection } from '../models/RouteDirection';
+import request from "supertest";
+import { describe, expect, it, vi } from "vitest";
+import { NotFoundError } from "../errors";
+import { BusRoute, BusStop, RouteType } from "../models";
+import { RouteDirection } from "../models/RouteDirection";
 
-vi.mock('../services/BusRouteService', () => ({
+vi.mock("../services/BusRouteService", () => ({
     createBusRouteService: vi.fn(() => ({
         getAgencyRoutes: vi.fn(),
         getAgencyRoute: vi.fn(),
@@ -14,34 +14,31 @@ vi.mock('../services/BusRouteService', () => ({
     })),
 }));
 
-import app from '../../test/app';
-import { createBusRouteService } from '../services/BusRouteService';
+import app from "../../test/app";
+import { createBusRouteService } from "../services/BusRouteService";
 
 const getMockService = () => vi.mocked(createBusRouteService).mock.results[0]?.value;
 
-const makeStop = () =>
-    new BusStop({ id: 'stop-1', name: 'Main St', code: 101, lat: 38.8, lon: -77.1 });
+const makeStop = () => new BusStop({ id: "stop-1", name: "Main St", code: 101, lat: 38.8, lon: -77.1 });
 
-const makeRoute = (shortName = '1A') =>
+const makeRoute = (shortName = "1A") =>
     new BusRoute({
-        id: 'route-1',
-        longName: 'Route 1A Long',
+        id: "route-1",
+        longName: "Route 1A Long",
         shortName,
-        name: 'Route 1A',
+        name: "Route 1A",
         type: RouteType.Bus,
-        directions: [
-            new RouteDirection({ id: 'd1', title: 'Northbound', stops: [makeStop()], headSigns: [] }),
-        ],
+        directions: [new RouteDirection({ id: "d1", title: "Northbound", stops: [makeStop()], headSigns: [] })],
     });
 
-describe('GET /api/v1/routes/all', () => {
-    it('responds with 200 and an array of route objects', async () => {
+describe("GET /api/v1/routes/all", () => {
+    it("responds with 200 and an array of route objects", async () => {
         // Arrange
-        const routes = [makeRoute('1A'), makeRoute('2B')];
+        const routes = [makeRoute("1A"), makeRoute("2B")];
         getMockService().getAgencyRoutes.mockReturnValue(routes);
 
         // Act
-        const response = await request(app).get('/api/v1/routes/all');
+        const response = await request(app).get("/api/v1/routes/all");
 
         // Assert
         expect(response.status).toBe(200);
@@ -49,109 +46,113 @@ describe('GET /api/v1/routes/all', () => {
         expect(response.body).toHaveLength(2);
     });
 
-    it('responds with route objects that contain the expected properties', async () => {
+    it("responds with route objects that contain the expected properties", async () => {
         // Arrange
-        getMockService().getAgencyRoutes.mockReturnValue([makeRoute('1A')]);
+        getMockService().getAgencyRoutes.mockReturnValue([makeRoute("1A")]);
 
         // Act
-        const response = await request(app).get('/api/v1/routes/all');
+        const response = await request(app).get("/api/v1/routes/all");
 
         // Assert
         expect(response.body[0]).toMatchObject({
-            id: 'route-1',
-            shortName: '1A',
-            longName: 'Route 1A Long',
-            name: 'Route 1A',
+            id: "route-1",
+            shortName: "1A",
+            longName: "Route 1A Long",
+            name: "Route 1A",
             type: RouteType.Bus,
         });
     });
 
-    it('responds with 200 and an empty array when there are no routes', async () => {
+    it("responds with 200 and an empty array when there are no routes", async () => {
         // Arrange
         getMockService().getAgencyRoutes.mockReturnValue([]);
 
         // Act
-        const response = await request(app).get('/api/v1/routes/all');
+        const response = await request(app).get("/api/v1/routes/all");
 
         // Assert
         expect(response.status).toBe(200);
         expect(response.body).toEqual([]);
     });
 
-    it('responds with 500 and an error body when the service throws', async () => {
+    it("responds with 500 and an error body when the service throws", async () => {
         // Arrange
-        getMockService().getAgencyRoutes.mockImplementation(() => { throw new Error('service error'); });
+        getMockService().getAgencyRoutes.mockImplementation(() => {
+            throw new Error("service error");
+        });
 
         // Act
-        const response = await request(app).get('/api/v1/routes/all');
+        const response = await request(app).get("/api/v1/routes/all");
 
         // Assert
         expect(response.status).toBe(500);
         expect(response.body).toMatchObject({
-            error: 'Request Failed',
-            details: 'service error',
+            error: "Request Failed",
+            details: "service error",
         });
     });
 });
 
-describe('GET /api/v1/routes/:shortName', () => {
-    it('responds with 200 and the matching route object', async () => {
+describe("GET /api/v1/routes/:shortName", () => {
+    it("responds with 200 and the matching route object", async () => {
         // Arrange
-        const route = makeRoute('1A');
+        const route = makeRoute("1A");
         getMockService().getAgencyRoute.mockReturnValue(route);
 
         // Act
-        const response = await request(app).get('/api/v1/routes/1A');
+        const response = await request(app).get("/api/v1/routes/1A");
 
         // Assert
         expect(response.status).toBe(200);
         expect(response.body).toMatchObject({
-            id: 'route-1',
-            shortName: '1A',
+            id: "route-1",
+            shortName: "1A",
         });
     });
 
-    it('responds with 404 and a Not Found error body when the route does not exist', async () => {
+    it("responds with 404 and a Not Found error body when the route does not exist", async () => {
         // Arrange
         getMockService().getAgencyRoute.mockImplementation(() => {
-            throw new NotFoundError('Route not found: UNKNOWN');
+            throw new NotFoundError("Route not found: UNKNOWN");
         });
 
         // Act
-        const response = await request(app).get('/api/v1/routes/UNKNOWN');
+        const response = await request(app).get("/api/v1/routes/UNKNOWN");
 
         // Assert
         expect(response.status).toBe(404);
         expect(response.body).toMatchObject({
-            error: 'Not Found',
-            details: 'Route not found: UNKNOWN',
+            error: "Not Found",
+            details: "Route not found: UNKNOWN",
         });
     });
 
-    it('responds with 500 and a Request Failed error body when the service throws a generic error', async () => {
+    it("responds with 500 and a Request Failed error body when the service throws a generic error", async () => {
         // Arrange
-        getMockService().getAgencyRoute.mockImplementation(() => { throw new Error('unexpected'); });
+        getMockService().getAgencyRoute.mockImplementation(() => {
+            throw new Error("unexpected");
+        });
 
         // Act
-        const response = await request(app).get('/api/v1/routes/1A');
+        const response = await request(app).get("/api/v1/routes/1A");
 
         // Assert
         expect(response.status).toBe(500);
         expect(response.body).toMatchObject({
-            error: 'Request Failed',
-            details: 'unexpected',
+            error: "Request Failed",
+            details: "unexpected",
         });
     });
 
-    it('passes the shortName path parameter to the service', async () => {
+    it("passes the shortName path parameter to the service", async () => {
         // Arrange
-        const route = makeRoute('3C');
+        const route = makeRoute("3C");
         getMockService().getAgencyRoute.mockReturnValue(route);
 
         // Act
-        await request(app).get('/api/v1/routes/3C');
+        await request(app).get("/api/v1/routes/3C");
 
         // Assert
-        expect(getMockService().getAgencyRoute).toHaveBeenCalledWith('3C');
+        expect(getMockService().getAgencyRoute).toHaveBeenCalledWith("3C");
     });
 });

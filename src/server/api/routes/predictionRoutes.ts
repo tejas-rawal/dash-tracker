@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { createPredictionController } from "../controllers/PredictionController";
-import { createPredictionService } from "../services/PredictionService";
 import { BusDataRepository } from "../repositories";
+import { createPredictionService } from "../services/PredictionService";
 
 const service = createPredictionService(BusDataRepository.getInstance());
 const controller = createPredictionController(service);

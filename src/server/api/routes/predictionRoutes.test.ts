@@ -109,7 +109,10 @@ describe("GET /api/v1/predictions", () => {
         await request(app).get("/api/v1/predictions?stop=stop-1&number=5");
 
         // Assert
-        expect(getMockService().getPredictionsForStop).toHaveBeenCalledWith("stop-1", expect.objectContaining({ number: 5 }));
+        expect(getMockService().getPredictionsForStop).toHaveBeenCalledWith(
+            "stop-1",
+            expect.objectContaining({ number: 5 }),
+        );
     });
 
     it("passes the route option to the service", async () => {
@@ -120,7 +123,10 @@ describe("GET /api/v1/predictions", () => {
         await request(app).get("/api/v1/predictions?stop=stop-1&route=1A");
 
         // Assert
-        expect(getMockService().getPredictionsForStop).toHaveBeenCalledWith("stop-1", expect.objectContaining({ route: "1A" }));
+        expect(getMockService().getPredictionsForStop).toHaveBeenCalledWith(
+            "stop-1",
+            expect.objectContaining({ route: "1A" }),
+        );
     });
 
     it("responds with 404 when the service throws a NotFoundError", async () => {

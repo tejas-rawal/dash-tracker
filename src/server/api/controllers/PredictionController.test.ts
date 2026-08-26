@@ -134,7 +134,10 @@ describe("PredictionController", () => {
             await getPredictions(req, res, vi.fn());
 
             // Assert
-            expect(mockService.getPredictionsForStop).toHaveBeenCalledWith("stop-1", { number: undefined, route: "1A" });
+            expect(mockService.getPredictionsForStop).toHaveBeenCalledWith("stop-1", {
+                number: undefined,
+                route: "1A",
+            });
         });
 
         it("responds with 200 and the predictions response body on success", async () => {
