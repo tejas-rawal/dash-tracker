@@ -34,7 +34,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-08-26 — Phase 03 complete, transitioned to Phase 4
 
-Progress: [░░░░░░░░░░] 0% (0/2 v0.2 phases complete)
+Progress: [█████░░░░░] 50% (1/2 v0.2 phases complete)
 
 ## Performance Metrics
 
@@ -50,9 +50,8 @@ Progress: [░░░░░░░░░░] 0% (0/2 v0.2 phases complete)
 |-------|-------|-------|----------|
 | 1 (v0.1) | 1 | - | - |
 | 2 (v0.1) | 1 | - | - |
-| 3 (v0.2) | TBD | - | - |
+| 3 (v0.2) | 2 | - | - |
 | 4 (v0.2) | TBD | - | - |
-| 03 | 2 | - | - |
 
 **Recent Trend:**
 
@@ -71,6 +70,8 @@ Recent decisions affecting current work:
 - v0.2: Use Server-Sent Events (not WebSocket) for live predictions, with REST retained as fallback
 - v0.2: Server runs one shared 30s upstream poll per subscribed stop, stopping when idle, resuming on new subscriber
 - v0.2: Repo will eventually house both backend and Expo/React Native frontend (monorepo); frontend itself deferred
+- [Phase 3] Stop discovery lives in a new `StopController`/`StopService` pair, kept separate from `BusRouteController`/`BusRouteService`
+- [Phase 3] `GET /:shortName/stops` groups stops by direction (not a deduped flat list) — locked public contract, iterate `route.directions` directly
 
 ### Pending Todos
 
@@ -79,6 +80,7 @@ None yet.
 ### Blockers/Concerns
 
 - ⚠️ [Phase 1, v0.1] `lint:fix` uses Biome's deprecated `--apply-unsafe` flag (should become `--write --unsafe` per Biome 1.9.4); non-blocking, not yet addressed.
+- ⚠️ [Phase 3] Code review (03-REVIEW.md) flagged 2 non-blocking edge cases: empty-string `lat`/`lng` query params coerce to `0` instead of 400ing in `StopController`; `StopService.getNearbyStops` doesn't lower-bound `count` if called directly (not reachable via the controller today). Neither blocks Phase 3 completion.
 
 ## Deferred Items
 
@@ -91,10 +93,10 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-08-26T20:37:26.727Z
-Stopped at: Phase 03 complete, ready to plan Phase 4
-Resume file: .planning/phases/03-stop-discovery/03-CONTEXT.md
+Last session: 2026-08-26
+Stopped at: Phase 3 complete, ready to plan Phase 4
+Resume file: None
 
 ## Operator Next Steps
 
-- Run `/gsd-plan-phase 3` to plan Stop Discovery, the first phase of v0.2.
+- Run `/gsd-discuss-phase 4` to gather context for Live Predictions via SSE, then `/gsd-plan-phase 4`.
