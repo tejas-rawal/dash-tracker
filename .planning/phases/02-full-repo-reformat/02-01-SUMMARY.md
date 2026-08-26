@@ -141,3 +141,9 @@ Phase 2 is now complete — Milestone requirement TOOL-04 satisfied, all 4 ROADM
 ---
 *Phase: 02-full-repo-reformat*
 *Completed: 2026-08-26*
+
+## Self-Check: PASSED
+- FOUND: .planning/phases/02-full-repo-reformat/02-01-SUMMARY.md
+- FOUND: commit eead153 (style reformat)
+- FOUND: commit 10c4528 (docs summary)
+- CLAUDE.md, .planning/phases/01-consolidate-lint-format-tooling/01-PATTERNS.md, .gsd/ remain untracked (verified via git status --porcelain)
