@@ -13,7 +13,7 @@ This milestone consolidates dash-tracker's dev tooling onto a single lint-and-fo
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Consolidate Lint & Format Tooling** - Biome becomes the sole lint/format tool; Prettier and its config/plugin are fully removed; `package.json` scripts are rewired accordingly
+- [x] **Phase 1: Consolidate Lint & Format Tooling** - Biome becomes the sole lint/format tool; Prettier and its config/plugin are fully removed; `package.json` scripts are rewired accordingly (completed 2026-08-26)
 - [ ] **Phase 2: Full-Repo Reformat** - The entire codebase is reformatted under Biome with zero outstanding diffs, landed as its own isolated commit
 
 ## Phase Details
@@ -61,5 +61,5 @@ Phases execute in numeric order: 1 → 2
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Consolidate Lint & Format Tooling | 1/1 | In Progress|  |
+| 1. Consolidate Lint & Format Tooling | 1/1 | Complete    | 2026-08-26 |
 | 2. Full-Repo Reformat | 0/1 | Not started | - |
