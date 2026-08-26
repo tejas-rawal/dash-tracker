@@ -2,7 +2,7 @@
 
 ## What This Is
 
-dash-tracker is a Node.js/Express REST API that proxies and structures data from the DASH public transit API (goswift.ly), exposing bus routes and arrival predictions through a layered architecture (routes → controllers → services → repositories). This milestone is not about new features — it's a dev-tooling cleanup to consolidate the lint/format toolchain before further feature work resumes.
+dash-tracker is a Node.js/Express REST API that proxies and structures data from the DASH public transit API (goswift.ly), exposing bus routes and arrival predictions through a layered architecture (routes → controllers → services → repositories). v0.1 shipped a dev-tooling cleanup: the lint/format toolchain is now Biome-only, and the whole repo conforms to it. Feature work resumes from a clean, single-tool baseline.
 
 ## Core Value
 
@@ -16,13 +16,14 @@ A single, unambiguous command for linting and formatting — no redundant tools,
 - ✓ Layered architecture (routes → controllers → services → repositories) with factory-function DI — existing
 - ✓ TypeScript strict mode, compiled via `tsc` to `dist/` (ES2020, CommonJS) — existing
 - ✓ Vitest test suite with 80% coverage thresholds — existing
-- ✓ Biome is the sole tool for both linting and formatting (`biome check`/`biome check --write`) — Phase 1
-- ✓ Prettier, `@jonahsnider/prettier-config`, and `prettier-plugin-packagejson` fully removed (dependency, config, scripts) — Phase 1
-- ✓ `package.json` scripts (`lint`, `lint:fix`, `format`, `format:write`) updated to reflect the single-tool flow — Phase 1
+- ✓ Biome is the sole tool for both linting and formatting (`biome check`/`biome check --write`) — v0.1
+- ✓ Prettier, `@jonahsnider/prettier-config`, and `prettier-plugin-packagejson` fully removed (dependency, config, scripts) — v0.1
+- ✓ `package.json` scripts (`lint`, `lint:fix`, `format`, `format:write`) updated to reflect the single-tool flow — v0.1
+- ✓ Full codebase reformatted under Biome's formatter with zero outstanding diffs, landed as its own commit separate from the config/dependency change — v0.1
 
 ### Active
 
-- [ ] Full codebase reformatted under Biome's formatter with zero outstanding diffs, landed as its own commit separate from the config/dependency change
+(None yet — next milestone's requirements not yet defined. Run `/gsd-new-milestone`.)
 
 ### Out of Scope
 
@@ -33,8 +34,9 @@ A single, unambiguous command for linting and formatting — no redundant tools,
 ## Context
 
 - Existing codebase mapped in `.planning/codebase/` (STACK.md, ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, TESTING.md, INTEGRATIONS.md, CONCERNS.md)
-- Current toolchain redundancy: Biome (linting) + Prettier (formatting via `@jonahsnider/prettier-config`) run side by side even though Biome ships its own formatter — this is the actual problem being fixed
+- Shipped v0.1: Biome is now the sole lint/format tool (Prettier fully removed) and the entire repo (29 tracked files) is reformatted to it — `bun run format`/`bun run lint` exit 0 repo-wide, 141/141 tests pass unchanged
 - Package manager is Bun; TypeScript target ES2020/CommonJS, strict mode fully enabled
+- Known tech debt: `lint:fix`'s `--apply-unsafe` flag is deprecated by Biome 1.9.4 in favor of `--write --unsafe` (non-blocking, flagged in Phase 1 code review); 15 pre-existing Biome warnings remain by design (Axios `baseURL` naming, `*.test.ts` filename convention, intentional non-Error throws in tests) — see 02-CONTEXT.md D-02
 
 ## Constraints
 
@@ -47,8 +49,9 @@ A single, unambiguous command for linting and formatting — no redundant tools,
 |----------|-----------|---------|
 | Drop Prettier, standardize on Biome for lint + format | Biome already includes a formatter; running Prettier alongside it is pure redundancy | Shipped Phase 1 |
 | Keep `tsc` for build | Standard, dependency-free way to compile TS → CommonJS for a Node server; Vite is a frontend-oriented bundler and a poor fit here | Confirmed Phase 1 (build unaffected) |
-| Land the mass reformat as its own commit | Keeps the tooling/config change reviewable separately from the resulting whitespace/style diff | Pending — Phase 2 |
-| Leave `lint`/`lint:fix` scripts untouched in Phase 1 | They already invoked Biome and were the reference pattern for the new `format`/`format:write` scripts | Shipped Phase 1 — surfaced one follow-up: `lint:fix`'s `--apply-unsafe` flag is deprecated by Biome 1.9.4 in favor of `--write --unsafe` (non-blocking, logged in code review) |
+| Land the mass reformat as its own commit | Keeps the tooling/config change reviewable separately from the resulting whitespace/style diff | ✓ Shipped Phase 2 |
+| Leave `lint`/`lint:fix` scripts untouched in Phase 1 | They already invoked Biome and were the reference pattern for the new `format`/`format:write` scripts | ✓ Shipped Phase 1 — surfaced one follow-up: `lint:fix`'s `--apply-unsafe` flag is deprecated by Biome 1.9.4 in favor of `--write --unsafe` (non-blocking, logged in code review) |
+| Preserve the 15 pre-existing Biome warnings unchanged (no renames, no suppressions) during the Phase 2 reformat | Keeps the reformat purely cosmetic and scoped; fixing warnings is a separate, deliberate decision | ✓ Shipped Phase 2 |
 
 ## Evolution
 
@@ -68,4 +71,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-26 after Phase 1*
+*Last updated: 2026-08-26 after v0.1 milestone*
