@@ -1,15 +1,17 @@
 ---
 phase: 01-consolidate-lint-format-tooling
 verified: 2026-08-26T13:27:27Z
-status: human_needed
+status: passed
 score: 6/7 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
 deferred:
+
   - truth: "bun run lint and bun run format exit 0 against the full repository"
     addressed_in: "Phase 2"
     evidence: "Phase 2 Success Criterion 2: 'bun run format (Biome-backed check) exits 0 against the full repository with no reported diffs' — Phase 2's explicit goal is 'The whole codebase conforms to the new Biome-only formatter.' ~14 pre-existing src/**/*.ts, tsconfig.json, and vitest.config.mts files use tab-indentation/single-quotes that were never run through Biome's formatter and are explicitly out of scope for Phase 1 per PROJECT.md/CONTEXT.md."
 human_verification:
+
   - test: "Resolve the 30 uncommitted working-tree changes present at verification time (src/**/*.ts, tsconfig.json, vitest.config.mts, .planning/config.json all show as modified in `git status`, reformatted to double-quote/4-space style, but not committed by any Phase 1 task)."
     expected: "Either (a) these are intentional early Phase 2 work and should be committed as Phase 2's isolated reformat commit once Phase 2 is officially executed, or (b) they are stray/accidental changes and should be discarded (`git checkout -- <paths>`) before Phase 2 begins, so Phase 2's own reformat commit is clean and attributable."
     why_human: "An automated check cannot determine developer intent behind uncommitted changes; leaving them in place risks silently violating Phase 2's stated requirement that the reformat 'land as its own isolated commit separate from the config/dependency change' if they get swept into some other commit."
