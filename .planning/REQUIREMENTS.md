@@ -9,9 +9,9 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Tooling
 
-- [ ] **TOOL-01**: Biome is the sole tool for both linting and formatting (`biome check` / `biome check --write`)
-- [ ] **TOOL-02**: Prettier, `@jonahsnider/prettier-config`, and `prettier-plugin-packagejson` are fully removed (dependency, config file, and any plugin references)
-- [ ] **TOOL-03**: `package.json` scripts (`lint`, `lint:fix`, `format`, `format:write`) are updated to reflect the single-tool Biome flow
+- [x] **TOOL-01**: Biome is the sole tool for both linting and formatting (`biome check` / `biome check --write`)
+- [x] **TOOL-02**: Prettier, `@jonahsnider/prettier-config`, and `prettier-plugin-packagejson` are fully removed (dependency, config file, and any plugin references)
+- [x] **TOOL-03**: `package.json` scripts (`lint`, `lint:fix`, `format`, `format:write`) are updated to reflect the single-tool Biome flow
 - [ ] **TOOL-04**: Full codebase passes the new Biome formatter with zero outstanding diffs, landed as its own commit separate from the config/dependency change
 
 ## v2 Requirements
@@ -34,12 +34,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TOOL-01 | Phase 1 | Pending |
-| TOOL-02 | Phase 1 | Pending |
-| TOOL-03 | Phase 1 | Pending |
+| TOOL-01 | Phase 1 | Complete |
+| TOOL-02 | Phase 1 | Complete |
+| TOOL-03 | Phase 1 | Complete |
 | TOOL-04 | Phase 2 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 4 total
 - Mapped to phases: 4 ✓
 - Unmapped: 0
