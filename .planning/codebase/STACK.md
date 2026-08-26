@@ -80,17 +80,9 @@
 
 ## Linting & Formatting
 
-**Linting:**
-- Biome 1.9.4 (`@biomejs/biome`)
-  - Recommended rules enabled
-  - Formatting errors do not block linting
-  - Suspicious noExplicitAny set to info level
-
-**Formatting:**
-- Prettier 3.3.3
-  - Config via npm package `@jonahsnider/prettier-config` (v1.1.2)
-  - Extends Jonah Snider's standardized Prettier configuration
-  - Plugin: prettier-plugin-packagejson 2.5.3 (auto-formats package.json)
+**Tool:** Biome 1.9.4 (`@biomejs/biome`) — sole linter and formatter (Prettier removed in v0.1)
+- Recommended rules enabled; formatting errors do not block linting
+- Suspicious noExplicitAny set to info level
 
 ## Test Configuration
 

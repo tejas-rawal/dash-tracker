@@ -35,23 +35,14 @@
 
 ## Code Style
 
-**Formatting:**
-- **Tool:** Prettier with `@jonahsnider/prettier-config`
+**Formatting & Linting:**
+- **Tool:** Biome v1.9.4 (`@biomejs/biome`) — sole linter and formatter, config in `biome.json`
 - **Line width:** 120 characters
 - **Indentation:** 4 spaces
 - **Quote style:** Double quotes (`"`) for strings; single quotes (`'`) for JSX attributes
-- **Semicolons:** Required (Prettier enforces)
-- **Trailing commas:** auto (Prettier default)
-
-**Linting:**
-- **Tool:** Biome v1.9.4
-- **Config file:** `biome.json`
-- **Key rules:**
-  - `style/all: true` (all style rules enabled)
-  - `noParameterProperties: off` (TypeScript parameter properties allowed)
-  - `noDefaultExport: off` (default exports permitted)
-  - `suspicious/noExplicitAny: info` (warn on `any` types, not error)
-  - Recommended + all style rules enabled
+- **Semicolons:** Required
+- **Trailing commas:** all (Biome default)
+- **Key lint rules:** `style/all: true`, `noParameterProperties: off`, `noDefaultExport: off`, `suspicious/noExplicitAny: info`
 - **Run:** `bun run lint` (check), `bun run lint:fix` (auto-fix unsafe issues)
 
 **TypeScript Strict Mode:**
