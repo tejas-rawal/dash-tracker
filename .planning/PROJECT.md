@@ -16,12 +16,12 @@ A single, unambiguous command for linting and formatting — no redundant tools,
 - ✓ Layered architecture (routes → controllers → services → repositories) with factory-function DI — existing
 - ✓ TypeScript strict mode, compiled via `tsc` to `dist/` (ES2020, CommonJS) — existing
 - ✓ Vitest test suite with 80% coverage thresholds — existing
+- ✓ Biome is the sole tool for both linting and formatting (`biome check`/`biome check --write`) — Phase 1
+- ✓ Prettier, `@jonahsnider/prettier-config`, and `prettier-plugin-packagejson` fully removed (dependency, config, scripts) — Phase 1
+- ✓ `package.json` scripts (`lint`, `lint:fix`, `format`, `format:write`) updated to reflect the single-tool flow — Phase 1
 
 ### Active
 
-- [ ] Biome is the sole tool for both linting and formatting (`biome check`/`biome check --write`)
-- [ ] Prettier, `@jonahsnider/prettier-config`, and `prettier-plugin-packagejson` fully removed (dependency, config, scripts)
-- [ ] `package.json` scripts (`lint`, `lint:fix`, `format`, `format:write`) updated to reflect the single-tool flow
 - [ ] Full codebase reformatted under Biome's formatter with zero outstanding diffs, landed as its own commit separate from the config/dependency change
 
 ### Out of Scope
@@ -45,9 +45,10 @@ A single, unambiguous command for linting and formatting — no redundant tools,
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Drop Prettier, standardize on Biome for lint + format | Biome already includes a formatter; running Prettier alongside it is pure redundancy | — Pending |
-| Keep `tsc` for build | Standard, dependency-free way to compile TS → CommonJS for a Node server; Vite is a frontend-oriented bundler and a poor fit here | — Pending |
-| Land the mass reformat as its own commit | Keeps the tooling/config change reviewable separately from the resulting whitespace/style diff | — Pending |
+| Drop Prettier, standardize on Biome for lint + format | Biome already includes a formatter; running Prettier alongside it is pure redundancy | Shipped Phase 1 |
+| Keep `tsc` for build | Standard, dependency-free way to compile TS → CommonJS for a Node server; Vite is a frontend-oriented bundler and a poor fit here | Confirmed Phase 1 (build unaffected) |
+| Land the mass reformat as its own commit | Keeps the tooling/config change reviewable separately from the resulting whitespace/style diff | Pending — Phase 2 |
+| Leave `lint`/`lint:fix` scripts untouched in Phase 1 | They already invoked Biome and were the reference pattern for the new `format`/`format:write` scripts | Shipped Phase 1 — surfaced one follow-up: `lint:fix`'s `--apply-unsafe` flag is deprecated by Biome 1.9.4 in favor of `--write --unsafe` (non-blocking, logged in code review) |
 
 ## Evolution
 
@@ -67,4 +68,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-25 after initialization*
+*Last updated: 2026-08-26 after Phase 1*
