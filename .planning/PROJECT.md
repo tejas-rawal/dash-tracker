@@ -6,7 +6,7 @@ dash-tracker is a Node.js/Express REST API that proxies and structures data from
 
 ## Core Value
 
-A single, unambiguous command for linting and formatting — no redundant tools, no drift between what CI checks and what a contributor runs locally.
+Riders can always see accurate, near-real-time arrival predictions for their stop.
 
 ## Current Milestone: v0.2 Real-Time Arrival Predictions
 
@@ -70,6 +70,10 @@ A single, unambiguous command for linting and formatting — no redundant tools,
 | Land the mass reformat as its own commit | Keeps the tooling/config change reviewable separately from the resulting whitespace/style diff | ✓ Shipped Phase 2 |
 | Leave `lint`/`lint:fix` scripts untouched in Phase 1 | They already invoked Biome and were the reference pattern for the new `format`/`format:write` scripts | ✓ Shipped Phase 1 — surfaced one follow-up: `lint:fix`'s `--apply-unsafe` flag is deprecated by Biome 1.9.4 in favor of `--write --unsafe` (non-blocking, logged in code review) |
 | Preserve the 15 pre-existing Biome warnings unchanged (no renames, no suppressions) during the Phase 2 reformat | Keeps the reformat purely cosmetic and scoped; fixing warnings is a separate, deliberate decision | ✓ Shipped Phase 2 |
+| Replace Core Value with a product-level statement ("Riders can always see accurate, near-real-time arrival predictions for their stop") | The v0.1 Core Value ("single command for lint/format") was scoped to that tooling cleanup, not a lasting product value; v0.2 is the first feature milestone | — Pending |
+| Use Server-Sent Events (not WebSocket) for live predictions, with REST retained as fallback | SSE is one-way push over plain HTTP — simplest fit for this Express app and easy for the future Expo client to consume; bidirectional messaging isn't needed yet | — Pending |
+| Server runs one shared 30s upstream poll per subscribed stop, stopping when idle | Decouples client refresh cadence from per-client polling; protects upstream DASH API from being hammered by many simultaneous phone clients | — Pending |
+| This repo will eventually house both backend and Expo/React Native frontend (monorepo) | User doesn't want to manage separate repos; frontend build itself deferred to a future milestone | — Pending |
 
 ## Evolution
 
