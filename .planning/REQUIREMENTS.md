@@ -9,8 +9,8 @@ Requirements for milestone v0.2. Each maps to roadmap phases.
 
 ### Stop Discovery
 
-- [ ] **STOP-01**: User can retrieve the list of stops for a given route
-- [ ] **STOP-02**: User can retrieve stops near a given lat/lng, bounded by a radius and capped result count
+- [x] **STOP-01**: User can retrieve the list of stops for a given route
+- [x] **STOP-02**: User can retrieve stops near a given lat/lng, bounded by a radius and capped result count
 
 ### Live Predictions
 
@@ -46,8 +46,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| STOP-01 | Phase 3 | Pending |
-| STOP-02 | Phase 3 | Pending |
+| STOP-01 | Phase 3 | Complete |
+| STOP-02 | Phase 3 | Complete |
 | LIVE-01 | Phase 4 | Pending |
 | LIVE-02 | Phase 4 | Pending |
 | LIVE-03 | Phase 4 | Pending |
@@ -55,6 +55,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LIVE-05 | Phase 4 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 7 total
 - Mapped to phases: 7
 - Unmapped: 0 ✓
