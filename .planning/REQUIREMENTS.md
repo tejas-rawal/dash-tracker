@@ -46,19 +46,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| STOP-01 | TBD | Pending |
-| STOP-02 | TBD | Pending |
-| LIVE-01 | TBD | Pending |
-| LIVE-02 | TBD | Pending |
-| LIVE-03 | TBD | Pending |
-| LIVE-04 | TBD | Pending |
-| LIVE-05 | TBD | Pending |
+| STOP-01 | Phase 3 | Pending |
+| STOP-02 | Phase 3 | Pending |
+| LIVE-01 | Phase 4 | Pending |
+| LIVE-02 | Phase 4 | Pending |
+| LIVE-03 | Phase 4 | Pending |
+| LIVE-04 | Phase 4 | Pending |
+| LIVE-05 | Phase 4 | Pending |
 
 **Coverage:**
 - v1 requirements: 7 total
-- Mapped to phases: 0
-- Unmapped: 7 ⚠️ (roadmap not yet created)
+- Mapped to phases: 7
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-08-26*
-*Last updated: 2026-08-26 after initial definition*
+*Last updated: 2026-08-26 after roadmap creation (Phase 3: Stop Discovery, Phase 4: Live Predictions via SSE)*
