@@ -80,5 +80,57 @@ describe("StopService", () => {
             // Assert
             expect(result).toEqual([{ directionId: "d1", title: "Northbound", stops: [] }]);
         });
+
+        it("does not dedupe a stop shared by two directions — each direction keeps its own copy", () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            const sharedStop = makeStop("shared-1");
+            const route = makeRoute("1A", [
+                new RouteDirection({ id: "d1", title: "Inbound", stops: [sharedStop], headSigns: [] }),
+                new RouteDirection({ id: "d2", title: "Outbound", stops: [sharedStop], headSigns: [] }),
+            ]);
+            mockRepo.getRouteByShortName.mockReturnValue(route);
+            const { getStopsForRoute } = createStopService(mockRepo as never);
+
+            // Act
+            const result = getStopsForRoute("1A");
+
+            // Assert
+            expect(result[0]?.stops).toContainEqual(sharedStop);
+            expect(result[1]?.stops).toContainEqual(sharedStop);
+        });
+
+        it("preserves the direction's real stop sequence order, not re-sorted", () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            const stopC = makeStop("c");
+            const stopA = makeStop("a");
+            const stopB = makeStop("b");
+            const route = makeRoute("1A", [
+                new RouteDirection({ id: "d1", title: "Northbound", stops: [stopC, stopA, stopB], headSigns: [] }),
+            ]);
+            mockRepo.getRouteByShortName.mockReturnValue(route);
+            const { getStopsForRoute } = createStopService(mockRepo as never);
+
+            // Act
+            const result = getStopsForRoute("1A");
+
+            // Assert
+            expect(result[0]?.stops).toEqual([stopC, stopA, stopB]);
+        });
+
+        it("returns an empty array when the route has zero directions", () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            const route = makeRoute("1A", []);
+            mockRepo.getRouteByShortName.mockReturnValue(route);
+            const { getStopsForRoute } = createStopService(mockRepo as never);
+
+            // Act
+            const result = getStopsForRoute("1A");
+
+            // Assert
+            expect(result).toEqual([]);
+        });
     });
 });

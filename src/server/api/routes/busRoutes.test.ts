@@ -206,4 +206,37 @@ describe("GET /api/v1/routes/:shortName/stops", () => {
         // Assert
         expect(getMockStopService().getStopsForRoute).toHaveBeenCalledWith("3C");
     });
+
+    it("returns a direction with an empty stops array as { directionId, title, stops: [] }, not omitted", async () => {
+        // Arrange
+        const body = [
+            { directionId: "d1", title: "Northbound", stops: [makeStop()] },
+            { directionId: "d2", title: "Southbound", stops: [] },
+        ];
+        getMockStopService().getStopsForRoute.mockReturnValue(body);
+
+        // Act
+        const response = await request(app).get("/api/v1/routes/1A/stops");
+
+        // Assert
+        expect(response.body).toHaveLength(2);
+        expect(response.body[1]).toEqual({ directionId: "d2", title: "Southbound", stops: [] });
+    });
+
+    it("returns both direction entries with a shared stop present in each", async () => {
+        // Arrange
+        const sharedStop = { id: "shared-1", name: "Main St", code: 101, lat: 38.8, lon: -77.1 };
+        const body = [
+            { directionId: "d1", title: "Inbound", stops: [sharedStop] },
+            { directionId: "d2", title: "Outbound", stops: [sharedStop] },
+        ];
+        getMockStopService().getStopsForRoute.mockReturnValue(body);
+
+        // Act
+        const response = await request(app).get("/api/v1/routes/1A/stops");
+
+        // Assert
+        expect(response.body[0].stops).toContainEqual(sharedStop);
+        expect(response.body[1].stops).toContainEqual(sharedStop);
+    });
 });
