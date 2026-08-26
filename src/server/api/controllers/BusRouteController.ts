@@ -1,6 +1,6 @@
-import type { Request, RequestHandler, Response } from 'express';
-import type { BusRouteService } from '../services/BusRouteService';
-import { NotFoundError } from '../errors';
+import type { Request, RequestHandler, Response } from "express";
+import { NotFoundError } from "../errors";
+import type { BusRouteService } from "../services/BusRouteService";
 
 export interface BusRouteController {
     getAllRoutes: RequestHandler;
@@ -14,8 +14,8 @@ export function createBusRouteController(service: BusRouteService): BusRouteCont
             res.json(routes);
         } catch (error: unknown) {
             res.status(error instanceof NotFoundError ? 404 : 500).json({
-                error: error instanceof NotFoundError ? 'Not Found' : 'Request Failed',
-                details: error instanceof Error ? error.message : 'Unknown error',
+                error: error instanceof NotFoundError ? "Not Found" : "Request Failed",
+                details: error instanceof Error ? error.message : "Unknown error",
             });
         }
     };
@@ -27,8 +27,8 @@ export function createBusRouteController(service: BusRouteService): BusRouteCont
             res.json(route);
         } catch (error: unknown) {
             res.status(error instanceof NotFoundError ? 404 : 500).json({
-                error: error instanceof NotFoundError ? 'Not Found' : 'Request Failed',
-                details: error instanceof Error ? error.message : 'Unknown error',
+                error: error instanceof NotFoundError ? "Not Found" : "Request Failed",
+                details: error instanceof Error ? error.message : "Unknown error",
             });
         }
     };

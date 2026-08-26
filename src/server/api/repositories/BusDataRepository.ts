@@ -1,6 +1,6 @@
+import { axios, environment, logger } from "../../config";
 // BusDataRepository.ts
-import { BusRoute, RouteDirection, BusStop, type RouteType } from '../models';
-import { axios, environment, logger } from '../../config';
+import { BusRoute, BusStop, RouteDirection, type RouteType } from "../models";
 
 // Define interfaces for data structures to improve type safety
 interface RouteData {
@@ -64,7 +64,7 @@ export class BusDataRepository {
             })
             .catch((error) => {
                 this.initializationPromise = null;
-                const message = error instanceof Error ? error.message : 'Unknown error';
+                const message = error instanceof Error ? error.message : "Unknown error";
                 logger.error(`Failed to initialize bus data: ${message}`);
                 throw new Error(`Failed to initialize bus data: ${message}`);
             });
@@ -83,7 +83,7 @@ export class BusDataRepository {
                 this.initializationPromise = null;
             })
             .catch((error) => {
-                const message = error instanceof Error ? error.message : 'Unknown error';
+                const message = error instanceof Error ? error.message : "Unknown error";
                 logger.error(`Failed to refresh bus data: ${message}`);
                 throw new Error(`Failed to refresh bus data: ${message}`);
             });
@@ -103,14 +103,16 @@ export class BusDataRepository {
             logger.info(`Fetching bus data from API: ${apiUrl}`);
             const response = await axios.get(apiUrl);
 
-            const { data: { routes } } = response.data;
+            const {
+                data: { routes },
+            } = response.data;
 
             const stagingRoutes = new Map<string, BusRoute>();
             const stagingRoutesByShortName = new Map<string, BusRoute>();
             const stagingStops = new Map<string, BusStop>();
 
             if (!routes || !Array.isArray(routes) || routes.length === 0) {
-                logger.warn('No routes found in API response');
+                logger.warn("No routes found in API response");
                 return { routes: stagingRoutes, routesByShortName: stagingRoutesByShortName, stops: stagingStops };
             }
 
@@ -127,7 +129,7 @@ export class BusDataRepository {
             logger.info(`Processed ${stagingRoutes.size} routes and ${stagingStops.size} stops`);
             return { routes: stagingRoutes, routesByShortName: stagingRoutesByShortName, stops: stagingStops };
         } catch (error) {
-            const message = error instanceof Error ? error.message : 'Unknown error';
+            const message = error instanceof Error ? error.message : "Unknown error";
             logger.error(`Failed to fetch and process data: ${message}`);
             throw new Error(`Failed to fetch and process data: ${message}`);
         }
@@ -141,10 +143,10 @@ export class BusDataRepository {
      */
     private processDirectionsAndStops(
         directionsData: DirectionData[],
-        stagingStops: Map<string, BusStop>
+        stagingStops: Map<string, BusStop>,
     ): RouteDirection[] {
-        return directionsData.map(directionData => {
-            const stops = (directionData.stops || []).map(stopData => {
+        return directionsData.map((directionData) => {
+            const stops = (directionData.stops || []).map((stopData) => {
                 // Check if we've already processed this stop
                 let stop = stagingStops.get(stopData.id);
 
@@ -171,11 +173,11 @@ export class BusDataRepository {
     private createRoute(routeData: RouteData, directions: RouteDirection[]): BusRoute {
         return new BusRoute({
             id: routeData.id,
-            longName: routeData.longName || '',
-            shortName: routeData.shortName || '',
-            name: routeData.name || '',
+            longName: routeData.longName || "",
+            shortName: routeData.shortName || "",
+            name: routeData.name || "",
             type: routeData.type,
-            directions
+            directions,
         });
     }
 
@@ -185,15 +187,17 @@ export class BusDataRepository {
      * @returns A new BusStop instance
      */
     private createStop(stopData: StopData): BusStop {
-        const code = typeof stopData.code === 'string' ? Number.parseInt(stopData.code, 10) : stopData.code;
-        const lat = typeof stopData.lat === 'string' ? Number.parseFloat(stopData.lat) : stopData.lat;
-        const lon = typeof stopData.lon === 'string' ? Number.parseFloat(stopData.lon) : stopData.lon;
+        const code = typeof stopData.code === "string" ? Number.parseInt(stopData.code, 10) : stopData.code;
+        const lat = typeof stopData.lat === "string" ? Number.parseFloat(stopData.lat) : stopData.lat;
+        const lon = typeof stopData.lon === "string" ? Number.parseFloat(stopData.lon) : stopData.lon;
 
         if (Number.isNaN(code)) {
             throw new Error(`Invalid stop code for stop '${stopData.id}': '${stopData.code}'`);
         }
         if (Number.isNaN(lat) || Number.isNaN(lon)) {
-            throw new Error(`Invalid coordinates for stop '${stopData.id}': lat='${stopData.lat}', lon='${stopData.lon}'`);
+            throw new Error(
+                `Invalid coordinates for stop '${stopData.id}': lat='${stopData.lat}', lon='${stopData.lon}'`,
+            );
         }
 
         return new BusStop({ id: stopData.id, name: stopData.name, code, lat, lon });
@@ -210,13 +214,13 @@ export class BusDataRepository {
             id: directionData.id,
             title: directionData.title,
             stops,
-            headSigns: directionData.headSigns || []
+            headSigns: directionData.headSigns || [],
         });
     }
 
     private assertInitialized(): void {
         if (!this.isInitialized) {
-            throw new Error('BusDataRepository has not been initialized. Call initialize() before accessing data.');
+            throw new Error("BusDataRepository has not been initialized. Call initialize() before accessing data.");
         }
     }
 
@@ -258,10 +262,8 @@ export class BusDataRepository {
      */
     public getRoutesForStop(stopId: string): BusRoute[] {
         this.assertInitialized();
-        return Array.from(this.routes.values()).filter(route => {
-            return route.directions.some(direction =>
-                direction.stops.some(stop => stop.id === stopId)
-            );
+        return Array.from(this.routes.values()).filter((route) => {
+            return route.directions.some((direction) => direction.stops.some((stop) => stop.id === stopId));
         });
     }
 }

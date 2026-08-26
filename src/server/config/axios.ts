@@ -1,5 +1,5 @@
-import axios from 'axios';
-import { environment } from './environment';
+import axios from "axios";
+import { environment } from "./environment";
 
 const { dashApi } = environment;
 

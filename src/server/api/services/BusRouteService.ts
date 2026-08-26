@@ -1,6 +1,6 @@
-import type { BusRoute, BusStop } from '../models';
-import type { BusDataRepository } from '../repositories';
-import { NotFoundError } from '../errors';
+import { NotFoundError } from "../errors";
+import type { BusRoute, BusStop } from "../models";
+import type { BusDataRepository } from "../repositories";
 
 export interface BusRouteService {
     getAgencyRoutes(): BusRoute[];
