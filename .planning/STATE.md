@@ -20,10 +20,10 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-08-25)
+See: .planning/PROJECT.md (updated 2026-08-26)
 
 **Core value:** A single, unambiguous command for linting and formatting — no redundant tools, no drift between what CI checks and what a contributor runs locally.
-**Current focus:** Phase 01 — Consolidate Lint & Format Tooling
+**Current focus:** Phase 2 — Full-Repo Reformat
 
 ## Current Position
 
@@ -74,6 +74,8 @@ None yet.
 
 None yet.
 
+- ⚠️ [Phase 1] `lint:fix` uses Biome's deprecated `--apply-unsafe` flag (should become `--write --unsafe` per Biome 1.9.4); left untouched per Phase 1's scope, non-blocking. Flagged in `01-REVIEW.md`.
+
 ## Deferred Items
 
 Items acknowledged and deferred at milestone close, most recent first:
@@ -84,6 +86,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-08-25T21:01:51.822Z
+Last session: 2026-08-26T13:59:07.248Z
 Stopped at: Phase 01 complete, ready to plan Phase 2
-Resume file: .planning/phases/01-consolidate-lint-format-tooling/01-CONTEXT.md
+Resume file: None
