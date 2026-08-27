@@ -37,7 +37,10 @@
   2. Given a latitude/longitude plus optional radius and max-count parameters, a client can retrieve nearby stops within that radius, sorted by proximity, capped at the requested (or a sensible default) count.
   3. Requesting stops for an unknown route returns a typed 404 (`NotFoundError`), and invalid or out-of-range coordinate/radius input returns a typed 400 validation error, consistent with existing controller conventions.
   4. Existing routes and predictions endpoints continue to respond exactly as before — no regression introduced by adding the new stop-discovery endpoints.
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 03-01-PLAN.md — Stops for a route, grouped by direction (StopService/StopController tracer, STOP-01)
+- [ ] 03-02-PLAN.md — Nearby-stops search with haversine distance (extends StopService/StopController, STOP-02)
 
 ### Phase 4: Live Predictions via SSE
 **Goal**: Riders can subscribe to a stop and see arrival predictions update automatically over a live connection, with the existing REST endpoint still available as a fallback, and both response shapes reporting server-side freshness.
@@ -60,5 +63,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Consolidate Lint & Format Tooling | 1/1 | Complete | 2026-08-26 |
 | 2. Full-Repo Reformat | 1/1 | Complete | 2026-08-26 |
-| 3. Stop Discovery | 0/TBD | Not started | - |
+| 3. Stop Discovery | 0/2 | Not started | - |
 | 4. Live Predictions via SSE | 0/TBD | Not started | - |
