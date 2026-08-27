@@ -14,10 +14,18 @@ vi.mock("../services/BusRouteService", () => ({
     })),
 }));
 
+vi.mock("../services/StopService", () => ({
+    createStopService: vi.fn(() => ({
+        getStopsForRoute: vi.fn(),
+    })),
+}));
+
 import app from "../../test/app";
 import { createBusRouteService } from "../services/BusRouteService";
+import { createStopService } from "../services/StopService";
 
 const getMockService = () => vi.mocked(createBusRouteService).mock.results[0]?.value;
+const getMockStopService = () => vi.mocked(createStopService).mock.results[0]?.value;
 
 const makeStop = () => new BusStop({ id: "stop-1", name: "Main St", code: 101, lat: 38.8, lon: -77.1 });
 
@@ -154,5 +162,48 @@ describe("GET /api/v1/routes/:shortName", () => {
 
         // Assert
         expect(getMockService().getAgencyRoute).toHaveBeenCalledWith("3C");
+    });
+});
+
+describe("GET /api/v1/routes/:shortName/stops", () => {
+    it("responds with 200 and the grouped-by-direction body for a known route", async () => {
+        // Arrange
+        const body = [{ directionId: "d1", title: "Northbound", stops: [makeStop()] }];
+        getMockStopService().getStopsForRoute.mockReturnValue(body);
+
+        // Act
+        const response = await request(app).get("/api/v1/routes/1A/stops");
+
+        // Assert
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual(body);
+    });
+
+    it("responds with 404 and a Not Found error body when the service throws NotFoundError", async () => {
+        // Arrange
+        getMockStopService().getStopsForRoute.mockImplementation(() => {
+            throw new NotFoundError("Route not found: UNKNOWN");
+        });
+
+        // Act
+        const response = await request(app).get("/api/v1/routes/UNKNOWN/stops");
+
+        // Assert
+        expect(response.status).toBe(404);
+        expect(response.body).toMatchObject({
+            error: "Not Found",
+            details: "Route not found: UNKNOWN",
+        });
+    });
+
+    it("passes the shortName path parameter to the service", async () => {
+        // Arrange
+        getMockStopService().getStopsForRoute.mockReturnValue([]);
+
+        // Act
+        await request(app).get("/api/v1/routes/3C/stops");
+
+        // Assert
+        expect(getMockStopService().getStopsForRoute).toHaveBeenCalledWith("3C");
     });
 });
