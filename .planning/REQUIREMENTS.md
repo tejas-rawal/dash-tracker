@@ -14,11 +14,11 @@ Requirements for milestone v0.2. Each maps to roadmap phases.
 
 ### Live Predictions
 
-- [ ] **LIVE-01**: User can subscribe to a stop via Server-Sent Events and receive live prediction updates without client-side polling
-- [ ] **LIVE-02**: SSE prediction updates for a stop are backed by a single shared upstream poll every 30 seconds, regardless of how many clients are subscribed to that stop
-- [ ] **LIVE-03**: Upstream polling for a stop stops when its last SSE subscriber disconnects, and resumes automatically when a new subscriber connects
-- [ ] **LIVE-04**: User can still fetch predictions via the existing REST endpoint (`/api/v1/predictions`) as a fallback or for initial load
-- [ ] **LIVE-05**: Prediction responses from both the REST endpoint and the SSE stream include a `generatedAt` timestamp indicating server-side freshness
+- [x] **LIVE-01**: User can subscribe to a stop via Server-Sent Events and receive live prediction updates without client-side polling
+- [x] **LIVE-02**: SSE prediction updates for a stop are backed by a single shared upstream poll every 30 seconds, regardless of how many clients are subscribed to that stop
+- [x] **LIVE-03**: Upstream polling for a stop stops when its last SSE subscriber disconnects, and resumes automatically when a new subscriber connects
+- [x] **LIVE-04**: User can still fetch predictions via the existing REST endpoint (`/api/v1/predictions`) as a fallback or for initial load
+- [x] **LIVE-05**: Prediction responses from both the REST endpoint and the SSE stream include a `generatedAt` timestamp indicating server-side freshness
 
 ## v2 Requirements
 
@@ -48,11 +48,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | STOP-01 | Phase 3 | Complete |
 | STOP-02 | Phase 3 | Complete |
-| LIVE-01 | Phase 4 | Pending |
-| LIVE-02 | Phase 4 | Pending |
-| LIVE-03 | Phase 4 | Pending |
-| LIVE-04 | Phase 4 | Pending |
-| LIVE-05 | Phase 4 | Pending |
+| LIVE-01 | Phase 4 | Complete |
+| LIVE-02 | Phase 4 | Complete |
+| LIVE-03 | Phase 4 | Complete |
+| LIVE-04 | Phase 4 | Complete |
+| LIVE-05 | Phase 4 | Complete |
 
 **Coverage:**
 

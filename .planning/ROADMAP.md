@@ -60,11 +60,11 @@ Plans:
   4. The existing REST endpoint (`GET /api/v1/predictions`) still returns predictions on demand, unchanged in behavior, usable for initial load or as a fallback when SSE isn't available.
   5. Both the REST response and every SSE update include a `generatedAt` timestamp indicating when the server produced that specific payload.
 
-**Plans**: 1 plan
+**Plans**: 1/1 plans executed
 
 Plans:
 
-- [ ] 04-01-PLAN.md — SSE prediction stream: shared per-stop poll loop, immediate push, generatedAt freshness on REST + SSE (LIVE-01 through LIVE-05)
+- [x] 04-01-PLAN.md — SSE prediction stream: shared per-stop poll loop, immediate push, generatedAt freshness on REST + SSE (LIVE-01 through LIVE-05)
 
 ## Progress
 
@@ -76,4 +76,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Consolidate Lint & Format Tooling | 1/1 | Complete | 2026-08-26 |
 | 2. Full-Repo Reformat | 1/1 | Complete | 2026-08-26 |
 | 3. Stop Discovery | 2/2 | Complete    | 2026-08-26 |
-| 4. Live Predictions via SSE | 0/TBD | Not started | - |
+| 4. Live Predictions via SSE | 1/1 | In Progress|  |
