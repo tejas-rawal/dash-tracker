@@ -60,7 +60,11 @@ Plans:
   4. The existing REST endpoint (`GET /api/v1/predictions`) still returns predictions on demand, unchanged in behavior, usable for initial load or as a fallback when SSE isn't available.
   5. Both the REST response and every SSE update include a `generatedAt` timestamp indicating when the server produced that specific payload.
 
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+
+- [ ] 04-01-PLAN.md — SSE prediction stream: shared per-stop poll loop, immediate push, generatedAt freshness on REST + SSE (LIVE-01 through LIVE-05)
 
 ## Progress
 
