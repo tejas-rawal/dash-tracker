@@ -262,5 +262,84 @@ describe("StopService", () => {
             // Assert
             expect(result[0]?.distance).toBe(expectedDistance);
         });
+
+        it("at-cap boundary: requested count: 50 against 60 in-radius stops returns exactly 50 entries", () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            const stops = Array.from({ length: 60 }, (_, i) => makeStopAt(`stop-${i}`, ORIGIN.lat, ORIGIN.lng));
+            mockRepo.getAllStops.mockReturnValue(stops);
+            const { getNearbyStops } = createStopService(mockRepo as never);
+
+            // Act
+            const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng, { count: 50 });
+
+            // Assert
+            expect(result).toHaveLength(50);
+        });
+
+        it("over-cap boundary: requested count: 1000 against 60 in-radius stops still returns exactly 50 entries", () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            const stops = Array.from({ length: 60 }, (_, i) => makeStopAt(`stop-${i}`, ORIGIN.lat, ORIGIN.lng));
+            mockRepo.getAllStops.mockReturnValue(stops);
+            const { getNearbyStops } = createStopService(mockRepo as never);
+
+            // Act
+            const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng, { count: 1000 });
+
+            // Assert
+            expect(result).toHaveLength(50);
+        });
+
+        it("default count: with no count option and 15 in-radius stops, returns exactly 10 entries", () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            const stops = Array.from({ length: 15 }, (_, i) => makeStopAt(`stop-${i}`, ORIGIN.lat, ORIGIN.lng));
+            mockRepo.getAllStops.mockReturnValue(stops);
+            const { getNearbyStops } = createStopService(mockRepo as never);
+
+            // Act
+            const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng);
+
+            // Assert
+            expect(result).toHaveLength(10);
+        });
+
+        it("default radius: a stop just inside 0.5 miles is included and a stop just outside is excluded", () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            // ~0.005 deg lat offset ≈ 0.35mi (well inside 0.5mi); ~0.01 deg ≈ 0.69mi (well outside 0.5mi).
+            const inside = makeStopAt("inside", ORIGIN.lat + 0.005, ORIGIN.lng);
+            const outside = makeStopAt("outside", ORIGIN.lat + 0.01, ORIGIN.lng);
+            mockRepo.getAllStops.mockReturnValue([inside, outside]);
+            const { getNearbyStops } = createStopService(mockRepo as never);
+
+            // Act
+            const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng);
+
+            // Assert
+            expect(result.map((stop) => stop.id)).toEqual(["inside"]);
+        });
+
+        it("rounding contract: every returned distance has at most 2 decimal places", () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            const stops = [
+                makeStopAt("a", ORIGIN.lat + 0.001, ORIGIN.lng + 0.002),
+                makeStopAt("b", ORIGIN.lat + 0.003, ORIGIN.lng + 0.001),
+                makeStopAt("c", ORIGIN.lat, ORIGIN.lng),
+            ];
+            mockRepo.getAllStops.mockReturnValue(stops);
+            const { getNearbyStops } = createStopService(mockRepo as never);
+
+            // Act
+            const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng, { radius: 5 });
+
+            // Assert
+            expect(result.length).toBeGreaterThan(0);
+            for (const stop of result) {
+                expect(Number(stop.distance.toFixed(2))).toBe(stop.distance);
+            }
+        });
     });
 });
