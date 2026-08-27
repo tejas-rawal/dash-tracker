@@ -24,6 +24,7 @@ export interface RoutePrediction {
 
 export interface StopPredictionsResponse {
     success: boolean;
+    generatedAt: string;
     data: {
         agencyKey: string;
         stop: {
