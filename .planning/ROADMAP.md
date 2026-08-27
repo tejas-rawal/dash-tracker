@@ -25,7 +25,7 @@
 **Milestone Goal:** Give the future Expo/React Native app what it needs to show near-real-time bus arrivals for a selected stop — stop discovery plus a live-updating predictions feed.
 
 - [x] **Phase 3: Stop Discovery** - Riders can find stops by route or by location before subscribing to predictions (completed 2026-08-26)
-- [ ] **Phase 4: Live Predictions via SSE** - Riders get live-updating arrival predictions over SSE, backed by a shared poll loop, with REST fallback and freshness timestamps
+- [x] **Phase 4: Live Predictions via SSE** - Riders get live-updating arrival predictions over SSE, backed by a shared poll loop, with REST fallback and freshness timestamps (completed 2026-08-27)
 
 ## Phase Details
 
@@ -76,4 +76,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Consolidate Lint & Format Tooling | 1/1 | Complete | 2026-08-26 |
 | 2. Full-Repo Reformat | 1/1 | Complete | 2026-08-26 |
 | 3. Stop Discovery | 2/2 | Complete    | 2026-08-26 |
-| 4. Live Predictions via SSE | 1/1 | In Progress|  |
+| 4. Live Predictions via SSE | 1/1 | Complete    | 2026-08-27 |
