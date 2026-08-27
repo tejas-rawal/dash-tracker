@@ -43,24 +43,41 @@ export function createPredictionStreamController(streamService: PredictionStream
             res.write(`event: prediction\ndata: ${JSON.stringify(payload)}\n\n`);
         };
 
+        let closed = false;
+        req.on("close", () => {
+            closed = true;
+        });
+
+        let subscription: { initialPayload: StopPredictionsResponse; unsubscribe: () => void };
         try {
-            const { initialPayload, unsubscribe } = await streamService.subscribe(stop, send);
-
-            res.writeHead(200, {
-                "Content-Type": "text/event-stream",
-                "Cache-Control": "no-cache",
-                // biome-ignore lint/style/useNamingConvention: HTTP header name, casing is fixed by the spec
-                Connection: "keep-alive",
-            });
-            send(initialPayload);
-
-            req.on("close", () => {
-                unsubscribe();
-                res.end();
-            });
+            subscription = await streamService.subscribe(stop, send);
         } catch (error: unknown) {
+            if (res.headersSent) {
+                return;
+            }
             res.status(resolveErrorStatus(error)).json(resolveErrorBody(error));
+            return;
         }
+
+        const { initialPayload, unsubscribe } = subscription;
+
+        if (closed || req.destroyed) {
+            unsubscribe();
+            return;
+        }
+
+        res.writeHead(200, {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            // biome-ignore lint/style/useNamingConvention: HTTP header name, casing is fixed by the spec
+            Connection: "keep-alive",
+        });
+        send(initialPayload);
+
+        req.on("close", () => {
+            unsubscribe();
+            res.end();
+        });
     };
 
     return { getPredictionsStream };
