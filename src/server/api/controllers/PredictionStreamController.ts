@@ -1,4 +1,5 @@
 import type { Request, RequestHandler, Response } from "express";
+import { logger } from "../../config";
 import { NotFoundError, UpstreamApiError } from "../errors";
 import type { StopPredictionsResponse } from "../models/Prediction";
 import type { PredictionStreamService } from "../services/PredictionStreamService";
@@ -66,13 +67,20 @@ export function createPredictionStreamController(streamService: PredictionStream
             return;
         }
 
-        res.writeHead(200, {
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache",
-            // biome-ignore lint/style/useNamingConvention: HTTP header name, casing is fixed by the spec
-            Connection: "keep-alive",
-        });
-        send(initialPayload);
+        try {
+            res.writeHead(200, {
+                "Content-Type": "text/event-stream",
+                "Cache-Control": "no-cache",
+                // biome-ignore lint/style/useNamingConvention: HTTP header name, casing is fixed by the spec
+                Connection: "keep-alive",
+            });
+            send(initialPayload);
+        } catch (writeError: unknown) {
+            const message = writeError instanceof Error ? writeError.message : "Unknown error";
+            logger.error(`Failed to write initial SSE frame for stop ${stop}: ${message}`);
+            unsubscribe();
+            return;
+        }
 
         req.on("close", () => {
             unsubscribe();
