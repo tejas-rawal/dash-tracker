@@ -2,21 +2,15 @@
 
 ## What This Is
 
-dash-tracker is a Node.js/Express REST API that proxies and structures data from the DASH public transit API (goswift.ly), exposing bus routes and arrival predictions through a layered architecture (routes → controllers → services → repositories). v0.1 shipped a dev-tooling cleanup: the lint/format toolchain is now Biome-only, and the whole repo conforms to it. Feature work resumes from a clean, single-tool baseline.
+dash-tracker is a Node.js/Express REST API that proxies and structures data from the DASH public transit API (goswift.ly), exposing bus routes, stop discovery, and arrival predictions — via both REST and a live Server-Sent Events feed — through a layered architecture (routes → controllers → services → repositories). v0.1 shipped a dev-tooling cleanup (Biome-only lint/format); v0.2 shipped the first real feature set: riders (via a future client) can discover stops and get near-real-time arrival predictions that update automatically over a live connection.
 
 ## Core Value
 
 Riders can always see accurate, near-real-time arrival predictions for their stop.
 
-## Current Milestone: v0.2 Real-Time Arrival Predictions
+## Current Milestone: Planning Next (post-v0.2)
 
-**Goal:** Give the future Expo/React Native app what it needs to show near-real-time bus arrivals for a selected stop — stop discovery plus a live-updating predictions feed.
-
-**Target features:**
-- Stop discovery endpoints (by route, and nearby by lat/lng with radius + count bound)
-- Server-Sent Events endpoint streaming live predictions per stop, backed by one shared 30s upstream poll loop per subscribed stop (starts on first subscriber, stops when idle)
-- Existing REST predictions endpoint retained as fallback/initial-load path
-- `generatedAt` freshness timestamp added to REST and SSE prediction payloads
+v0.2 Real-Time Arrival Predictions shipped 2026-08-27. No milestone is currently in progress — run `/gsd-new-milestone` to scope the next one (the Expo/React Native client is the natural next candidate per Context below).
 
 ## Requirements
 
@@ -32,13 +26,14 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 - ✓ Full codebase reformatted under Biome's formatter with zero outstanding diffs, landed as its own commit separate from the config/dependency change — v0.1
 - ✓ Stop discovery: list stops for a given route (`GET /api/v1/routes/:shortName/stops`, grouped by direction) — Phase 3
 - ✓ Stop discovery: find nearby stops by lat/lng (`GET /api/v1/stops/nearby`, radius + result-count bound, haversine distance) — Phase 3
+- ✓ Live predictions via Server-Sent Events, subscribed per stop (`GET /api/v1/predictions/stream?stop={id}`) — v0.2 Phase 4
+- ✓ Shared per-stop upstream poll loop (30s), started on first subscriber and stopped when idle — v0.2 Phase 4
+- ✓ REST predictions endpoint retained as fallback/initial-load path, fully independent of SSE — v0.2 Phase 4
+- ✓ `generatedAt` freshness timestamp added to REST and SSE prediction payloads — v0.2 Phase 4
 
 ### Active
 
-- [ ] Live predictions via Server-Sent Events, subscribed per stop
-- [ ] Shared per-stop upstream poll loop (30s), started on first subscriber and stopped when idle
-- [ ] REST predictions endpoint retained as fallback/initial-load path
-- [ ] `generatedAt` freshness timestamp added to REST and SSE prediction payloads
+(None yet — scope the next milestone via `/gsd-new-milestone`. The Expo/React Native client, listed under Out of Scope below, is the natural next candidate.)
 
 ### Out of Scope
 
@@ -50,11 +45,14 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 ## Context
 
 - This repo is intended to eventually house both the backend API and the Expo/React Native frontend (monorepo by design, not separate repos) — the frontend itself is planned for a future milestone
-- The Expo app will consume this API for near-real-time bus arrivals: 30-second refresh cadence, offline caching, and an animated countdown UI (client-side concerns, out of scope for this milestone)
-- Existing codebase mapped in `.planning/codebase/` (STACK.md, ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, TESTING.md, INTEGRATIONS.md, CONCERNS.md)
-- Shipped v0.1: Biome is now the sole lint/format tool (Prettier fully removed) and the entire repo (29 tracked files) is reformatted to it — `bun run format`/`bun run lint` exit 0 repo-wide, 141/141 tests pass unchanged
+- The Expo app will consume this API for near-real-time bus arrivals: 30-second refresh cadence, offline caching, and an animated countdown UI (client-side concerns, out of scope until that milestone)
+- Existing codebase mapped in `.planning/codebase/` (STACK.md, ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, TESTING.md, INTEGRATIONS.md, CONCERNS.md) — predates v0.2, not yet refreshed with Phase 3/4 additions
+- Shipped v0.1: Biome is now the sole lint/format tool (Prettier fully removed), entire repo reformatted to it
+- Shipped v0.2 (2026-08-27): stop discovery (`StopService`/`StopController`) plus a live SSE predictions feed (`PredictionStreamService`/`PredictionStreamController`) with a shared per-stop poll loop and `generatedAt` freshness on both REST and SSE — 217/217 tests pass, ~97% coverage on new code, `bun run build`/`bun run lint` clean
 - Package manager is Bun; TypeScript target ES2020/CommonJS, strict mode fully enabled
 - Known tech debt: `lint:fix`'s `--apply-unsafe` flag is deprecated by Biome 1.9.4 in favor of `--write --unsafe` (non-blocking, flagged in Phase 1 code review); 15 pre-existing Biome warnings remain by design (Axios `baseURL` naming, `*.test.ts` filename convention, intentional non-Error throws in tests) — see 02-CONTEXT.md D-02
+- Known tech debt (v0.2): `PredictionStreamController`'s initial SSE write is guarded only against synchronous throws — a mid-write client-socket error surfaces asynchronously via an `'error'` event, which no handler currently catches anywhere in `src/server` (no `res.on("error", ...)` or process-level `unhandledRejection` handler). Flagged as residual Warning WR-05 in `.planning/phases/04-live-predictions-via-sse/04-REVIEW.md` after a 3-iteration code-review fix cycle that closed 3 Critical race/leak bugs and 4 other Warnings; does not violate any LIVE-01..05 requirement as scoped
+- Note: an unrelated, pre-existing uncommitted fix to `BusDataRepository.ts` (dedupe `initialize()`/`refreshData()` load paths, commit `b52c130`) was swept into the v0.2 execution history by the automated code-review-fix pipeline picking up dirty working-tree state — not part of Phase 3/4 scope, flagged to the user during execution, left in place as a correct fix
 
 ## Constraints
 
@@ -70,10 +68,10 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 | Land the mass reformat as its own commit | Keeps the tooling/config change reviewable separately from the resulting whitespace/style diff | ✓ Shipped Phase 2 |
 | Leave `lint`/`lint:fix` scripts untouched in Phase 1 | They already invoked Biome and were the reference pattern for the new `format`/`format:write` scripts | ✓ Shipped Phase 1 — surfaced one follow-up: `lint:fix`'s `--apply-unsafe` flag is deprecated by Biome 1.9.4 in favor of `--write --unsafe` (non-blocking, logged in code review) |
 | Preserve the 15 pre-existing Biome warnings unchanged (no renames, no suppressions) during the Phase 2 reformat | Keeps the reformat purely cosmetic and scoped; fixing warnings is a separate, deliberate decision | ✓ Shipped Phase 2 |
-| Replace Core Value with a product-level statement ("Riders can always see accurate, near-real-time arrival predictions for their stop") | The v0.1 Core Value ("single command for lint/format") was scoped to that tooling cleanup, not a lasting product value; v0.2 is the first feature milestone | — Pending |
-| Use Server-Sent Events (not WebSocket) for live predictions, with REST retained as fallback | SSE is one-way push over plain HTTP — simplest fit for this Express app and easy for the future Expo client to consume; bidirectional messaging isn't needed yet | — Pending |
-| Server runs one shared 30s upstream poll per subscribed stop, stopping when idle | Decouples client refresh cadence from per-client polling; protects upstream DASH API from being hammered by many simultaneous phone clients | — Pending |
-| This repo will eventually house both backend and Expo/React Native frontend (monorepo) | User doesn't want to manage separate repos; frontend build itself deferred to a future milestone | — Pending |
+| Replace Core Value with a product-level statement ("Riders can always see accurate, near-real-time arrival predictions for their stop") | The v0.1 Core Value ("single command for lint/format") was scoped to that tooling cleanup, not a lasting product value; v0.2 is the first feature milestone | ✓ Good — Shipped v0.2 |
+| Use Server-Sent Events (not WebSocket) for live predictions, with REST retained as fallback | SSE is one-way push over plain HTTP — simplest fit for this Express app and easy for the future Expo client to consume; bidirectional messaging isn't needed yet | ✓ Good — Shipped Phase 4 |
+| Server runs one shared 30s upstream poll per subscribed stop, stopping when idle | Decouples client refresh cadence from per-client polling; protects upstream DASH API from being hammered by many simultaneous phone clients | ✓ Good — Shipped Phase 4, verified concurrency-safe after a 3-iteration code-review fix cycle (see Context) |
+| This repo will eventually house both backend and Expo/React Native frontend (monorepo) | User doesn't want to manage separate repos; frontend build itself deferred to a future milestone | — Pending (unchanged by v0.2, still the plan for next milestone) |
 | Stop discovery lives in a new `StopController`/`StopService` pair, not folded into `BusRouteController`/`BusRouteService` | Stop discovery is a distinct concern from route CRUD even though one URL nests under `/routes`; splitting it out later would touch call sites and tests | ✓ Shipped Phase 3 |
 | `GET /:shortName/stops` groups stops by direction (`[{ directionId, title, stops }]`) instead of a deduped flat list | Response shape is a public contract — flattening later would be a breaking change for client apps; iterating `route.directions` preserves real sequence order that `getAllStops()` loses | ✓ Shipped Phase 3 |
 | Nearby-search radius/distance in miles, default radius 0.5mi, default count 10 (cap 50), results sorted ascending by distance | Matches how a rider thinks about "how far," and bounds response size against a dense stop dataset | ✓ Shipped Phase 3 |
@@ -96,4 +94,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-26 after Phase 3*
+*Last updated: 2026-08-27 after v0.2 milestone*

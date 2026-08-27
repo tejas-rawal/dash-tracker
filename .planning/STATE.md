@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Real-Time Arrival Predictions
-current_phase: 04
-status: completed
+status: Awaiting next milestone
 stopped_at: Phase 04 complete — all phases complete
-last_updated: "2026-08-27T16:05:21.374Z"
+last_updated: "2026-08-27T17:15:22.521Z"
 last_activity: 2026-08-27
-last_activity_desc: Phase 04 complete
-state_head: 3e35eae68ad8afcaafb00985c023b9b732545f96
+last_activity_desc: Milestone v0.2 completed and archived
+state_head: 0ce4757a7d6d2de1c5451cb10493178b4d750ceb
 progress:
   total_phases: 2
   completed_phases: 2
   total_plans: 3
   completed_plans: 3
   percent: 100
+current_phase: 04
 ---
 
 # Project State
@@ -28,12 +28,10 @@ See: .planning/PROJECT.md (updated 2026-08-26)
 
 ## Current Position
 
-Phase: 04
-Plan: Not started
-Status: All phases complete
-Last activity: 2026-08-27 — Phase 04 complete
-
-Progress: [█████░░░░░] 50% (1/2 v0.2 phases complete)
+Phase: Milestone v0.2 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-08-27 — Milestone v0.2 completed and archived
 
 ## Performance Metrics
 
@@ -104,4 +102,4 @@ Resume file: .planning/phases/04-live-predictions-via-sse/04-CONTEXT.md
 
 ## Operator Next Steps
 
-- Run `/gsd-discuss-phase 4` to gather context for Live Predictions via SSE, then `/gsd-plan-phase 4`.
+- Start the next milestone with /gsd-new-milestone
