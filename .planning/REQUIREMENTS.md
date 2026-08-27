@@ -1,0 +1,64 @@
+# Requirements: dash-tracker
+
+**Defined:** 2026-08-26
+**Core Value:** Riders can always see accurate, near-real-time arrival predictions for their stop.
+
+## v1 Requirements
+
+Requirements for milestone v0.2. Each maps to roadmap phases.
+
+### Stop Discovery
+
+- [ ] **STOP-01**: User can retrieve the list of stops for a given route
+- [ ] **STOP-02**: User can retrieve stops near a given lat/lng, bounded by a radius and capped result count
+
+### Live Predictions
+
+- [ ] **LIVE-01**: User can subscribe to a stop via Server-Sent Events and receive live prediction updates without client-side polling
+- [ ] **LIVE-02**: SSE prediction updates for a stop are backed by a single shared upstream poll every 30 seconds, regardless of how many clients are subscribed to that stop
+- [ ] **LIVE-03**: Upstream polling for a stop stops when its last SSE subscriber disconnects, and resumes automatically when a new subscriber connects
+- [ ] **LIVE-04**: User can still fetch predictions via the existing REST endpoint (`/api/v1/predictions`) as a fallback or for initial load
+- [ ] **LIVE-05**: Prediction responses from both the REST endpoint and the SSE stream include a `generatedAt` timestamp indicating server-side freshness
+
+## v2 Requirements
+
+Deferred to future release. Tracked but not in current roadmap.
+
+### Live Predictions
+
+- **LIVE-06**: Bidirectional WebSocket support for switching subscribed stop without reconnecting
+- **LIVE-07**: Client-configurable poll/update interval
+
+## Out of Scope
+
+Explicitly excluded. Documented to prevent scope creep.
+
+| Feature | Reason |
+|---------|--------|
+| Expo/React Native frontend app | This repo is intended to eventually house both backend and frontend, but the app itself is deferred to a future milestone |
+| Offline caching (client-side) | Belongs to the future Expo milestone, not this backend milestone |
+| Animated countdown UI | Client-side rendering concern, belongs to the future Expo milestone |
+| Replacing the REST predictions endpoint entirely | REST stays as fallback/initial-load path alongside SSE, per decision in this milestone's scoping |
+
+## Traceability
+
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| STOP-01 | TBD | Pending |
+| STOP-02 | TBD | Pending |
+| LIVE-01 | TBD | Pending |
+| LIVE-02 | TBD | Pending |
+| LIVE-03 | TBD | Pending |
+| LIVE-04 | TBD | Pending |
+| LIVE-05 | TBD | Pending |
+
+**Coverage:**
+- v1 requirements: 7 total
+- Mapped to phases: 0
+- Unmapped: 7 ⚠️ (roadmap not yet created)
+
+---
+*Requirements defined: 2026-08-26*
+*Last updated: 2026-08-26 after initial definition*
