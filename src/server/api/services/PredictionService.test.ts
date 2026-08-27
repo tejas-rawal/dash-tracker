@@ -224,6 +224,20 @@ describe("PredictionService", () => {
             expect(route.destinations[0].predictions[0].min).toBe(5);
         });
 
+        it("includes a generatedAt ISO 8601 timestamp in the response", async () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
+            mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
+            const { getPredictionsForStop } = createPredictionService(mockRepo as never);
+
+            // Act
+            const result = await getPredictionsForStop("stop-1");
+
+            // Assert
+            expect(result.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+        });
+
         it("returns an empty routes array when DASH API returns no predictions", async () => {
             // Arrange
             const mockRepo = makeMockRepo();

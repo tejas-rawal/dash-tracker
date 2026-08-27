@@ -18,6 +18,7 @@ const getMockService = () => vi.mocked(createPredictionService).mock.results[0]?
 
 const makeStopPredictionsResponse = (stopId = "stop-1"): StopPredictionsResponse => ({
     success: true,
+    generatedAt: "2026-01-01T00:00:00.000Z",
     data: {
         agencyKey: "alexandria-dash",
         stop: { id: stopId, name: "Main St", code: 101 },

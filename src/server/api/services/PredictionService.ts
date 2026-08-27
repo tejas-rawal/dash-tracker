@@ -86,6 +86,7 @@ export function createPredictionService(repository: BusDataRepository): Predicti
 
         return {
             success: true,
+            generatedAt: new Date().toISOString(),
             data: {
                 agencyKey: dashResponse.data.agencyKey,
                 stop: {
