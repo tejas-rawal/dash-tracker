@@ -106,6 +106,36 @@ describe("PredictionStreamController", () => {
             expect(res.end).toHaveBeenCalledTimes(1);
         });
 
+        it("invokes unsubscribe without writing headers when the client disconnects while subscribe is still pending", async () => {
+            // Arrange
+            const mockStreamService = makeMockStreamService();
+            const unsubscribe = vi.fn();
+            let resolveSubscribe: (value: {
+                initialPayload: StopPredictionsResponse;
+                unsubscribe: () => void;
+            }) => void = () => {};
+            mockStreamService.subscribe.mockImplementation(
+                () =>
+                    new Promise((resolve) => {
+                        resolveSubscribe = resolve;
+                    }),
+            );
+            const { getPredictionsStream } = createPredictionStreamController(mockStreamService);
+            const { req, triggerClose } = makeMockReq({ stop: "stop-1" });
+            const res = makeMockRes();
+
+            // Act: start the handler (subscribe pending), disconnect, then let subscribe resolve
+            const handlerPromise = getPredictionsStream(req, res, vi.fn());
+            triggerClose();
+            resolveSubscribe({ initialPayload: makeStopPredictionsResponse("stop-1"), unsubscribe });
+            await handlerPromise;
+
+            // Assert
+            expect(unsubscribe).toHaveBeenCalledTimes(1);
+            expect(res.writeHead).not.toHaveBeenCalled();
+            expect(res.write).not.toHaveBeenCalled();
+        });
+
         it("responds with 404 and never writes SSE headers when subscribe rejects with NotFoundError", async () => {
             // Arrange
             const mockStreamService = makeMockStreamService();
