@@ -177,6 +177,31 @@ describe("PredictionStreamService", () => {
         expect(mockPredictionService.getPredictionsForStop).toHaveBeenCalledTimes(2);
     });
 
+    it("isolates a throwing subscriber during poll() fan-out so other subscribers still receive the update", async () => {
+        // Arrange
+        const mockPredictionService = makeMockPredictionService();
+        const firstPayload = makeResponse("stop-1", "a");
+        const secondPayload = makeResponse("stop-1", "b");
+        mockPredictionService.getPredictionsForStop
+            .mockResolvedValueOnce(firstPayload)
+            .mockResolvedValue(secondPayload);
+        const { subscribe } = createPredictionStreamService(mockPredictionService as never);
+        const onUpdateA = vi.fn(() => {
+            throw new Error("subscriber A exploded");
+        });
+        const onUpdateB = vi.fn();
+
+        // Act
+        await subscribe("stop-1", onUpdateA);
+        await subscribe("stop-1", onUpdateB);
+        await vi.advanceTimersByTimeAsync(30_000);
+
+        // Assert: the failing subscriber's error is caught and logged...
+        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("Failed to deliver prediction update"));
+        // ...but the other subscriber in the same tick still receives the update.
+        expect(onUpdateB).toHaveBeenCalledWith(secondPayload);
+    });
+
     it("propagates the error when the very first subscribe fetch rejects, without creating a zombie loop", async () => {
         // Arrange
         const mockPredictionService = makeMockPredictionService();
