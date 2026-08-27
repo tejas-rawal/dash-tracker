@@ -56,18 +56,8 @@ export class BusDataRepository {
         }
 
         this.initializationPromise = this.fetchAndProcessData()
-            .then(({ routes, routesByShortName, stops }) => {
-                this.routes = routes;
-                this.routesByShortName = routesByShortName;
-                this.stops = stops;
-                this.isInitialized = true;
-            })
-            .catch((error) => {
-                this.initializationPromise = null;
-                const message = error instanceof Error ? error.message : "Unknown error";
-                logger.error(`Failed to initialize bus data: ${message}`);
-                throw new Error(`Failed to initialize bus data: ${message}`);
-            });
+            .then((data) => this.applyData(data))
+            .catch((error) => this.handleLoadError("initialize", error));
 
         return this.initializationPromise;
     }
@@ -75,21 +65,39 @@ export class BusDataRepository {
     // Method to refresh data if needed
     public async refreshData(): Promise<void> {
         const refreshPromise = this.fetchAndProcessData()
-            .then(({ routes, routesByShortName, stops }) => {
-                this.routes = routes;
-                this.routesByShortName = routesByShortName;
-                this.stops = stops;
-                this.isInitialized = true;
-                this.initializationPromise = null;
-            })
-            .catch((error) => {
-                const message = error instanceof Error ? error.message : "Unknown error";
-                logger.error(`Failed to refresh bus data: ${message}`);
-                throw new Error(`Failed to refresh bus data: ${message}`);
-            });
+            .then((data) => this.applyData(data))
+            .catch((error) => this.handleLoadError("refresh", error));
 
         this.initializationPromise = refreshPromise;
         return refreshPromise;
+    }
+
+    /**
+     * Pure-ish state application shared by initialize() and refreshData(): commits a
+     * freshly fetched dataset and clears in-flight tracking now that loading is done.
+     */
+    private applyData(data: {
+        routes: Map<string, BusRoute>;
+        routesByShortName: Map<string, BusRoute>;
+        stops: Map<string, BusStop>;
+    }): void {
+        this.routes = data.routes;
+        this.routesByShortName = data.routesByShortName;
+        this.stops = data.stops;
+        this.isInitialized = true;
+        this.initializationPromise = null;
+    }
+
+    /**
+     * Shared failure path for initialize()/refreshData(). Clears the in-flight
+     * promise so a subsequent initialize() call can retry instead of permanently
+     * returning a dead rejection, logs, then rethrows a wrapped error.
+     */
+    private handleLoadError(action: "initialize" | "refresh", error: unknown): never {
+        this.initializationPromise = null;
+        const message = error instanceof Error ? error.message : "Unknown error";
+        logger.error(`Failed to ${action} bus data: ${message}`);
+        throw new Error(`Failed to ${action} bus data: ${message}`);
     }
 
     private async fetchAndProcessData(): Promise<{

@@ -313,6 +313,19 @@ describe("BusDataRepository", () => {
             // Act & Assert
             await expect(repo.refreshData()).rejects.toThrow("Failed to refresh bus data");
         });
+
+        it("does not permanently break initialize() after a refresh failure with no prior successful load", async () => {
+            // Arrange: refreshData fails before any successful initialize()
+            mockAxiosGet.mockRejectedValueOnce(new Error("refresh failed"));
+            await expect(repo.refreshData()).rejects.toThrow("Failed to refresh bus data");
+
+            // Act: initialize() must retry against the API, not replay the dead rejection
+            mockAxiosGet.mockResolvedValueOnce(makeApiResponse([makeApiRoute("r1", "1A")]));
+            await repo.initialize();
+
+            // Assert
+            expect(repo.getAllRoutes()).toHaveLength(1);
+        });
     });
 
     describe("getAllRoutes", () => {
