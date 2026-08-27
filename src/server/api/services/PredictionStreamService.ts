@@ -21,6 +21,7 @@ export interface PredictionStreamService {
 
 export function createPredictionStreamService(predictionService: PredictionService): PredictionStreamService {
     const loops = new Map<string, StreamLoop>();
+    const pendingFirstFetch = new Map<string, Promise<StopPredictionsResponse>>();
 
     async function poll(stopId: string): Promise<void> {
         const entry = loops.get(stopId);
@@ -32,7 +33,12 @@ export function createPredictionStreamService(predictionService: PredictionServi
             const result = await predictionService.getPredictionsForStop(stopId);
             entry.lastData = result;
             for (const subscriber of entry.subscribers) {
-                subscriber(result);
+                try {
+                    subscriber(result);
+                } catch (deliveryError) {
+                    const message = deliveryError instanceof Error ? deliveryError.message : "Unknown error";
+                    logger.error(`Failed to deliver prediction update for stop ${stopId}: ${message}`);
+                }
             }
         } catch (error) {
             const message = error instanceof Error ? error.message : "Unknown error";
@@ -66,7 +72,28 @@ export function createPredictionStreamService(predictionService: PredictionServi
             };
         }
 
-        const initialPayload = await predictionService.getPredictionsForStop(stopId);
+        let fetchPromise = pendingFirstFetch.get(stopId);
+        if (!fetchPromise) {
+            fetchPromise = predictionService.getPredictionsForStop(stopId);
+            pendingFirstFetch.set(stopId, fetchPromise);
+        }
+
+        let initialPayload: StopPredictionsResponse;
+        try {
+            initialPayload = await fetchPromise;
+        } finally {
+            pendingFirstFetch.delete(stopId);
+        }
+
+        // Another concurrent caller may have already created the loop while we awaited the shared fetch.
+        const raced = loops.get(stopId);
+        if (raced) {
+            raced.subscribers.add(onUpdate);
+            return {
+                initialPayload: raced.lastData,
+                unsubscribe: () => unsubscribeFrom(stopId, onUpdate),
+            };
+        }
 
         const entry: StreamLoop = {
             subscribers: new Set([onUpdate]),
