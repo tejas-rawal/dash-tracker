@@ -240,4 +240,101 @@ describe("GET /api/v1/predictions/stream", () => {
             });
         });
     });
+
+    it("responds with 400 when the stop query parameter is missing", async () => {
+        // Arrange & Act
+        const response = await request(app).get("/api/v1/predictions/stream");
+
+        // Assert
+        expect(response.status).toBe(400);
+        expect(response.body).toMatchObject({
+            error: "Bad Request",
+            details: "stop parameter is required",
+        });
+    });
+
+    it("responds with 404 when the stop does not exist, without ever opening a stream", async () => {
+        // Arrange
+        getMockService().getPredictionsForStop.mockRejectedValue(new NotFoundError("Stop not found: missing-stop"));
+
+        // Act
+        const response = await request(app).get("/api/v1/predictions/stream?stop=missing-stop");
+
+        // Assert
+        expect(response.status).toBe(404);
+        expect(response.body).toMatchObject({
+            error: "Not Found",
+            details: "Stop not found: missing-stop",
+        });
+    });
+
+    it("performs its own independent fetch for REST even while a stream loop is active for the same stop", async () => {
+        // Arrange
+        getMockService().getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse("stop-shared"));
+        const server = app.listen(0);
+        const port = (server.address() as AddressInfo).port;
+
+        // Act: open a stream connection first (populates the loop/cache for this stop)
+        const streamReq = await new Promise<import("node:http").ClientRequest>((resolve, reject) => {
+            const req = http.get(`http://localhost:${port}/api/v1/predictions/stream?stop=stop-shared`, (res) => {
+                res.on("data", () => resolve(req));
+            });
+            req.on("error", () => {
+                // ignore socket-hangup once we destroy it below
+            });
+            setTimeout(() => reject(new Error("timed out waiting for stream data")), 2000);
+        });
+        const callsAfterStreamOpen = getMockService().getPredictionsForStop.mock.calls.length;
+
+        const restResponse = await request(app).get("/api/v1/predictions?stop=stop-shared");
+
+        // Assert: REST performed its own additional fetch, not served from the stream's cache
+        expect(restResponse.status).toBe(200);
+        expect(getMockService().getPredictionsForStop.mock.calls.length).toBe(callsAfterStreamOpen + 1);
+
+        streamReq.destroy();
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        server.close();
+    });
+
+    it("tears down the poll loop on client disconnect, triggering a fresh fetch on reconnect", async () => {
+        // Arrange
+        getMockService().getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse("stop-reconnect"));
+        const server = app.listen(0);
+        const port = (server.address() as AddressInfo).port;
+
+        // Act: open, read first frame, then disconnect
+        const callsAfterFirstConnect = await new Promise<number>((resolve, reject) => {
+            const req = http.get(`http://localhost:${port}/api/v1/predictions/stream?stop=stop-reconnect`, (res) => {
+                res.on("data", () => {
+                    req.destroy();
+                    setTimeout(() => resolve(getMockService().getPredictionsForStop.mock.calls.length), 20);
+                });
+            });
+            req.on("error", () => {
+                // ignore socket-hangup from req.destroy()
+            });
+            setTimeout(() => reject(new Error("timed out waiting for stream data")), 2000);
+        });
+
+        // Act: reconnect for the same stop
+        await new Promise<void>((resolve, reject) => {
+            const req = http.get(`http://localhost:${port}/api/v1/predictions/stream?stop=stop-reconnect`, (res) => {
+                res.on("data", () => {
+                    req.destroy();
+                    setTimeout(() => {
+                        server.close();
+                        resolve();
+                    }, 20);
+                });
+            });
+            req.on("error", () => {
+                // ignore socket-hangup from req.destroy()
+            });
+            setTimeout(() => reject(new Error("timed out waiting for stream data")), 2000);
+        });
+
+        // Assert: reconnect triggered a brand-new fetch (loop was torn down, not reused stale)
+        expect(getMockService().getPredictionsForStop.mock.calls.length).toBe(callsAfterFirstConnect + 1);
+    });
 });
