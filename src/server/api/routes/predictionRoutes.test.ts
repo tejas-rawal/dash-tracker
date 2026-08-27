@@ -1,3 +1,5 @@
+import http from "node:http";
+import type { AddressInfo } from "node:net";
 import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
 import { NotFoundError, UpstreamApiError } from "../errors";
@@ -192,6 +194,49 @@ describe("GET /api/v1/predictions", () => {
                     predictions: [{ min: 5 }],
                 },
             ],
+        });
+    });
+});
+
+describe("GET /api/v1/predictions/stream", () => {
+    it("streams an immediate event: prediction frame carrying the mocked payload", async () => {
+        // Arrange
+        getMockService().getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse("stop-1"));
+        const server = app.listen(0);
+        const port = (server.address() as AddressInfo).port;
+
+        // Act & Assert
+        await new Promise<void>((resolve, reject) => {
+            const req = http.get(`http://localhost:${port}/api/v1/predictions/stream?stop=stop-1`, (res) => {
+                try {
+                    expect(res.headers["content-type"]).toMatch(/^text\/event-stream/);
+                } catch (assertionError) {
+                    server.close();
+                    reject(assertionError as Error);
+                    return;
+                }
+
+                res.on("data", (chunk: Buffer) => {
+                    req.destroy();
+                    // let the server-side "close" event fire and tear down the poll loop/interval
+                    // before closing the server, to avoid leaking a 30s timer into later tests
+                    setTimeout(() => {
+                        server.close();
+                        try {
+                            const text = chunk.toString();
+                            expect(text).toContain("event: prediction");
+                            expect(text).toContain("stop-1");
+                            resolve();
+                        } catch (assertionError) {
+                            reject(assertionError as Error);
+                        }
+                    }, 20);
+                });
+            });
+            req.on("error", () => {
+                // req.destroy() above triggers a socket-hangup error event; ignore it here
+                // since the assertions and resolve/reject already happened in the data handler.
+            });
         });
     });
 });
