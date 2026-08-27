@@ -145,6 +145,38 @@ describe("PredictionStreamService", () => {
         expect(mockPredictionService.getPredictionsForStop).toHaveBeenCalledTimes(3);
     });
 
+    it("two subscribes for the same brand-new stop issued without awaiting the first share one fetch and one loop", async () => {
+        // Arrange
+        const mockPredictionService = makeMockPredictionService();
+        const payload = makeResponse();
+        let resolveFetch: (value: StopPredictionsResponse) => void = () => {};
+        mockPredictionService.getPredictionsForStop.mockImplementationOnce(
+            () =>
+                new Promise<StopPredictionsResponse>((resolve) => {
+                    resolveFetch = resolve;
+                }),
+        );
+        const { subscribe } = createPredictionStreamService(mockPredictionService as never);
+        const onUpdateA = vi.fn();
+        const onUpdateB = vi.fn();
+
+        // Act: fire both subscribes without awaiting the first before starting the second
+        const firstPromise = subscribe("stop-1", onUpdateA);
+        const secondPromise = subscribe("stop-1", onUpdateB);
+        resolveFetch(payload);
+        const [first, second] = await Promise.all([firstPromise, secondPromise]);
+
+        // Assert: the shared in-flight fetch was only issued once
+        expect(mockPredictionService.getPredictionsForStop).toHaveBeenCalledTimes(1);
+        expect(first.initialPayload).toBe(payload);
+        expect(second.initialPayload).toBe(payload);
+
+        // Assert: only one loop/interval was created — a tick fetches once, not twice
+        mockPredictionService.getPredictionsForStop.mockResolvedValue(makeResponse("stop-1", "b"));
+        await vi.advanceTimersByTimeAsync(30_000);
+        expect(mockPredictionService.getPredictionsForStop).toHaveBeenCalledTimes(2);
+    });
+
     it("propagates the error when the very first subscribe fetch rejects, without creating a zombie loop", async () => {
         // Arrange
         const mockPredictionService = makeMockPredictionService();
