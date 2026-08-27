@@ -8,6 +8,16 @@ dash-tracker is a Node.js/Express REST API that proxies and structures data from
 
 A single, unambiguous command for linting and formatting — no redundant tools, no drift between what CI checks and what a contributor runs locally.
 
+## Current Milestone: v0.2 Real-Time Arrival Predictions
+
+**Goal:** Give the future Expo/React Native app what it needs to show near-real-time bus arrivals for a selected stop — stop discovery plus a live-updating predictions feed.
+
+**Target features:**
+- Stop discovery endpoints (by route, and nearby by lat/lng with radius + count bound)
+- Server-Sent Events endpoint streaming live predictions per stop, backed by one shared 30s upstream poll loop per subscribed stop (starts on first subscriber, stops when idle)
+- Existing REST predictions endpoint retained as fallback/initial-load path
+- `generatedAt` freshness timestamp added to REST and SSE prediction payloads
+
 ## Requirements
 
 ### Validated
@@ -23,16 +33,24 @@ A single, unambiguous command for linting and formatting — no redundant tools,
 
 ### Active
 
-(None yet — next milestone's requirements not yet defined. Run `/gsd-new-milestone`.)
+- [ ] Stop discovery: list stops for a given route
+- [ ] Stop discovery: find nearby stops by lat/lng (radius + result-count bound)
+- [ ] Live predictions via Server-Sent Events, subscribed per stop
+- [ ] Shared per-stop upstream poll loop (30s), started on first subscriber and stopped when idle
+- [ ] REST predictions endpoint retained as fallback/initial-load path
+- [ ] `generatedAt` freshness timestamp added to REST and SSE prediction payloads
 
 ### Out of Scope
 
-- New feature work (bus route/prediction endpoints, etc.) — deferred to a future milestone, scope not yet decided
+- The Expo/React Native frontend app itself — this repo is intended to eventually house both backend and frontend (monorepo, not separate repos), but the app is deferred to a future milestone
+- Offline caching and countdown animation UI — client-side concerns that land with the future Expo milestone
 - Replacing `tsc` as the build tool (e.g. with Vite/esbuild) — Vite is a frontend bundler/dev server and doesn't fit compiling this Node/Express backend; not part of this cleanup
 - Replacing Vitest — it's a test runner only, unrelated to lint/format consolidation
 
 ## Context
 
+- This repo is intended to eventually house both the backend API and the Expo/React Native frontend (monorepo by design, not separate repos) — the frontend itself is planned for a future milestone
+- The Expo app will consume this API for near-real-time bus arrivals: 30-second refresh cadence, offline caching, and an animated countdown UI (client-side concerns, out of scope for this milestone)
 - Existing codebase mapped in `.planning/codebase/` (STACK.md, ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, TESTING.md, INTEGRATIONS.md, CONCERNS.md)
 - Shipped v0.1: Biome is now the sole lint/format tool (Prettier fully removed) and the entire repo (29 tracked files) is reformatted to it — `bun run format`/`bun run lint` exit 0 repo-wide, 141/141 tests pass unchanged
 - Package manager is Bun; TypeScript target ES2020/CommonJS, strict mode fully enabled
@@ -71,4 +89,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-26 after v0.1 milestone*
+*Last updated: 2026-08-26 after starting v0.2 milestone*
