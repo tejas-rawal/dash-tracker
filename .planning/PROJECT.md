@@ -30,11 +30,11 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 - ✓ Prettier, `@jonahsnider/prettier-config`, and `prettier-plugin-packagejson` fully removed (dependency, config, scripts) — v0.1
 - ✓ `package.json` scripts (`lint`, `lint:fix`, `format`, `format:write`) updated to reflect the single-tool flow — v0.1
 - ✓ Full codebase reformatted under Biome's formatter with zero outstanding diffs, landed as its own commit separate from the config/dependency change — v0.1
+- ✓ Stop discovery: list stops for a given route (`GET /api/v1/routes/:shortName/stops`, grouped by direction) — Phase 3
+- ✓ Stop discovery: find nearby stops by lat/lng (`GET /api/v1/stops/nearby`, radius + result-count bound, haversine distance) — Phase 3
 
 ### Active
 
-- [ ] Stop discovery: list stops for a given route
-- [ ] Stop discovery: find nearby stops by lat/lng (radius + result-count bound)
 - [ ] Live predictions via Server-Sent Events, subscribed per stop
 - [ ] Shared per-stop upstream poll loop (30s), started on first subscriber and stopped when idle
 - [ ] REST predictions endpoint retained as fallback/initial-load path
@@ -74,6 +74,9 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 | Use Server-Sent Events (not WebSocket) for live predictions, with REST retained as fallback | SSE is one-way push over plain HTTP — simplest fit for this Express app and easy for the future Expo client to consume; bidirectional messaging isn't needed yet | — Pending |
 | Server runs one shared 30s upstream poll per subscribed stop, stopping when idle | Decouples client refresh cadence from per-client polling; protects upstream DASH API from being hammered by many simultaneous phone clients | — Pending |
 | This repo will eventually house both backend and Expo/React Native frontend (monorepo) | User doesn't want to manage separate repos; frontend build itself deferred to a future milestone | — Pending |
+| Stop discovery lives in a new `StopController`/`StopService` pair, not folded into `BusRouteController`/`BusRouteService` | Stop discovery is a distinct concern from route CRUD even though one URL nests under `/routes`; splitting it out later would touch call sites and tests | ✓ Shipped Phase 3 |
+| `GET /:shortName/stops` groups stops by direction (`[{ directionId, title, stops }]`) instead of a deduped flat list | Response shape is a public contract — flattening later would be a breaking change for client apps; iterating `route.directions` preserves real sequence order that `getAllStops()` loses | ✓ Shipped Phase 3 |
+| Nearby-search radius/distance in miles, default radius 0.5mi, default count 10 (cap 50), results sorted ascending by distance | Matches how a rider thinks about "how far," and bounds response size against a dense stop dataset | ✓ Shipped Phase 3 |
 
 ## Evolution
 
@@ -93,4 +96,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-26 after starting v0.2 milestone*
+*Last updated: 2026-08-26 after Phase 3*
