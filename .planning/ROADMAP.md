@@ -8,6 +8,7 @@
 ## Phases
 
 **Phase Numbering:**
+
 - Integer phases (1, 2, 3): Planned milestone work
 - Phase numbering is continuous across milestones (never restarts at 1)
 
@@ -23,35 +24,42 @@
 
 **Milestone Goal:** Give the future Expo/React Native app what it needs to show near-real-time bus arrivals for a selected stop — stop discovery plus a live-updating predictions feed.
 
-- [ ] **Phase 3: Stop Discovery** - Riders can find stops by route or by location before subscribing to predictions
+- [x] **Phase 3: Stop Discovery** - Riders can find stops by route or by location before subscribing to predictions (completed 2026-08-26)
 - [ ] **Phase 4: Live Predictions via SSE** - Riders get live-updating arrival predictions over SSE, backed by a shared poll loop, with REST fallback and freshness timestamps
 
 ## Phase Details
 
 ### Phase 3: Stop Discovery
+
 **Goal**: Riders (via future client apps) can discover which stops belong to a route and which stops are near their current location, so they can pick a stop before requesting predictions for it.
 **Depends on**: Nothing (independent of Phase 4; builds on existing route/stop data already loaded in `BusDataRepository`)
 **Requirements**: STOP-01, STOP-02
 **Success Criteria** (what must be TRUE):
+
   1. Given a valid route (by short name), a client can retrieve the ordered list of stops served by that route.
   2. Given a latitude/longitude plus optional radius and max-count parameters, a client can retrieve nearby stops within that radius, sorted by proximity, capped at the requested (or a sensible default) count.
   3. Requesting stops for an unknown route returns a typed 404 (`NotFoundError`), and invalid or out-of-range coordinate/radius input returns a typed 400 validation error, consistent with existing controller conventions.
   4. Existing routes and predictions endpoints continue to respond exactly as before — no regression introduced by adding the new stop-discovery endpoints.
+
 **Plans**: 2 plans
 Plans:
-- [ ] 03-01-PLAN.md — Stops for a route, grouped by direction (StopService/StopController tracer, STOP-01)
-- [ ] 03-02-PLAN.md — Nearby-stops search with haversine distance (extends StopService/StopController, STOP-02)
+
+- [x] 03-01-PLAN.md — Stops for a route, grouped by direction (StopService/StopController tracer, STOP-01)
+- [x] 03-02-PLAN.md — Nearby-stops search with haversine distance (extends StopService/StopController, STOP-02)
 
 ### Phase 4: Live Predictions via SSE
+
 **Goal**: Riders can subscribe to a stop and see arrival predictions update automatically over a live connection, with the existing REST endpoint still available as a fallback, and both response shapes reporting server-side freshness.
 **Depends on**: Nothing (independent of Phase 3; extends the existing `PredictionService`/REST endpoint with a new SSE path and a shared poll loop)
 **Requirements**: LIVE-01, LIVE-02, LIVE-03, LIVE-04, LIVE-05
 **Success Criteria** (what must be TRUE):
+
   1. A client can open a Server-Sent Events connection scoped to a stop and receive prediction updates automatically, roughly every 30 seconds, without any client-side polling.
   2. However many clients are subscribed to a given stop's SSE stream, the upstream DASH API for that stop is polled at most once per 30-second interval — one shared poll loop per stop, not one per subscriber.
   3. When the last SSE subscriber for a stop disconnects, that stop's upstream polling stops; when a new subscriber connects (immediately or later), polling resumes automatically.
   4. The existing REST endpoint (`GET /api/v1/predictions`) still returns predictions on demand, unchanged in behavior, usable for initial load or as a fallback when SSE isn't available.
   5. Both the REST response and every SSE update include a `generatedAt` timestamp indicating when the server produced that specific payload.
+
 **Plans**: TBD
 
 ## Progress
@@ -63,5 +71,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Consolidate Lint & Format Tooling | 1/1 | Complete | 2026-08-26 |
 | 2. Full-Repo Reformat | 1/1 | Complete | 2026-08-26 |
-| 3. Stop Discovery | 0/2 | Not started | - |
+| 3. Stop Discovery | 2/2 | Complete    | 2026-08-26 |
 | 4. Live Predictions via SSE | 0/TBD | Not started | - |
