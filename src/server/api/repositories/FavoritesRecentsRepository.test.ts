@@ -210,4 +210,44 @@ describe("FavoritesRecentsRepository", () => {
             expect(recentsForB).toEqual([]);
         });
     });
+
+    describe("concurrency", () => {
+        beforeEach(async () => {
+            await repo.initialize();
+        });
+
+        it("handles concurrent bump-to-top writes to the same device+entity without throwing or duplicating rows", async () => {
+            // Arrange
+            const beforeBurst = new Date().toISOString();
+
+            // Act
+            const results = await Promise.all(
+                Array.from({ length: 25 }, () => repo.upsertRecent("device-a", "stop", "stop-1")),
+            );
+
+            // Assert
+            expect(results).toHaveLength(25);
+            const rows = await repo.listRecents("device-a");
+            expect(rows).toHaveLength(1);
+            expect(rows[0].entityId).toBe("stop-1");
+            expect(rows[0].entityType).toBe("stop");
+            expect(rows[0].viewedAt >= beforeBurst).toBe(true);
+        });
+
+        it("isolates concurrent writes across two different devices for the same entity", async () => {
+            // Act
+            await Promise.all([
+                ...Array.from({ length: 12 }, () => repo.upsertRecent("device-a", "route", "route-9")),
+                ...Array.from({ length: 12 }, () => repo.upsertRecent("device-b", "route", "route-9")),
+            ]);
+
+            // Assert
+            const recentsForA = await repo.listRecents("device-a");
+            const recentsForB = await repo.listRecents("device-b");
+            expect(recentsForA).toHaveLength(1);
+            expect(recentsForA[0].entityId).toBe("route-9");
+            expect(recentsForB).toHaveLength(1);
+            expect(recentsForB[0].entityId).toBe("route-9");
+        });
+    });
 });
