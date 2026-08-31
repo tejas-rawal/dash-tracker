@@ -20,8 +20,12 @@ export function createPredictionService(
     repository: BusDataRepository,
     recentsRepository: FavoritesRecentsRepository,
 ): PredictionService {
-    async function recordRecentView(deviceId: string, stopId: string): Promise<void> {
-        await recentsRepository.upsertRecent(deviceId, "stop", stopId);
+    async function recordRecentView(deviceId: string, stopId: string, routeId?: string): Promise<void> {
+        const writes = [recentsRepository.upsertRecent(deviceId, "stop", stopId)];
+        if (routeId !== undefined) {
+            writes.push(recentsRepository.upsertRecent(deviceId, "route", routeId));
+        }
+        await Promise.all(writes);
     }
 
     function getValidatedStop(stopId: string): BusStop {
@@ -107,7 +111,7 @@ export function createPredictionService(
 
         const deviceId = options.deviceId;
         if (deviceId !== undefined && deviceId.trim().length > 0) {
-            recordRecentView(deviceId, stopId).catch((error) => {
+            recordRecentView(deviceId, stopId, options.route).catch((error) => {
                 const message = error instanceof Error ? error.message : "Unknown error";
                 logger.warn(`Failed to record recents for device ${deviceId}: ${message}`);
             });
