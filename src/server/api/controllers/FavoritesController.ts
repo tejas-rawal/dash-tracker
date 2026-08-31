@@ -4,6 +4,7 @@ import type { FavoritesService } from "../services/FavoritesService";
 
 export interface FavoritesController {
     favorite: RequestHandler;
+    unfavorite: RequestHandler;
 }
 
 function resolveErrorStatus(error: unknown): number {
@@ -49,5 +50,27 @@ export function createFavoritesController(service: FavoritesService): FavoritesC
         }
     };
 
-    return { favorite };
+    const unfavorite: RequestHandler = async (req: Request, res: Response) => {
+        const rawEntityType = req.params.entityType;
+        const rawEntityId = req.params.entityId;
+        const entityType = Array.isArray(rawEntityType) ? rawEntityType[0] : rawEntityType;
+        const entityId = Array.isArray(rawEntityId) ? rawEntityId[0] : rawEntityId;
+
+        if (entityType !== "route" && entityType !== "stop") {
+            res.status(400).json({
+                error: "Bad Request",
+                details: 'entityType must be exactly "route" or "stop"',
+            });
+            return;
+        }
+
+        try {
+            await service.removeFavorite(resolveDeviceId(req), entityType, entityId);
+            res.json({ success: true });
+        } catch (error: unknown) {
+            res.status(resolveErrorStatus(error)).json(resolveErrorBody(error));
+        }
+    };
+
+    return { favorite, unfavorite };
 }

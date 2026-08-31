@@ -5,6 +5,7 @@ import type { FavoritesRecentsRepository } from "../repositories/FavoritesRecent
 
 export interface FavoritesService {
     addFavorite(deviceId: string, entityType: EntityType, entityId: string): Promise<void>;
+    removeFavorite(deviceId: string, entityType: EntityType, entityId: string): Promise<void>;
 }
 
 export function createFavoritesService(
@@ -25,5 +26,9 @@ export function createFavoritesService(
         await favoritesRepository.upsertFavorite(deviceId, entityType, entityId);
     }
 
-    return { addFavorite };
+    async function removeFavorite(deviceId: string, entityType: EntityType, entityId: string): Promise<void> {
+        await favoritesRepository.deleteFavorite(deviceId, entityType, entityId);
+    }
+
+    return { addFavorite, removeFavorite };
 }
