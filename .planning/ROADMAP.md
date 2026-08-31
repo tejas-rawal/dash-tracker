@@ -75,12 +75,12 @@ Plans:
   4. Any favorites request with a missing or empty `X-Device-Id` header is rejected with 400 — never a silent shared-bucket fallback.
   5. All existing v0.2 endpoints (routes, stop discovery, predictions, SSE) continue to respond exactly as before — favorites is purely additive.
 
-**Plans**: 1 plan
+**Plans**: 1/1 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 06-01-PLAN.md — requireDeviceId middleware, favorite/unfavorite/list HTTP surface, FavoritesRecentsRepository.deleteFavorite (FAV-01..05, DEVICE-01)
+- [x] 06-01-PLAN.md — requireDeviceId middleware, favorite/unfavorite/list HTTP surface, FavoritesRecentsRepository.deleteFavorite (FAV-01..05, DEVICE-01)
 
 ### Phase 7: Recents (Routes & Stops)
 
@@ -109,7 +109,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 3. Stop Discovery | 2/2 | Complete | 2026-08-26 |
 | 4. Live Predictions via SSE | 1/1 | Complete | 2026-08-27 |
 | 5. SQLite Persistence Foundation | 2/2 | Complete    | 2026-08-31 |
-| 6. Favorites (Routes & Stops) | 0/TBD | Not started | - |
+| 6. Favorites (Routes & Stops) | 1/1 | In Progress|  |
 | 7. Recents (Routes & Stops) | 0/TBD | Not started | - |
 
 ---
