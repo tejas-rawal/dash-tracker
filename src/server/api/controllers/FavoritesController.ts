@@ -5,6 +5,7 @@ import type { FavoritesService } from "../services/FavoritesService";
 export interface FavoritesController {
     favorite: RequestHandler;
     unfavorite: RequestHandler;
+    listFavorites: RequestHandler;
 }
 
 function resolveErrorStatus(error: unknown): number {
@@ -72,5 +73,14 @@ export function createFavoritesController(service: FavoritesService): FavoritesC
         }
     };
 
-    return { favorite, unfavorite };
+    const listFavorites: RequestHandler = async (req: Request, res: Response) => {
+        try {
+            const result = await service.listFavorites(resolveDeviceId(req));
+            res.json(result);
+        } catch (error: unknown) {
+            res.status(resolveErrorStatus(error)).json(resolveErrorBody(error));
+        }
+    };
+
+    return { favorite, unfavorite, listFavorites };
 }
