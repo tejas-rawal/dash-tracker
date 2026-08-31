@@ -4,17 +4,18 @@ milestone: v0.3
 milestone_name: Favorited & Recent Routes
 current_phase: 05
 current_phase_name: sqlite-persistence-foundation
-status: executing
-stopped_at: Phase 5 context gathered
-last_updated: "2026-08-31T15:36:53.342Z"
+current_plan: 2
+status: verifying
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-08-31T16:02:02.363Z"
 last_activity: 2026-08-31
 last_activity_desc: "ROADMAP.md created for v0.3 (Phase 5: SQLite Persistence Foundation, Phase 6: Favorites (Routes & Stops), Phase 7: Recents (Routes & Stops)), 13/13 v1 requirements mapped"
-state_head: 528b39a697c9eda95985d19828ba73386cd0d6dd
+state_head: 2453d6136cebe8f2c5787d42c43aa28adfc6837f
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 2
-  completed_plans: 0
+  completed_plans: 2
   percent: 0
 ---
 
@@ -29,12 +30,13 @@ See: .planning/PROJECT.md (updated 2026-08-31)
 
 ## Current Position
 
-Phase: 05 (sqlite-persistence-foundation) — READY TO EXECUTE
-Plan: TBD (not yet planned)
-Status: Ready to execute
-Last activity: 2026-08-31 — ROADMAP.md created for v0.3 (Phase 5: SQLite Persistence Foundation, Phase 6: Favorites (Routes & Stops), Phase 7: Recents (Routes & Stops)), 13/13 v1 requirements mapped
+Phase: 5 of 7 (sqlite-persistence-foundation)
+Current Plan: 2
+Total Plans in Phase: 2
+Status: Phase complete — ready for verification
+Last activity: 2026-08-31 — Completed Phase 5 Plan 2 (SQLite repository: connection lifecycle, schema, CRUD, concurrency) — Phase 5 (SQLite Persistence Foundation) fully executed, both plans done
 
-Progress: [░░░░░░░░░░] 0% (0/3 v0.3 phases complete)
+Progress: [░░░░░░░░░░] 0% (1/3 v0.3 phases complete)
 
 ## Performance Metrics
 
@@ -67,6 +69,7 @@ Progress: [░░░░░░░░░░] 0% (0/3 v0.3 phases complete)
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 04 P01 | 8min | 3 tasks | 11 files |
+| Phase 05 P02 | 45min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -80,6 +83,7 @@ Recent decisions affecting current work:
 - [v0.3] Recents are auto-logged on any prediction/stop lookup rather than requiring a dedicated "log view" call — reflects actual usage automatically
 - v0.2: Use Server-Sent Events (not WebSocket) for live predictions, with REST retained as fallback
 - v0.2: Server runs one shared 30s upstream poll per subscribed stop, stopping when idle, resuming on new subscriber
+- [Phase 05]: Installed better-sqlite3@^12.11.1 (not latest 13.0.3): v13 requires Node >=22 and its native binary crashed under both Bun 1.0.31 and system Node 20.20.2 in this environment
 
 ### Pending Todos
 
@@ -110,9 +114,9 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-08-31T14:53:47.968Z
-Stopped at: Phase 5 context gathered
-Resume file: .planning/phases/05-sqlite-persistence-foundation/05-CONTEXT.md
+Last session: 2026-08-31T16:02:02.353Z
+Stopped at: Completed 05-02-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
