@@ -60,25 +60,25 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FAV-01 | TBD | Pending |
-| FAV-02 | TBD | Pending |
-| FAV-03 | TBD | Pending |
-| FAV-04 | TBD | Pending |
-| FAV-05 | TBD | Pending |
-| RECENT-01 | TBD | Pending |
-| RECENT-02 | TBD | Pending |
-| RECENT-03 | TBD | Pending |
-| RECENT-04 | TBD | Pending |
-| RECENT-05 | TBD | Pending |
-| RECENT-06 | TBD | Pending |
-| DEVICE-01 | TBD | Pending |
-| PERSIST-01 | TBD | Pending |
+| FAV-01 | Phase 6 | Pending |
+| FAV-02 | Phase 6 | Pending |
+| FAV-03 | Phase 6 | Pending |
+| FAV-04 | Phase 6 | Pending |
+| FAV-05 | Phase 6 | Pending |
+| RECENT-01 | Phase 7 | Pending |
+| RECENT-02 | Phase 7 | Pending |
+| RECENT-03 | Phase 7 | Pending |
+| RECENT-04 | Phase 7 | Pending |
+| RECENT-05 | Phase 7 | Pending |
+| RECENT-06 | Phase 7 | Pending |
+| DEVICE-01 | Phase 6 | Pending |
+| PERSIST-01 | Phase 5 | Pending |
 
 **Coverage:**
 - v1 requirements: 13 total
-- Mapped to phases: 0 (pending roadmap creation)
-- Unmapped: 13 ⚠️
+- Mapped to phases: 13 (Phase 5: 1, Phase 6: 6, Phase 7: 6)
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-08-31*
-*Last updated: 2026-08-31 after initial definition*
+*Last updated: 2026-08-31 after v0.3 roadmap creation (Phases 5-7)*
