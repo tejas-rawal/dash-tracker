@@ -256,6 +256,66 @@ describe("FavoritesRecentsRepository", () => {
         });
     });
 
+    describe("eviction", () => {
+        beforeEach(async () => {
+            await repo.initialize();
+        });
+
+        it("caps a device's recents at 5, evicting the oldest-written entry first", async () => {
+            // Arrange & Act: write 6 distinct recents, mixing entity types
+            await repo.upsertRecent("device-a", "stop", "stop-1");
+            await repo.upsertRecent("device-a", "route", "route-1");
+            await repo.upsertRecent("device-a", "stop", "stop-2");
+            await repo.upsertRecent("device-a", "route", "route-2");
+            await repo.upsertRecent("device-a", "stop", "stop-3");
+            await repo.upsertRecent("device-a", "route", "route-3");
+            const recents = await repo.listRecents("device-a");
+
+            // Assert
+            expect(recents).toHaveLength(5);
+            expect(recents.some((r) => r.entityType === "stop" && r.entityId === "stop-1")).toBe(false);
+        });
+
+        it("does not change the row count when re-upserting an existing top-5 recent", async () => {
+            // Arrange
+            await repo.upsertRecent("device-a", "stop", "stop-1");
+            await repo.upsertRecent("device-a", "stop", "stop-2");
+            await repo.upsertRecent("device-a", "stop", "stop-3");
+            await repo.upsertRecent("device-a", "stop", "stop-4");
+            await repo.upsertRecent("device-a", "stop", "stop-5");
+
+            // Act: re-upsert an existing recent
+            await repo.upsertRecent("device-a", "stop", "stop-1");
+            const recents = await repo.listRecents("device-a");
+
+            // Assert
+            expect(recents).toHaveLength(5);
+        });
+
+        it("scopes eviction per device, leaving another device's 5 existing rows untouched", async () => {
+            // Arrange
+            await repo.upsertRecent("device-b", "stop", "stop-1");
+            await repo.upsertRecent("device-b", "stop", "stop-2");
+            await repo.upsertRecent("device-b", "stop", "stop-3");
+            await repo.upsertRecent("device-b", "stop", "stop-4");
+            await repo.upsertRecent("device-b", "stop", "stop-5");
+
+            // Act: device-a writes a 6th distinct recent
+            await repo.upsertRecent("device-a", "stop", "stop-x");
+            const recentsForB = await repo.listRecents("device-b");
+
+            // Assert
+            expect(recentsForB).toHaveLength(5);
+            expect(recentsForB.map((r) => r.entityId).sort()).toEqual([
+                "stop-1",
+                "stop-2",
+                "stop-3",
+                "stop-4",
+                "stop-5",
+            ]);
+        });
+    });
+
     describe("concurrency", () => {
         beforeEach(async () => {
             await repo.initialize();

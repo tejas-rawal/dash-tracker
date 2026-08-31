@@ -430,5 +430,40 @@ describe("PredictionService", () => {
             expect(logger.warn).toHaveBeenCalledTimes(1);
             expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining("device-a"));
         });
+
+        it("logs both the stop and the route as recents when a deviceId and an explicit route are provided", async () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
+            mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
+            const mockRecentsRepo = makeMockRecentsRepo();
+            const { getPredictionsForStop } = createPredictionService(mockRepo as never, mockRecentsRepo as never);
+
+            // Act
+            await getPredictionsForStop("stop-1", { deviceId: "device-a", route: "1A" });
+            await new Promise((resolve) => setImmediate(resolve));
+
+            // Assert
+            expect(mockRecentsRepo.upsertRecent).toHaveBeenCalledTimes(2);
+            expect(mockRecentsRepo.upsertRecent).toHaveBeenCalledWith("device-a", "stop", "stop-1");
+            expect(mockRecentsRepo.upsertRecent).toHaveBeenCalledWith("device-a", "route", "1A");
+        });
+
+        it("logs only the stop as a recent when a deviceId is provided without a route", async () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
+            mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
+            const mockRecentsRepo = makeMockRecentsRepo();
+            const { getPredictionsForStop } = createPredictionService(mockRepo as never, mockRecentsRepo as never);
+
+            // Act
+            await getPredictionsForStop("stop-1", { deviceId: "device-a" });
+            await new Promise((resolve) => setImmediate(resolve));
+
+            // Assert
+            expect(mockRecentsRepo.upsertRecent).toHaveBeenCalledTimes(1);
+            expect(mockRecentsRepo.upsertRecent).toHaveBeenCalledWith("device-a", "stop", "stop-1");
+        });
     });
 });
