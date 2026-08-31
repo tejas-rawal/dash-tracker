@@ -42,6 +42,13 @@ const makeStopPredictionsResponse = (stopId = "stop-1"): StopPredictionsResponse
     },
 });
 
+describe("predictionRoutes wiring", () => {
+    it("passes both a BusDataRepository and a FavoritesRecentsRepository instance to createPredictionService", () => {
+        // Assert
+        expect(vi.mocked(createPredictionService).mock.calls[0]).toHaveLength(2);
+    });
+});
+
 describe("GET /api/v1/predictions", () => {
     it("responds with 400 when stop query parameter is missing", async () => {
         // Arrange & Act

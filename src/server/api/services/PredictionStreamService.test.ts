@@ -32,6 +32,25 @@ describe("PredictionStreamService", () => {
         vi.useRealTimers();
     });
 
+    it("never supplies a second argument to getPredictionsForStop on the initial subscribe fetch or a subsequent poll tick", async () => {
+        // Arrange
+        const mockPredictionService = makeMockPredictionService();
+        mockPredictionService.getPredictionsForStop.mockResolvedValue(makeResponse());
+        const { subscribe } = createPredictionStreamService(mockPredictionService as never);
+
+        // Act
+        await subscribe("stop-1", vi.fn());
+        expect(mockPredictionService.getPredictionsForStop).toHaveBeenCalledWith("stop-1");
+
+        await vi.advanceTimersByTimeAsync(30_000);
+
+        // Assert
+        expect(mockPredictionService.getPredictionsForStop).toHaveBeenCalledWith("stop-1");
+        for (const call of mockPredictionService.getPredictionsForStop.mock.calls) {
+            expect(call).toHaveLength(1);
+        }
+    });
+
     it("subscribing to a new stop returns the first fetch's resolved value and fetches exactly once", async () => {
         // Arrange
         const mockPredictionService = makeMockPredictionService();
