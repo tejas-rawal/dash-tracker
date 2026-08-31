@@ -27,7 +27,7 @@ Requirements for milestone v0.3 (Favorited & Recent Routes). Each maps to roadma
 ### Infrastructure
 
 - [ ] **DEVICE-01**: All favorites/recents endpoints require an `X-Device-Id` header; a missing or empty header returns 400, never a silent shared-bucket fallback
-- [ ] **PERSIST-01**: Favorites and recents persist in a new SQLite-backed repository, isolated from the existing `BusDataRepository` (no changes to the DASH-proxy repository), following the existing routes → controllers → services → repository architecture
+- [x] **PERSIST-01**: Favorites and recents persist in a new SQLite-backed repository, isolated from the existing `BusDataRepository` (no changes to the DASH-proxy repository), following the existing routes → controllers → services → repository architecture
 
 ## v2 Requirements
 
@@ -72,9 +72,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RECENT-05 | Phase 7 | Pending |
 | RECENT-06 | Phase 7 | Pending |
 | DEVICE-01 | Phase 6 | Pending |
-| PERSIST-01 | Phase 5 | Pending |
+| PERSIST-01 | Phase 5 | Complete |
 
 **Coverage:**
+
 - v1 requirements: 13 total
 - Mapped to phases: 13 (Phase 5: 1, Phase 6: 6, Phase 7: 6)
 - Unmapped: 0 ✓
