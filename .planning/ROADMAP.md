@@ -54,8 +54,12 @@
 **Plans**: 2 plans
 
 Plans:
+**Wave 1**
 
 - [ ] 05-01-PLAN.md — Package legitimacy checkpoint (better-sqlite3, D-01)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 05-02-PLAN.md — SQLite repository: connection lifecycle, schema, CRUD, concurrency (PERSIST-01)
 
 ### Phase 6: Favorites (Routes & Stops)
