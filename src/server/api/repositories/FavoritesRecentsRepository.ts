@@ -74,6 +74,13 @@ export class FavoritesRecentsRepository {
             .run({ deviceId, entityType, entityId, favoritedAt });
     }
 
+    public async deleteFavorite(deviceId: string, entityType: EntityType, entityId: string): Promise<void> {
+        this.assertInitialized();
+        (this.db as DatabaseInstance)
+            .prepare("DELETE FROM favorites WHERE device_id = ? AND entity_type = ? AND entity_id = ?")
+            .run(deviceId, entityType, entityId);
+    }
+
     public async listFavorites(deviceId: string): Promise<FavoriteRecord[]> {
         this.assertInitialized();
         return (this.db as DatabaseInstance)

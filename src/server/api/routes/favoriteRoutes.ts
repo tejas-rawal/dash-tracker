@@ -14,5 +14,6 @@ const router = Router();
 router.use(requireDeviceId);
 
 router.post("/", controller.favorite);
+router.delete("/:entityType/:entityId", controller.unfavorite);
 
 export default router;
