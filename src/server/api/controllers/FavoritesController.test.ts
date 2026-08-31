@@ -25,6 +25,7 @@ const makeMockReqWithParams = (
 const makeMockService = () => ({
     addFavorite: vi.fn(),
     removeFavorite: vi.fn(),
+    listFavorites: vi.fn(),
 });
 
 describe("FavoritesController", () => {
@@ -218,6 +219,73 @@ describe("FavoritesController", () => {
 
             // Act
             await unfavorite(req, res, vi.fn());
+
+            // Assert
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith({ error: "Request Failed", details: "unexpected" });
+        });
+    });
+
+    describe("listFavorites", () => {
+        it("responds with 200 and [] when the service resolves an empty array", async () => {
+            // Arrange
+            const mockService = makeMockService();
+            mockService.listFavorites.mockResolvedValue([]);
+            const { listFavorites } = createFavoritesController(mockService as never);
+            const req = makeMockReq();
+            const res = makeMockRes();
+
+            // Act
+            await listFavorites(req, res, vi.fn());
+
+            // Assert
+            expect(res.json).toHaveBeenCalledWith([]);
+            expect(res.status).not.toHaveBeenCalled();
+        });
+
+        it("responds with 200 and the service's array verbatim on success", async () => {
+            // Arrange
+            const mockService = makeMockService();
+            const payload = [
+                { entityType: "route", favoritedAt: "2026-08-31T10:00:00.000Z", entity: { id: "route-1" } },
+            ];
+            mockService.listFavorites.mockResolvedValue(payload);
+            const { listFavorites } = createFavoritesController(mockService as never);
+            const req = makeMockReq();
+            const res = makeMockRes();
+
+            // Act
+            await listFavorites(req, res, vi.fn());
+
+            // Assert
+            expect(res.json).toHaveBeenCalledWith(payload);
+        });
+
+        it("calls service.listFavorites with the deviceId read from the X-Device-Id header", async () => {
+            // Arrange
+            const mockService = makeMockService();
+            mockService.listFavorites.mockResolvedValue([]);
+            const { listFavorites } = createFavoritesController(mockService as never);
+            const req = makeMockReq({}, { "x-device-id": "device-xyz" });
+            const res = makeMockRes();
+
+            // Act
+            await listFavorites(req, res, vi.fn());
+
+            // Assert
+            expect(mockService.listFavorites).toHaveBeenCalledWith("device-xyz");
+        });
+
+        it("responds with 500 and Request Failed body when the service throws a generic Error", async () => {
+            // Arrange
+            const mockService = makeMockService();
+            mockService.listFavorites.mockRejectedValue(new Error("unexpected"));
+            const { listFavorites } = createFavoritesController(mockService as never);
+            const req = makeMockReq();
+            const res = makeMockRes();
+
+            // Act
+            await listFavorites(req, res, vi.fn());
 
             // Assert
             expect(res.status).toHaveBeenCalledWith(500);

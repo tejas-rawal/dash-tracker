@@ -5,6 +5,7 @@ vi.mock("../services/FavoritesService", () => ({
     createFavoritesService: vi.fn(() => ({
         addFavorite: vi.fn(),
         removeFavorite: vi.fn(),
+        listFavorites: vi.fn(),
     })),
 }));
 
@@ -96,5 +97,43 @@ describe("DELETE /api/v1/favorites/:entityType/:entityId", () => {
 
         // Assert
         expect(response.status).toBe(400);
+    });
+});
+
+describe("GET /api/v1/favorites", () => {
+    it("responds with 400 when X-Device-Id header is missing", async () => {
+        // Act
+        const response = await request(app).get("/api/v1/favorites");
+
+        // Assert
+        expect(response.status).toBe(400);
+    });
+
+    it("responds with 200 and [] for a mocked empty listFavorites result", async () => {
+        // Arrange
+        getMockService().listFavorites.mockResolvedValue([]);
+
+        // Act
+        const response = await request(app).get("/api/v1/favorites").set("X-Device-Id", "device-a");
+
+        // Assert
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual([]);
+    });
+
+    it("responds with 200 and the service's array body for a mixed route+stop result", async () => {
+        // Arrange
+        const payload = [
+            { entityType: "route", favoritedAt: "2026-08-31T10:00:00.000Z", entity: { id: "route-1" } },
+            { entityType: "stop", favoritedAt: "2026-08-31T09:00:00.000Z", entity: { id: "stop-1" } },
+        ];
+        getMockService().listFavorites.mockResolvedValue(payload);
+
+        // Act
+        const response = await request(app).get("/api/v1/favorites").set("X-Device-Id", "device-a");
+
+        // Assert
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual(payload);
     });
 });
