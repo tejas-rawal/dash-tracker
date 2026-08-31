@@ -110,4 +110,104 @@ describe("FavoritesRecentsRepository", () => {
             await expect(repo.close()).resolves.not.toThrow();
         });
     });
+
+    describe("favorites", () => {
+        beforeEach(async () => {
+            await repo.initialize();
+        });
+
+        it("writes and reads back a favorite", async () => {
+            // Act
+            await repo.upsertFavorite("device-a", "route", "route-1");
+            const favorites = await repo.listFavorites("device-a");
+
+            // Assert
+            expect(favorites).toHaveLength(1);
+            expect(favorites[0]).toMatchObject({ entityType: "route", entityId: "route-1" });
+        });
+
+        it("stores both entity types in the same table for one device", async () => {
+            // Act
+            await repo.upsertFavorite("device-a", "stop", "stop-1");
+            await repo.upsertFavorite("device-a", "route", "route-1");
+            const favorites = await repo.listFavorites("device-a");
+
+            // Assert
+            expect(favorites).toHaveLength(2);
+        });
+
+        it("upserts idempotently, updating the timestamp on a repeated write", async () => {
+            // Act
+            await repo.upsertFavorite("device-a", "route", "route-1");
+            const [first] = await repo.listFavorites("device-a");
+            await new Promise((resolve) => setTimeout(resolve, 5));
+            await repo.upsertFavorite("device-a", "route", "route-1");
+            const favorites = await repo.listFavorites("device-a");
+
+            // Assert
+            expect(favorites).toHaveLength(1);
+            expect(favorites[0].favoritedAt).not.toBe(first.favoritedAt);
+        });
+
+        it("never leaks one device's favorites into another device's read", async () => {
+            // Arrange
+            await repo.upsertFavorite("device-a", "route", "route-1");
+
+            // Act
+            const favoritesForB = await repo.listFavorites("device-b");
+
+            // Assert
+            expect(favoritesForB).toEqual([]);
+        });
+    });
+
+    describe("recents", () => {
+        beforeEach(async () => {
+            await repo.initialize();
+        });
+
+        it("writes and reads back a recent", async () => {
+            // Act
+            await repo.upsertRecent("device-a", "stop", "stop-1");
+            const recents = await repo.listRecents("device-a");
+
+            // Assert
+            expect(recents).toHaveLength(1);
+            expect(recents[0]).toMatchObject({ entityType: "stop", entityId: "stop-1" });
+        });
+
+        it("stores both entity types in the same table for one device", async () => {
+            // Act
+            await repo.upsertRecent("device-a", "stop", "stop-1");
+            await repo.upsertRecent("device-a", "route", "route-1");
+            const recents = await repo.listRecents("device-a");
+
+            // Assert
+            expect(recents).toHaveLength(2);
+        });
+
+        it("upserts idempotently, updating the timestamp on a repeated write", async () => {
+            // Act
+            await repo.upsertRecent("device-a", "stop", "stop-1");
+            const [first] = await repo.listRecents("device-a");
+            await new Promise((resolve) => setTimeout(resolve, 5));
+            await repo.upsertRecent("device-a", "stop", "stop-1");
+            const recents = await repo.listRecents("device-a");
+
+            // Assert
+            expect(recents).toHaveLength(1);
+            expect(recents[0].viewedAt).not.toBe(first.viewedAt);
+        });
+
+        it("never leaks one device's recents into another device's read", async () => {
+            // Arrange
+            await repo.upsertRecent("device-a", "stop", "stop-1");
+
+            // Act
+            const recentsForB = await repo.listRecents("device-b");
+
+            // Assert
+            expect(recentsForB).toEqual([]);
+        });
+    });
 });
