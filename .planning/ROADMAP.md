@@ -95,12 +95,12 @@ Plans:
   4. A client can list their recents as one combined array mixing routes and stops, each tagged `entityType`, hydrated with full details, ordered most-recently-viewed-first.
   5. Opening an SSE prediction stream subscription never logs a recent, and the auto-logging side effect never delays or breaks the primary prediction/stop response, even if the persistence write fails.
 
-**Plans**: 0/1 plans executed
+**Plans**: 1/1 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 07-01-PLAN.md — Fire-and-forget stop/route recent auto-logging, cap-at-5 eviction, GET /api/v1/recents (RECENT-01..06)
+- [x] 07-01-PLAN.md — Fire-and-forget stop/route recent auto-logging, cap-at-5 eviction, GET /api/v1/recents (RECENT-01..06)
 
 ## Progress
 
@@ -115,7 +115,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 4. Live Predictions via SSE | 1/1 | Complete | 2026-08-27 |
 | 5. SQLite Persistence Foundation | 2/2 | Complete    | 2026-08-31 |
 | 6. Favorites (Routes & Stops) | 1/1 | Complete    | 2026-08-31 |
-| 7. Recents (Routes & Stops) | 0/1 | Not started | - |
+| 7. Recents (Routes & Stops) | 1/1 | In Progress|  |
 
 ---
 
