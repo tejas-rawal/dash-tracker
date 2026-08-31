@@ -111,4 +111,43 @@ describe("FavoritesService", () => {
             expect(mockFavoritesRepo.upsertFavorite).toHaveBeenCalledWith("device-a", "route", "route-1");
         });
     });
+
+    describe("removeFavorite", () => {
+        it("calls favoritesRepository.deleteFavorite with deviceId, entityType, entityId", async () => {
+            // Arrange
+            const mockFavoritesRepo = makeMockFavoritesRepository();
+            const mockBusDataRepo = makeMockBusDataRepository();
+            const { removeFavorite } = createFavoritesService(mockFavoritesRepo as never, mockBusDataRepo as never);
+
+            // Act
+            await removeFavorite("device-a", "route", "route-1");
+
+            // Assert
+            expect(mockFavoritesRepo.deleteFavorite).toHaveBeenCalledWith("device-a", "route", "route-1");
+        });
+
+        it("resolves without throwing for a device+entity that was never favorited", async () => {
+            // Arrange
+            const mockFavoritesRepo = makeMockFavoritesRepository();
+            const mockBusDataRepo = makeMockBusDataRepository();
+            const { removeFavorite } = createFavoritesService(mockFavoritesRepo as never, mockBusDataRepo as never);
+
+            // Act & Assert
+            await expect(removeFavorite("device-a", "stop", "unknown-stop")).resolves.not.toThrow();
+        });
+
+        it("does not perform any existence check via busDataRepository", async () => {
+            // Arrange
+            const mockFavoritesRepo = makeMockFavoritesRepository();
+            const mockBusDataRepo = makeMockBusDataRepository();
+            const { removeFavorite } = createFavoritesService(mockFavoritesRepo as never, mockBusDataRepo as never);
+
+            // Act
+            await removeFavorite("device-a", "route", "route-1");
+
+            // Assert
+            expect(mockBusDataRepo.getRouteById).not.toHaveBeenCalled();
+            expect(mockBusDataRepo.getStopById).not.toHaveBeenCalled();
+        });
+    });
 });

@@ -17,8 +17,14 @@ const makeMockReq = (
     headers: Record<string, string | string[] | undefined> = { "x-device-id": "device-a" },
 ): Request => ({ body, headers, params: {} }) as unknown as Request;
 
+const makeMockReqWithParams = (
+    params: Record<string, string> = {},
+    headers: Record<string, string | string[] | undefined> = { "x-device-id": "device-a" },
+): Request => ({ body: {}, headers, params }) as unknown as Request;
+
 const makeMockService = () => ({
     addFavorite: vi.fn(),
+    removeFavorite: vi.fn(),
 });
 
 describe("FavoritesController", () => {
@@ -127,6 +133,91 @@ describe("FavoritesController", () => {
 
             // Act
             await favorite(req, res, vi.fn());
+
+            // Assert
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith({ error: "Request Failed", details: "unexpected" });
+        });
+    });
+
+    describe("unfavorite", () => {
+        it("responds with 400 when entityType path segment is invalid", async () => {
+            // Arrange
+            const mockService = makeMockService();
+            const { unfavorite } = createFavoritesController(mockService as never);
+            const req = makeMockReqWithParams({ entityType: "vehicle", entityId: "id-1" });
+            const res = makeMockRes();
+
+            // Act
+            await unfavorite(req, res, vi.fn());
+
+            // Assert
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith(
+                expect.objectContaining({ error: "Bad Request", details: expect.stringContaining("entityType") }),
+            );
+            expect(mockService.removeFavorite).not.toHaveBeenCalled();
+        });
+
+        it("responds with 200 and success:true for a device that never favorited the entity", async () => {
+            // Arrange
+            const mockService = makeMockService();
+            mockService.removeFavorite.mockResolvedValue(undefined);
+            const { unfavorite } = createFavoritesController(mockService as never);
+            const req = makeMockReqWithParams({ entityType: "route", entityId: "route-1" });
+            const res = makeMockRes();
+
+            // Act
+            await unfavorite(req, res, vi.fn());
+
+            // Assert
+            expect(res.json).toHaveBeenCalledWith({ success: true });
+            expect(res.status).not.toHaveBeenCalled();
+        });
+
+        it("responds with 200 and success:true for a device that did favorite the entity", async () => {
+            // Arrange
+            const mockService = makeMockService();
+            mockService.removeFavorite.mockResolvedValue(undefined);
+            const { unfavorite } = createFavoritesController(mockService as never);
+            const req = makeMockReqWithParams({ entityType: "route", entityId: "route-1" });
+            const res = makeMockRes();
+
+            // Act
+            await unfavorite(req, res, vi.fn());
+
+            // Assert
+            expect(res.json).toHaveBeenCalledWith({ success: true });
+        });
+
+        it("calls service.removeFavorite with deviceId, entityType, entityId from params", async () => {
+            // Arrange
+            const mockService = makeMockService();
+            mockService.removeFavorite.mockResolvedValue(undefined);
+            const { unfavorite } = createFavoritesController(mockService as never);
+            const req = makeMockReqWithParams(
+                { entityType: "route", entityId: "route-1" },
+                { "x-device-id": "device-xyz" },
+            );
+            const res = makeMockRes();
+
+            // Act
+            await unfavorite(req, res, vi.fn());
+
+            // Assert
+            expect(mockService.removeFavorite).toHaveBeenCalledWith("device-xyz", "route", "route-1");
+        });
+
+        it("responds with 500 and Request Failed body when the service throws a generic Error", async () => {
+            // Arrange
+            const mockService = makeMockService();
+            mockService.removeFavorite.mockRejectedValue(new Error("unexpected"));
+            const { unfavorite } = createFavoritesController(mockService as never);
+            const req = makeMockReqWithParams({ entityType: "route", entityId: "route-1" });
+            const res = makeMockRes();
+
+            // Act
+            await unfavorite(req, res, vi.fn());
 
             // Assert
             expect(res.status).toHaveBeenCalledWith(500);
