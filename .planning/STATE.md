@@ -1,20 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.2
-milestone_name: Real-Time Arrival Predictions
-status: Awaiting next milestone
-stopped_at: Phase 04 complete — all phases complete
-last_updated: "2026-08-27T17:15:22.521Z"
-last_activity: 2026-08-27
-last_activity_desc: Milestone v0.2 completed and archived
-state_head: 0ce4757a7d6d2de1c5451cb10493178b4d750ceb
+milestone: v0.3
+milestone_name: Favorited & Recent Routes
+status: planning
+last_updated: "2026-08-31T14:00:58.903Z"
+last_activity: 2026-08-31
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
-  percent: 100
-current_phase: 04
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -28,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-08-27)
 
 ## Current Position
 
-Phase: Milestone v0.2 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-08-27 - Completed quick task 260827-jaa: Consolidate root CLAUDE.md and .claude/CLAUDE.md into a single canonical .claude/CLAUDE.md; delete root CLAUDE.md
+Status: Defining requirements
+Last activity: 2026-08-31 — Milestone v0.3 started
 
 ## Performance Metrics
 

@@ -8,9 +8,14 @@ dash-tracker is a Node.js/Express REST API that proxies and structures data from
 
 Riders can always see accurate, near-real-time arrival predictions for their stop.
 
-## Current Milestone: Planning Next (post-v0.2)
+## Current Milestone: v0.3 Favorited & Recent Routes
 
-v0.2 Real-Time Arrival Predictions shipped 2026-08-27. No milestone is currently in progress — run `/gsd-new-milestone` to scope the next one (the Expo/React Native client is the natural next candidate per Context below).
+**Goal:** Riders can save routes they care about and jump back into routes they recently viewed, scoped per device, through this backend.
+
+**Target features:**
+- Anonymous device-ID-scoped favorites (add/remove, no cap, most-recently-favorited-first)
+- Auto-tracked recent routes (last 5 per device, logged on any prediction/stop lookup)
+- SQLite-backed persistence via a new repository layer, following the existing routes → controllers → services → repository architecture
 
 ## Requirements
 
@@ -33,7 +38,9 @@ v0.2 Real-Time Arrival Predictions shipped 2026-08-27. No milestone is currently
 
 ### Active
 
-(None yet — scope the next milestone via `/gsd-new-milestone`. The Expo/React Native client, listed under Out of Scope below, is the natural next candidate.)
+- [ ] Anonymous device-ID-scoped favorites: add/remove a route as favorite, list favorites with full route details, most-recently-favorited-first, no cap
+- [ ] Auto-tracked recent routes: last 5 per device, logged automatically on any prediction/stop lookup, list with full route details
+- [ ] SQLite-backed persistence layer for favorites/recents, isolated behind a repository (no changes to existing DASH proxy repository)
 
 ### Out of Scope
 
@@ -75,6 +82,9 @@ v0.2 Real-Time Arrival Predictions shipped 2026-08-27. No milestone is currently
 | Stop discovery lives in a new `StopController`/`StopService` pair, not folded into `BusRouteController`/`BusRouteService` | Stop discovery is a distinct concern from route CRUD even though one URL nests under `/routes`; splitting it out later would touch call sites and tests | ✓ Shipped Phase 3 |
 | `GET /:shortName/stops` groups stops by direction (`[{ directionId, title, stops }]`) instead of a deduped flat list | Response shape is a public contract — flattening later would be a breaking change for client apps; iterating `route.directions` preserves real sequence order that `getAllStops()` loses | ✓ Shipped Phase 3 |
 | Nearby-search radius/distance in miles, default radius 0.5mi, default count 10 (cap 50), results sorted ascending by distance | Matches how a rider thinks about "how far," and bounds response size against a dense stop dataset | ✓ Shipped Phase 3 |
+| Favorites/recents identity is an anonymous device ID sent via `X-Device-Id` header, no auth system | Backend serves multiple clients, so favorites can't live in per-device local storage alone; full accounts are unnecessary complexity for v1 and the device ID becomes a natural foreign key if real accounts are added later | — Pending (v0.3) |
+| Favorites/recents persisted in SQLite behind a new repository, isolated from the existing DASH-proxy `BusDataRepository` | Zero ops (file-based, no external service), fits the existing repository-pattern architecture, easy to swap for Postgres later without touching services/controllers | — Pending (v0.3) |
+| Recents are auto-logged on any prediction/stop lookup rather than requiring a dedicated "log view" call | Reflects actual usage automatically; avoids relying on clients to remember to call a separate endpoint | — Pending (v0.3) |
 
 ## Evolution
 
@@ -94,4 +104,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-27 after v0.2 milestone*
+*Last updated: 2026-08-31 after starting v0.3 milestone*
