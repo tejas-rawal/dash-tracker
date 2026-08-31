@@ -11,9 +11,8 @@ const makeMockRes = () => {
     return res;
 };
 
-const makeMockReq = (
-    headers: Record<string, string | string[] | undefined> = { "x-device-id": "device-a" },
-): Request => ({ headers }) as unknown as Request;
+const makeMockReq = (headers: Record<string, string | string[] | undefined> = { "x-device-id": "device-a" }): Request =>
+    ({ headers }) as unknown as Request;
 
 const makeMockService = () => ({
     listRecents: vi.fn(),

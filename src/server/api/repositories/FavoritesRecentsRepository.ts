@@ -100,7 +100,7 @@ export class FavoritesRecentsRepository {
             .run({ deviceId, entityType, entityId, viewedAt });
         (this.db as DatabaseInstance)
             .prepare(
-                "DELETE FROM recents WHERE device_id = @deviceId AND id NOT IN (SELECT id FROM recents WHERE device_id = @deviceId ORDER BY viewed_at DESC LIMIT 5)",
+                "DELETE FROM recents WHERE device_id = @deviceId AND id NOT IN (SELECT id FROM recents WHERE device_id = @deviceId ORDER BY viewed_at DESC, id DESC LIMIT 5)",
             )
             .run({ deviceId });
     }
