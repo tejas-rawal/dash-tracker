@@ -10,13 +10,20 @@ import type {
     RoutePrediction,
     StopPredictionsResponse,
 } from "../models/Prediction";
-import type { BusDataRepository } from "../repositories";
+import type { BusDataRepository, FavoritesRecentsRepository } from "../repositories";
 
 export interface PredictionService {
     getPredictionsForStop(stopId: string, options?: PredictionOptions): Promise<StopPredictionsResponse>;
 }
 
-export function createPredictionService(repository: BusDataRepository): PredictionService {
+export function createPredictionService(
+    repository: BusDataRepository,
+    recentsRepository: FavoritesRecentsRepository,
+): PredictionService {
+    async function recordRecentView(deviceId: string, stopId: string): Promise<void> {
+        await recentsRepository.upsertRecent(deviceId, "stop", stopId);
+    }
+
     function getValidatedStop(stopId: string): BusStop {
         const stop = repository.getStopById(stopId);
         if (!stop) {
@@ -84,7 +91,7 @@ export function createPredictionService(repository: BusDataRepository): Predicti
             throw new UpstreamApiError(`DASH API returned success: false for stop ${stopId}`);
         }
 
-        return {
+        const response: StopPredictionsResponse = {
             success: true,
             generatedAt: new Date().toISOString(),
             data: {
@@ -97,6 +104,16 @@ export function createPredictionService(repository: BusDataRepository): Predicti
                 routes: mapToRoutePredictions(dashResponse.data.predictionsData),
             },
         };
+
+        const deviceId = options.deviceId;
+        if (deviceId !== undefined && deviceId.trim().length > 0) {
+            recordRecentView(deviceId, stopId).catch((error) => {
+                const message = error instanceof Error ? error.message : "Unknown error";
+                logger.warn(`Failed to record recents for device ${deviceId}: ${message}`);
+            });
+        }
+
+        return response;
     }
 
     return { getPredictionsForStop };

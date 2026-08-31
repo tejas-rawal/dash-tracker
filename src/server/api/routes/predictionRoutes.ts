@@ -1,11 +1,11 @@
 import { Router } from "express";
 import { createPredictionController } from "../controllers/PredictionController";
 import { createPredictionStreamController } from "../controllers/PredictionStreamController";
-import { BusDataRepository } from "../repositories";
+import { BusDataRepository, FavoritesRecentsRepository } from "../repositories";
 import { createPredictionService } from "../services/PredictionService";
 import { createPredictionStreamService } from "../services/PredictionStreamService";
 
-const service = createPredictionService(BusDataRepository.getInstance());
+const service = createPredictionService(BusDataRepository.getInstance(), FavoritesRecentsRepository.getInstance());
 const controller = createPredictionController(service);
 const streamService = createPredictionStreamService(service);
 const streamController = createPredictionStreamController(streamService);
