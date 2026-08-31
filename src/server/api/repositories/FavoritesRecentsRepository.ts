@@ -2,6 +2,7 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import Database from "better-sqlite3";
 import { environment, logger } from "../../config";
+import type { EntityType, FavoriteRecord, RecentRecord } from "../models";
 
 type DatabaseInstance = InstanceType<typeof Database>;
 
@@ -63,9 +64,55 @@ export class FavoritesRecentsRepository {
         }
     }
 
+    public async upsertFavorite(deviceId: string, entityType: EntityType, entityId: string): Promise<void> {
+        this.assertInitialized();
+        const favoritedAt = new Date().toISOString();
+        (this.db as DatabaseInstance)
+            .prepare(
+                "INSERT INTO favorites (device_id, entity_type, entity_id, favorited_at) VALUES (@deviceId, @entityType, @entityId, @favoritedAt) ON CONFLICT (device_id, entity_type, entity_id) DO UPDATE SET favorited_at = @favoritedAt",
+            )
+            .run({ deviceId, entityType, entityId, favoritedAt });
+    }
+
+    public async listFavorites(deviceId: string): Promise<FavoriteRecord[]> {
+        this.assertInitialized();
+        return (this.db as DatabaseInstance)
+            .prepare(
+                "SELECT device_id AS deviceId, entity_type AS entityType, entity_id AS entityId, favorited_at AS favoritedAt FROM favorites WHERE device_id = ? ORDER BY favorited_at DESC",
+            )
+            .all(deviceId) as FavoriteRecord[];
+    }
+
+    public async upsertRecent(deviceId: string, entityType: EntityType, entityId: string): Promise<void> {
+        this.assertInitialized();
+        const viewedAt = new Date().toISOString();
+        (this.db as DatabaseInstance)
+            .prepare(
+                "INSERT INTO recents (device_id, entity_type, entity_id, viewed_at) VALUES (@deviceId, @entityType, @entityId, @viewedAt) ON CONFLICT (device_id, entity_type, entity_id) DO UPDATE SET viewed_at = @viewedAt",
+            )
+            .run({ deviceId, entityType, entityId, viewedAt });
+    }
+
+    public async listRecents(deviceId: string): Promise<RecentRecord[]> {
+        this.assertInitialized();
+        return (this.db as DatabaseInstance)
+            .prepare(
+                "SELECT device_id AS deviceId, entity_type AS entityType, entity_id AS entityId, viewed_at AS viewedAt FROM recents WHERE device_id = ? ORDER BY viewed_at DESC",
+            )
+            .all(deviceId) as RecentRecord[];
+    }
+
     private handleError(action: "initialize" | "close", error: unknown): never {
         const message = error instanceof Error ? error.message : "Unknown error";
         logger.error(`Failed to ${action} FavoritesRecentsRepository: ${message}`);
         throw new Error(`Failed to ${action} FavoritesRecentsRepository: ${message}`);
+    }
+
+    private assertInitialized(): void {
+        if (!this.isInitialized || !this.db) {
+            throw new Error(
+                "FavoritesRecentsRepository has not been initialized. Call initialize() before accessing data.",
+            );
+        }
     }
 }
