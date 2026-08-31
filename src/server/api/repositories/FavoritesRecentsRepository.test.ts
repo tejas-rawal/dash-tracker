@@ -161,6 +161,51 @@ describe("FavoritesRecentsRepository", () => {
         });
     });
 
+    describe("deleteFavorite", () => {
+        beforeEach(async () => {
+            await repo.initialize();
+        });
+
+        it("resolves without throwing when deleting a device+entity that was never favorited", async () => {
+            // Act & Assert
+            await expect(repo.deleteFavorite("device-a", "route", "route-1")).resolves.not.toThrow();
+        });
+
+        it("leaves listFavorites returning [] for a device with no favorites after a no-op delete", async () => {
+            // Act
+            await repo.deleteFavorite("device-a", "route", "route-1");
+            const favorites = await repo.listFavorites("device-a");
+
+            // Assert
+            expect(favorites).toEqual([]);
+        });
+
+        it("removes exactly the favorited row after a prior upsertFavorite for the same triple", async () => {
+            // Arrange
+            await repo.upsertFavorite("device-a", "route", "route-1");
+
+            // Act
+            await repo.deleteFavorite("device-a", "route", "route-1");
+            const favorites = await repo.listFavorites("device-a");
+
+            // Assert
+            expect(favorites).toEqual([]);
+        });
+
+        it("does not remove a different device's favorite for the same entity", async () => {
+            // Arrange
+            await repo.upsertFavorite("device-a", "route", "route-1");
+            await repo.upsertFavorite("device-b", "route", "route-1");
+
+            // Act
+            await repo.deleteFavorite("device-a", "route", "route-1");
+
+            // Assert
+            const favoritesForB = await repo.listFavorites("device-b");
+            expect(favoritesForB).toHaveLength(1);
+        });
+    });
+
     describe("recents", () => {
         beforeEach(async () => {
             await repo.initialize();
@@ -248,6 +293,21 @@ describe("FavoritesRecentsRepository", () => {
             expect(recentsForA[0].entityId).toBe("route-9");
             expect(recentsForB).toHaveLength(1);
             expect(recentsForB[0].entityId).toBe("route-9");
+        });
+
+        it("handles concurrent favorite/unfavorite writes to the same device+entity without throwing SQLITE_BUSY", async () => {
+            // Act
+            const results = await Promise.allSettled(
+                Array.from({ length: 25 }, (_, i) =>
+                    i % 2 === 0
+                        ? repo.upsertFavorite("device-a", "stop", "stop-1")
+                        : repo.deleteFavorite("device-a", "stop", "stop-1"),
+                ),
+            );
+
+            // Assert
+            expect(results).toHaveLength(25);
+            expect(results.every((result) => result.status === "fulfilled")).toBe(true);
         });
     });
 });
