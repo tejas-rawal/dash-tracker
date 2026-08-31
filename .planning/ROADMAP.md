@@ -51,16 +51,16 @@
   3. Concurrent "bump to top" writes to the same device's recents complete via a single atomic UPSERT (no read-then-write race) and never throw `SQLITE_BUSY`, verified under a concurrency test.
   4. `BusDataRepository` and its existing tests are completely unmodified and continue to pass unchanged — the new repository is fully additive.
 
-**Plans**: 2 plans
+**Plans**: 2/2 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 05-01-PLAN.md — Package legitimacy checkpoint (better-sqlite3, D-01)
+- [x] 05-01-PLAN.md — Package legitimacy checkpoint (better-sqlite3, D-01)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 05-02-PLAN.md — SQLite repository: connection lifecycle, schema, CRUD, concurrency (PERSIST-01)
+- [x] 05-02-PLAN.md — SQLite repository: connection lifecycle, schema, CRUD, concurrency (PERSIST-01)
 
 ### Phase 6: Favorites (Routes & Stops)
 
@@ -103,7 +103,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 2. Full-Repo Reformat | 1/1 | Complete | 2026-08-26 |
 | 3. Stop Discovery | 2/2 | Complete | 2026-08-26 |
 | 4. Live Predictions via SSE | 1/1 | Complete | 2026-08-27 |
-| 5. SQLite Persistence Foundation | 0/2 | Not started | - |
+| 5. SQLite Persistence Foundation | 2/2 | In Progress|  |
 | 6. Favorites (Routes & Stops) | 0/TBD | Not started | - |
 | 7. Recents (Routes & Stops) | 0/TBD | Not started | - |
 
