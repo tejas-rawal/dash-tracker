@@ -75,7 +75,12 @@ Plans:
   4. Any favorites request with a missing or empty `X-Device-Id` header is rejected with 400 — never a silent shared-bucket fallback.
   5. All existing v0.2 endpoints (routes, stop discovery, predictions, SSE) continue to respond exactly as before — favorites is purely additive.
 
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+**Wave 1**
+
+- [ ] 06-01-PLAN.md — requireDeviceId middleware, favorite/unfavorite/list HTTP surface, FavoritesRecentsRepository.deleteFavorite (FAV-01..05, DEVICE-01)
 
 ### Phase 7: Recents (Routes & Stops)
 
