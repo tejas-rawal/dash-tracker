@@ -1,0 +1,136 @@
+import type { Request, Response } from "express";
+import { describe, expect, it, vi } from "vitest";
+import { NotFoundError } from "../errors";
+import { createFavoritesController } from "./FavoritesController";
+
+const makeMockRes = () => {
+    const res = {
+        json: vi.fn(),
+        status: vi.fn(),
+    } as unknown as Response;
+    (res.status as ReturnType<typeof vi.fn>).mockReturnValue(res);
+    return res;
+};
+
+const makeMockReq = (
+    body: Record<string, unknown> = {},
+    headers: Record<string, string | string[] | undefined> = { "x-device-id": "device-a" },
+): Request => ({ body, headers, params: {} }) as unknown as Request;
+
+const makeMockService = () => ({
+    addFavorite: vi.fn(),
+});
+
+describe("FavoritesController", () => {
+    describe("favorite", () => {
+        it("responds with 400 when entityType is invalid", async () => {
+            // Arrange
+            const mockService = makeMockService();
+            const { favorite } = createFavoritesController(mockService as never);
+            const req = makeMockReq({ entityType: "vehicle", entityId: "id-1" });
+            const res = makeMockRes();
+
+            // Act
+            await favorite(req, res, vi.fn());
+
+            // Assert
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith(
+                expect.objectContaining({ error: "Bad Request", details: expect.stringContaining("entityType") }),
+            );
+            expect(mockService.addFavorite).not.toHaveBeenCalled();
+        });
+
+        it("responds with 400 when entityId is missing", async () => {
+            // Arrange
+            const mockService = makeMockService();
+            const { favorite } = createFavoritesController(mockService as never);
+            const req = makeMockReq({ entityType: "route" });
+            const res = makeMockRes();
+
+            // Act
+            await favorite(req, res, vi.fn());
+
+            // Assert
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith({ error: "Bad Request", details: "entityId is required" });
+        });
+
+        it("responds with 400 when entityId is an empty string", async () => {
+            // Arrange
+            const mockService = makeMockService();
+            const { favorite } = createFavoritesController(mockService as never);
+            const req = makeMockReq({ entityType: "route", entityId: "  " });
+            const res = makeMockRes();
+
+            // Act
+            await favorite(req, res, vi.fn());
+
+            // Assert
+            expect(res.status).toHaveBeenCalledWith(400);
+        });
+
+        it("responds with 404 and Not Found body when the service throws NotFoundError", async () => {
+            // Arrange
+            const mockService = makeMockService();
+            mockService.addFavorite.mockRejectedValue(new NotFoundError("route not found: route-1"));
+            const { favorite } = createFavoritesController(mockService as never);
+            const req = makeMockReq({ entityType: "route", entityId: "route-1" });
+            const res = makeMockRes();
+
+            // Act
+            await favorite(req, res, vi.fn());
+
+            // Assert
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith({ error: "Not Found", details: "route not found: route-1" });
+        });
+
+        it("responds with 200 and success:true when the service resolves", async () => {
+            // Arrange
+            const mockService = makeMockService();
+            mockService.addFavorite.mockResolvedValue(undefined);
+            const { favorite } = createFavoritesController(mockService as never);
+            const req = makeMockReq({ entityType: "route", entityId: "route-1" });
+            const res = makeMockRes();
+
+            // Act
+            await favorite(req, res, vi.fn());
+
+            // Assert
+            expect(res.json).toHaveBeenCalledWith({ success: true });
+            expect(res.status).not.toHaveBeenCalled();
+        });
+
+        it("calls service.addFavorite with deviceId read from X-Device-Id header", async () => {
+            // Arrange
+            const mockService = makeMockService();
+            mockService.addFavorite.mockResolvedValue(undefined);
+            const { favorite } = createFavoritesController(mockService as never);
+            const req = makeMockReq({ entityType: "stop", entityId: "stop-1" }, { "x-device-id": "device-xyz" });
+            const res = makeMockRes();
+
+            // Act
+            await favorite(req, res, vi.fn());
+
+            // Assert
+            expect(mockService.addFavorite).toHaveBeenCalledWith("device-xyz", "stop", "stop-1");
+        });
+
+        it("responds with 500 and Request Failed body when the service throws a generic Error", async () => {
+            // Arrange
+            const mockService = makeMockService();
+            mockService.addFavorite.mockRejectedValue(new Error("unexpected"));
+            const { favorite } = createFavoritesController(mockService as never);
+            const req = makeMockReq({ entityType: "route", entityId: "route-1" });
+            const res = makeMockRes();
+
+            // Act
+            await favorite(req, res, vi.fn());
+
+            // Assert
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith({ error: "Request Failed", details: "unexpected" });
+        });
+    });
+});
