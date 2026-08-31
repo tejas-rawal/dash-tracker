@@ -201,6 +201,14 @@ None - no external service configuration required.
 - `bun run test` (311/311), `bun run test:coverage` (96.55% stmts/91.46% branch/97.24% funcs/96.55% lines, all above the 80% threshold), `bun run build`, and `bun run lint` (0 new errors; only the same pre-existing filename-convention warnings the rest of the repo already carries) all pass.
 - No blockers for milestone completion.
 
+## Self-Check: PASSED
+
+- FOUND: src/server/api/services/RecentsService.ts
+- FOUND: src/server/api/controllers/RecentsController.ts
+- FOUND: src/server/api/routes/recentRoutes.ts
+- FOUND: .planning/phases/07-recents-routes-stops/07-01-SUMMARY.md
+- FOUND commits: 91ef05f, b9e5a2b, 682ba7f, fd9cee9, 6c1517c, 09dc2d4
+
 ---
 *Phase: 07-recents-routes-stops*
 *Completed: 2026-08-31*
