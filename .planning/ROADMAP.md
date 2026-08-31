@@ -34,7 +34,7 @@
 **Milestone Goal:** Riders can save routes AND stops they care about, and jump back into ones they recently viewed, scoped per anonymous device, through this backend — so a home screen can take them straight to either.
 
 - [x] **Phase 5: SQLite Persistence Foundation** - A tested, isolated SQLite-backed repository exists for favorites and recents, covering both routes and stops via a single entity-typed schema (completed 2026-08-31)
-- [ ] **Phase 6: Favorites (Routes & Stops)** - Riders can favorite/unfavorite any route or stop and list their combined, type-tagged favorites
+- [x] **Phase 6: Favorites (Routes & Stops)** - Riders can favorite/unfavorite any route or stop and list their combined, type-tagged favorites (completed 2026-08-31)
 - [ ] **Phase 7: Recents (Routes & Stops)** - Riders' route/stop views are auto-tracked as recents and listable as a combined, type-tagged, capped list
 
 ## Phase Details
@@ -109,7 +109,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 3. Stop Discovery | 2/2 | Complete | 2026-08-26 |
 | 4. Live Predictions via SSE | 1/1 | Complete | 2026-08-27 |
 | 5. SQLite Persistence Foundation | 2/2 | Complete    | 2026-08-31 |
-| 6. Favorites (Routes & Stops) | 1/1 | In Progress|  |
+| 6. Favorites (Routes & Stops) | 1/1 | Complete    | 2026-08-31 |
 | 7. Recents (Routes & Stops) | 0/TBD | Not started | - |
 
 ---
