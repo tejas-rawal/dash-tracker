@@ -9,11 +9,11 @@ Requirements for milestone v0.3 (Favorited & Recent Routes). Each maps to roadma
 
 ### Favorites
 
-- [ ] **FAV-01**: User can favorite a route (device-scoped, idempotent — favoriting an already-favorited route is a no-op success, not an error or duplicate)
-- [ ] **FAV-02**: User can favorite a stop (device-scoped, idempotent — same semantics as FAV-01)
-- [ ] **FAV-03**: User can unfavorite a route (idempotent — unfavoriting a non-favorited route is a no-op success, not a 404)
-- [ ] **FAV-04**: User can unfavorite a stop (idempotent — same semantics as FAV-03)
-- [ ] **FAV-05**: User can list their favorites as one combined list mixing routes and stops, each entry tagged with its type (`entityType: "route" | "stop"`), hydrated with full details (not bare IDs), ordered most-recently-favorited-first, no cap on count
+- [x] **FAV-01**: User can favorite a route (device-scoped, idempotent — favoriting an already-favorited route is a no-op success, not an error or duplicate)
+- [x] **FAV-02**: User can favorite a stop (device-scoped, idempotent — same semantics as FAV-01)
+- [x] **FAV-03**: User can unfavorite a route (idempotent — unfavoriting a non-favorited route is a no-op success, not a 404)
+- [x] **FAV-04**: User can unfavorite a stop (idempotent — same semantics as FAV-03)
+- [x] **FAV-05**: User can list their favorites as one combined list mixing routes and stops, each entry tagged with its type (`entityType: "route" | "stop"`), hydrated with full details (not bare IDs), ordered most-recently-favorited-first, no cap on count
 
 ### Recents
 
@@ -26,7 +26,7 @@ Requirements for milestone v0.3 (Favorited & Recent Routes). Each maps to roadma
 
 ### Infrastructure
 
-- [ ] **DEVICE-01**: All favorites/recents endpoints require an `X-Device-Id` header; a missing or empty header returns 400, never a silent shared-bucket fallback
+- [x] **DEVICE-01**: All favorites/recents endpoints require an `X-Device-Id` header; a missing or empty header returns 400, never a silent shared-bucket fallback
 - [x] **PERSIST-01**: Favorites and recents persist in a new SQLite-backed repository, isolated from the existing `BusDataRepository` (no changes to the DASH-proxy repository), following the existing routes → controllers → services → repository architecture
 
 ## v2 Requirements
@@ -60,18 +60,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FAV-01 | Phase 6 | Pending |
-| FAV-02 | Phase 6 | Pending |
-| FAV-03 | Phase 6 | Pending |
-| FAV-04 | Phase 6 | Pending |
-| FAV-05 | Phase 6 | Pending |
+| FAV-01 | Phase 6 | Complete |
+| FAV-02 | Phase 6 | Complete |
+| FAV-03 | Phase 6 | Complete |
+| FAV-04 | Phase 6 | Complete |
+| FAV-05 | Phase 6 | Complete |
 | RECENT-01 | Phase 7 | Pending |
 | RECENT-02 | Phase 7 | Pending |
 | RECENT-03 | Phase 7 | Pending |
 | RECENT-04 | Phase 7 | Pending |
 | RECENT-05 | Phase 7 | Pending |
 | RECENT-06 | Phase 7 | Pending |
-| DEVICE-01 | Phase 6 | Pending |
+| DEVICE-01 | Phase 6 | Complete |
 | PERSIST-01 | Phase 5 | Complete |
 
 **Coverage:**
