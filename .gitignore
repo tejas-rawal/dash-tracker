@@ -129,3 +129,6 @@ docs/
 
 # Proto tools
 .proto*
+
+### SQLite ###
+data/

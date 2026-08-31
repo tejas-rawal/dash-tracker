@@ -13,6 +13,8 @@ const environmentSchema = z.object({
     DASH_API_KEY: z.string().min(1, "DASH_API_KEY must not be empty"),
     // biome-ignore lint/style/useNamingConvention: env vars use SCREAMING_SNAKE_CASE by convention
     PORT: z.coerce.number().int().positive().default(3000),
+    // biome-ignore lint/style/useNamingConvention: env vars use SCREAMING_SNAKE_CASE by convention
+    DB_PATH: z.string().min(1).default("data/dash-tracker.sqlite"),
 });
 
 const parsed = environmentSchema.safeParse(process.env);
@@ -32,5 +34,8 @@ export const environment = {
     },
     server: {
         port: parsed.data.PORT,
+    },
+    database: {
+        path: parsed.data.DB_PATH,
     },
 };

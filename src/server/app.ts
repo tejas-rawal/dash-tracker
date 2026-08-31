@@ -1,5 +1,5 @@
 import express from "express";
-import { BusDataRepository } from "./api/repositories";
+import { BusDataRepository, FavoritesRecentsRepository } from "./api/repositories";
 import router from "./api/routes";
 import { environment, logger } from "./config";
 
@@ -18,8 +18,8 @@ app.use("/api/v1", router);
 
 // Initialize repository data before accepting requests
 const repository = BusDataRepository.getInstance();
-repository
-    .initialize()
+const favoritesRecentsRepository = FavoritesRecentsRepository.getInstance();
+Promise.all([repository.initialize(), favoritesRecentsRepository.initialize()])
     .then(() => {
         const server = app.listen(port, () => {
             logger.info(`Server is running on port ${port}`);
@@ -27,7 +27,8 @@ repository
 
         // graceful shutdown
         const shutdown = () => {
-            server.close(() => {
+            server.close(async () => {
+                await favoritesRecentsRepository.close();
                 logger.info("Server is gracefully shutting down");
                 process.exit(0);
             });
