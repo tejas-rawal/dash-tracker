@@ -1,3 +1,6 @@
+import type { BusRoute } from "./BusRoute";
+import type { BusStop } from "./BusStop";
+
 export type EntityType = "route" | "stop";
 
 export interface FavoriteRecord {
@@ -12,4 +15,10 @@ export interface RecentRecord {
     entityType: EntityType;
     entityId: string;
     viewedAt: string;
+}
+
+export interface HydratedFavorite {
+    entityType: EntityType;
+    favoritedAt: string;
+    entity: BusRoute | BusStop;
 }
