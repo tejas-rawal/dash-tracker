@@ -1,12 +1,12 @@
 ---
-gsd_state_version: 1.0
+gsd_state_version: '1.0'
 milestone: v0.3
 milestone_name: Favorited & Recent Routes
 status: planning
-last_updated: "2026-08-31T14:00:58.903Z"
+last_updated: "2026-08-31T14:30:00.000Z"
 last_activity: 2026-08-31
 progress:
-  total_phases: 0
+  total_phases: 3
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,23 +17,25 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-08-27)
+See: .planning/PROJECT.md (updated 2026-08-31)
 
 **Core value:** Riders can always see accurate, near-real-time arrival predictions for their stop.
-**Current focus:** Planning next milestone (post-v0.2)
+**Current focus:** Phase 5 — SQLite Persistence Foundation
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-08-31 — Milestone v0.3 started
+Phase: 5 of 7 (SQLite Persistence Foundation) — first phase of v0.3, roadmap just created
+Plan: TBD (not yet planned)
+Status: Ready to plan
+Last activity: 2026-08-31 — ROADMAP.md created for v0.3 (Phase 5: SQLite Persistence Foundation, Phase 6: Favorites (Routes & Stops), Phase 7: Recents (Routes & Stops)), 13/13 v1 requirements mapped
+
+Progress: [░░░░░░░░░░] 0% (0/3 v0.3 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed (v0.2): 0
+- Total plans completed (v0.3): 0
 - Average duration: - min
 - Total execution time: 0 hours
 
@@ -44,8 +46,10 @@ Last activity: 2026-08-31 — Milestone v0.3 started
 | 1 (v0.1) | 1 | - | - |
 | 2 (v0.1) | 1 | - | - |
 | 3 (v0.2) | 2 | - | - |
-| 4 (v0.2) | TBD | - | - |
-| 04 | 1 | - | - |
+| 4 (v0.2) | 1 | 8min | 8min |
+| 5 (v0.3) | TBD | - | - |
+| 6 (v0.3) | TBD | - | - |
+| 7 (v0.3) | TBD | - | - |
 
 **Recent Trend:**
 
@@ -66,11 +70,11 @@ Last activity: 2026-08-31 — Milestone v0.3 started
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [v0.3] Favorites/recents identity is an anonymous device ID sent via `X-Device-Id` header, no auth system — device ID becomes a natural foreign key if real accounts are added later
+- [v0.3] Favorites/recents persisted in SQLite behind a new repository, isolated from the existing `BusDataRepository` — zero ops, fits existing repository-pattern architecture
+- [v0.3] Recents are auto-logged on any prediction/stop lookup rather than requiring a dedicated "log view" call — reflects actual usage automatically
 - v0.2: Use Server-Sent Events (not WebSocket) for live predictions, with REST retained as fallback
 - v0.2: Server runs one shared 30s upstream poll per subscribed stop, stopping when idle, resuming on new subscriber
-- v0.2: Repo will eventually house both backend and Expo/React Native frontend (monorepo); frontend itself deferred
-- [Phase 3] Stop discovery lives in a new `StopController`/`StopService` pair, kept separate from `BusRouteController`/`BusRouteService`
-- [Phase 3] `GET /:shortName/stops` groups stops by direction (not a deduped flat list) — locked public contract, iterate `route.directions` directly
 
 ### Pending Todos
 
@@ -101,10 +105,10 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-08-27T15:05:31.854Z
-Stopped at: Phase 04 complete — all phases complete
-Resume file: .planning/phases/04-live-predictions-via-sse/04-CONTEXT.md
+Last session: 2026-08-31T14:30:00.000Z
+Stopped at: v0.3 ROADMAP.md created (Phases 5-7), ready to plan Phase 5
+Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Run `/gsd-plan-phase 5` to plan the SQLite Persistence Foundation phase
