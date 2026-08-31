@@ -11,7 +11,7 @@ vi.mock("../../config", () => ({
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
-import { axios, environment } from "../../config";
+import { axios, environment, logger } from "../../config";
 import { BusStop } from "../models";
 import { createPredictionService } from "./PredictionService";
 
@@ -19,6 +19,10 @@ const mockAxiosGet = vi.mocked(axios.get);
 
 const makeMockRepo = () => ({
     getStopById: vi.fn(),
+});
+
+const makeMockRecentsRepo = () => ({
+    upsertRecent: vi.fn().mockResolvedValue(undefined),
 });
 
 const makeStop = (id = "stop-1") => new BusStop({ id, name: `Stop ${id}`, code: 101, lat: 38.8, lon: -77.1 });
@@ -55,7 +59,10 @@ describe("PredictionService", () => {
             // Arrange
             const mockRepo = makeMockRepo();
             mockRepo.getStopById.mockReturnValue(undefined);
-            const { getPredictionsForStop } = createPredictionService(mockRepo as never);
+            const { getPredictionsForStop } = createPredictionService(
+                mockRepo as never,
+                makeMockRecentsRepo() as never,
+            );
 
             // Act & Assert
             await expect(getPredictionsForStop("missing-stop")).rejects.toThrow(NotFoundError);
@@ -65,7 +72,10 @@ describe("PredictionService", () => {
             // Arrange
             const mockRepo = makeMockRepo();
             mockRepo.getStopById.mockReturnValue(undefined);
-            const { getPredictionsForStop } = createPredictionService(mockRepo as never);
+            const { getPredictionsForStop } = createPredictionService(
+                mockRepo as never,
+                makeMockRecentsRepo() as never,
+            );
 
             // Act & Assert
             await expect(getPredictionsForStop("missing-stop")).rejects.toThrow("Stop not found: missing-stop");
@@ -76,7 +86,10 @@ describe("PredictionService", () => {
             const mockRepo = makeMockRepo();
             mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
             mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
-            const { getPredictionsForStop } = createPredictionService(mockRepo as never);
+            const { getPredictionsForStop } = createPredictionService(
+                mockRepo as never,
+                makeMockRecentsRepo() as never,
+            );
 
             // Act
             await getPredictionsForStop("stop-1");
@@ -90,7 +103,10 @@ describe("PredictionService", () => {
             const mockRepo = makeMockRepo();
             mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
             mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
-            const { getPredictionsForStop } = createPredictionService(mockRepo as never);
+            const { getPredictionsForStop } = createPredictionService(
+                mockRepo as never,
+                makeMockRecentsRepo() as never,
+            );
 
             // Act
             await getPredictionsForStop("stop-1");
@@ -104,7 +120,10 @@ describe("PredictionService", () => {
             const mockRepo = makeMockRepo();
             mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
             mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
-            const { getPredictionsForStop } = createPredictionService(mockRepo as never);
+            const { getPredictionsForStop } = createPredictionService(
+                mockRepo as never,
+                makeMockRecentsRepo() as never,
+            );
 
             // Act
             await getPredictionsForStop("stop-1", { number: 5 });
@@ -118,7 +137,10 @@ describe("PredictionService", () => {
             const mockRepo = makeMockRepo();
             mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
             mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
-            const { getPredictionsForStop } = createPredictionService(mockRepo as never);
+            const { getPredictionsForStop } = createPredictionService(
+                mockRepo as never,
+                makeMockRecentsRepo() as never,
+            );
 
             // Act
             await getPredictionsForStop("stop-1", { route: "1A" });
@@ -132,7 +154,10 @@ describe("PredictionService", () => {
             const mockRepo = makeMockRepo();
             mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
             mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
-            const { getPredictionsForStop } = createPredictionService(mockRepo as never);
+            const { getPredictionsForStop } = createPredictionService(
+                mockRepo as never,
+                makeMockRecentsRepo() as never,
+            );
 
             // Act
             await getPredictionsForStop("stop-1");
@@ -146,7 +171,10 @@ describe("PredictionService", () => {
             const mockRepo = makeMockRepo();
             mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
             mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
-            const { getPredictionsForStop } = createPredictionService(mockRepo as never);
+            const { getPredictionsForStop } = createPredictionService(
+                mockRepo as never,
+                makeMockRecentsRepo() as never,
+            );
 
             // Act
             await getPredictionsForStop("stop-1");
@@ -160,7 +188,10 @@ describe("PredictionService", () => {
             const mockRepo = makeMockRepo();
             mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
             mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
-            const { getPredictionsForStop } = createPredictionService(mockRepo as never);
+            const { getPredictionsForStop } = createPredictionService(
+                mockRepo as never,
+                makeMockRecentsRepo() as never,
+            );
 
             // Act
             const result = await getPredictionsForStop("stop-1");
@@ -177,7 +208,10 @@ describe("PredictionService", () => {
             const mockRepo = makeMockRepo();
             mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
             mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
-            const { getPredictionsForStop } = createPredictionService(mockRepo as never);
+            const { getPredictionsForStop } = createPredictionService(
+                mockRepo as never,
+                makeMockRecentsRepo() as never,
+            );
 
             // Act
             const result = await getPredictionsForStop("stop-1");
@@ -192,7 +226,10 @@ describe("PredictionService", () => {
             mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
             const predData = makeDashPredictionData();
             mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([predData]) });
-            const { getPredictionsForStop } = createPredictionService(mockRepo as never);
+            const { getPredictionsForStop } = createPredictionService(
+                mockRepo as never,
+                makeMockRecentsRepo() as never,
+            );
 
             // Act
             const result = await getPredictionsForStop("stop-1");
@@ -212,7 +249,10 @@ describe("PredictionService", () => {
             const mockRepo = makeMockRepo();
             mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
             mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
-            const { getPredictionsForStop } = createPredictionService(mockRepo as never);
+            const { getPredictionsForStop } = createPredictionService(
+                mockRepo as never,
+                makeMockRecentsRepo() as never,
+            );
 
             // Act
             const result = await getPredictionsForStop("stop-1");
@@ -229,7 +269,10 @@ describe("PredictionService", () => {
             const mockRepo = makeMockRepo();
             mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
             mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
-            const { getPredictionsForStop } = createPredictionService(mockRepo as never);
+            const { getPredictionsForStop } = createPredictionService(
+                mockRepo as never,
+                makeMockRecentsRepo() as never,
+            );
 
             // Act
             const result = await getPredictionsForStop("stop-1");
@@ -243,7 +286,10 @@ describe("PredictionService", () => {
             const mockRepo = makeMockRepo();
             mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
             mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([]) });
-            const { getPredictionsForStop } = createPredictionService(mockRepo as never);
+            const { getPredictionsForStop } = createPredictionService(
+                mockRepo as never,
+                makeMockRecentsRepo() as never,
+            );
 
             // Act
             const result = await getPredictionsForStop("stop-1");
@@ -257,7 +303,10 @@ describe("PredictionService", () => {
             const mockRepo = makeMockRepo();
             mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
             mockAxiosGet.mockRejectedValue(new Error("network error"));
-            const { getPredictionsForStop } = createPredictionService(mockRepo as never);
+            const { getPredictionsForStop } = createPredictionService(
+                mockRepo as never,
+                makeMockRecentsRepo() as never,
+            );
 
             // Act & Assert
             await expect(getPredictionsForStop("stop-1")).rejects.toThrow("network error");
@@ -272,7 +321,10 @@ describe("PredictionService", () => {
                 success: false,
             };
             mockAxiosGet.mockResolvedValue({ data: failResponse });
-            const { getPredictionsForStop } = createPredictionService(mockRepo as never);
+            const { getPredictionsForStop } = createPredictionService(
+                mockRepo as never,
+                makeMockRecentsRepo() as never,
+            );
 
             // Act & Assert
             await expect(getPredictionsForStop("stop-1")).rejects.toThrow(UpstreamApiError);
@@ -287,10 +339,131 @@ describe("PredictionService", () => {
                 success: false,
             };
             mockAxiosGet.mockResolvedValue({ data: failResponse });
-            const { getPredictionsForStop } = createPredictionService(mockRepo as never);
+            const { getPredictionsForStop } = createPredictionService(
+                mockRepo as never,
+                makeMockRecentsRepo() as never,
+            );
 
             // Act & Assert
             await expect(getPredictionsForStop("stop-1")).rejects.toThrow("stop-1");
+        });
+
+        it("logs a recent for the stop when a deviceId is provided", async () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
+            mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
+            const mockRecentsRepo = makeMockRecentsRepo();
+            const { getPredictionsForStop } = createPredictionService(mockRepo as never, mockRecentsRepo as never);
+
+            // Act
+            await getPredictionsForStop("stop-1", { deviceId: "device-a" });
+            await new Promise((resolve) => setImmediate(resolve));
+
+            // Assert
+            expect(mockRecentsRepo.upsertRecent).toHaveBeenCalledWith("device-a", "stop", "stop-1");
+        });
+
+        it("does not log a recent when no deviceId is provided", async () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
+            mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
+            const mockRecentsRepo = makeMockRecentsRepo();
+            const { getPredictionsForStop } = createPredictionService(mockRepo as never, mockRecentsRepo as never);
+
+            // Act
+            await getPredictionsForStop("stop-1");
+            await new Promise((resolve) => setImmediate(resolve));
+
+            // Assert
+            expect(mockRecentsRepo.upsertRecent).not.toHaveBeenCalled();
+        });
+
+        it("does not log a recent when deviceId is whitespace-only", async () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
+            mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
+            const mockRecentsRepo = makeMockRecentsRepo();
+            const { getPredictionsForStop } = createPredictionService(mockRepo as never, mockRecentsRepo as never);
+
+            // Act
+            await getPredictionsForStop("stop-1", { deviceId: "   " });
+            await new Promise((resolve) => setImmediate(resolve));
+
+            // Assert
+            expect(mockRecentsRepo.upsertRecent).not.toHaveBeenCalled();
+        });
+
+        it("resolves the response even while the recents write is still pending", async () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
+            mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
+            const mockRecentsRepo = makeMockRecentsRepo();
+            mockRecentsRepo.upsertRecent.mockReturnValue(new Promise(() => {}));
+            const { getPredictionsForStop } = createPredictionService(mockRepo as never, mockRecentsRepo as never);
+
+            // Act
+            const result = await getPredictionsForStop("stop-1", { deviceId: "device-a" });
+
+            // Assert
+            expect(result.success).toBe(true);
+        });
+
+        it("resolves the response and logs a warning when the recents write rejects", async () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
+            mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
+            const mockRecentsRepo = makeMockRecentsRepo();
+            mockRecentsRepo.upsertRecent.mockRejectedValue(new Error("db write failed"));
+            const { getPredictionsForStop } = createPredictionService(mockRepo as never, mockRecentsRepo as never);
+
+            // Act
+            const result = await getPredictionsForStop("stop-1", { deviceId: "device-a" });
+            await new Promise((resolve) => setImmediate(resolve));
+
+            // Assert
+            expect(result.success).toBe(true);
+            expect(logger.warn).toHaveBeenCalledTimes(1);
+            expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining("device-a"));
+        });
+
+        it("logs both the stop and the route as recents when a deviceId and an explicit route are provided", async () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
+            mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
+            const mockRecentsRepo = makeMockRecentsRepo();
+            const { getPredictionsForStop } = createPredictionService(mockRepo as never, mockRecentsRepo as never);
+
+            // Act
+            await getPredictionsForStop("stop-1", { deviceId: "device-a", route: "1A" });
+            await new Promise((resolve) => setImmediate(resolve));
+
+            // Assert
+            expect(mockRecentsRepo.upsertRecent).toHaveBeenCalledTimes(2);
+            expect(mockRecentsRepo.upsertRecent).toHaveBeenCalledWith("device-a", "stop", "stop-1");
+            expect(mockRecentsRepo.upsertRecent).toHaveBeenCalledWith("device-a", "route", "1A");
+        });
+
+        it("logs only the stop as a recent when a deviceId is provided without a route", async () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
+            mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
+            const mockRecentsRepo = makeMockRecentsRepo();
+            const { getPredictionsForStop } = createPredictionService(mockRepo as never, mockRecentsRepo as never);
+
+            // Act
+            await getPredictionsForStop("stop-1", { deviceId: "device-a" });
+            await new Promise((resolve) => setImmediate(resolve));
+
+            // Assert
+            expect(mockRecentsRepo.upsertRecent).toHaveBeenCalledTimes(1);
+            expect(mockRecentsRepo.upsertRecent).toHaveBeenCalledWith("device-a", "stop", "stop-1");
         });
     });
 });

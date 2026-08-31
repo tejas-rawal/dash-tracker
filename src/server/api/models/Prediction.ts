@@ -39,6 +39,7 @@ export interface StopPredictionsResponse {
 export interface PredictionOptions {
     number?: number;
     route?: string;
+    deviceId?: string;
 }
 
 export interface DashPrediction {

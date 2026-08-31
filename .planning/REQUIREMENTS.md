@@ -17,12 +17,12 @@ Requirements for milestone v0.3 (Favorited & Recent Routes). Each maps to roadma
 
 ### Recents
 
-- [ ] **RECENT-01**: System auto-logs a recent route when a client makes a prediction lookup with an explicit `route` param (an unfiltered stop-only lookup does NOT log a route recent, since it may return multiple routes and no single one was explicitly chosen)
-- [ ] **RECENT-02**: System auto-logs a recent stop whenever a client looks up predictions for that stop (the `stop` param is always a single explicit value, so every prediction lookup logs its stop)
-- [ ] **RECENT-03**: Recents are deduped via bump-to-top semantics (UPSERT) — re-viewing an already-recent route or stop moves its existing entry to the top instead of creating a duplicate
-- [ ] **RECENT-04**: Recents list is capped at 5 entries per device (across routes and stops combined), oldest entry evicted when the cap is exceeded
-- [ ] **RECENT-05**: User can list their recents as one combined list mixing routes and stops, each entry tagged with its type, hydrated with full details, ordered most-recently-viewed-first
-- [ ] **RECENT-06**: Opening an SSE prediction stream subscription (`/predictions/stream`) never logs a recent — only REST prediction lookups do (SSE has no explicit route param and shouldn't infer one)
+- [x] **RECENT-01**: System auto-logs a recent route when a client makes a prediction lookup with an explicit `route` param (an unfiltered stop-only lookup does NOT log a route recent, since it may return multiple routes and no single one was explicitly chosen)
+- [x] **RECENT-02**: System auto-logs a recent stop whenever a client looks up predictions for that stop (the `stop` param is always a single explicit value, so every prediction lookup logs its stop)
+- [x] **RECENT-03**: Recents are deduped via bump-to-top semantics (UPSERT) — re-viewing an already-recent route or stop moves its existing entry to the top instead of creating a duplicate
+- [x] **RECENT-04**: Recents list is capped at 5 entries per device (across routes and stops combined), oldest entry evicted when the cap is exceeded
+- [x] **RECENT-05**: User can list their recents as one combined list mixing routes and stops, each entry tagged with its type, hydrated with full details, ordered most-recently-viewed-first
+- [x] **RECENT-06**: Opening an SSE prediction stream subscription (`/predictions/stream`) never logs a recent — only REST prediction lookups do (SSE has no explicit route param and shouldn't infer one)
 
 ### Infrastructure
 
@@ -65,12 +65,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FAV-03 | Phase 6 | Complete |
 | FAV-04 | Phase 6 | Complete |
 | FAV-05 | Phase 6 | Complete |
-| RECENT-01 | Phase 7 | Pending |
-| RECENT-02 | Phase 7 | Pending |
-| RECENT-03 | Phase 7 | Pending |
-| RECENT-04 | Phase 7 | Pending |
-| RECENT-05 | Phase 7 | Pending |
-| RECENT-06 | Phase 7 | Pending |
+| RECENT-01 | Phase 7 | Complete |
+| RECENT-02 | Phase 7 | Complete |
+| RECENT-03 | Phase 7 | Complete |
+| RECENT-04 | Phase 7 | Complete |
+| RECENT-05 | Phase 7 | Complete |
+| RECENT-06 | Phase 7 | Complete |
 | DEVICE-01 | Phase 6 | Complete |
 | PERSIST-01 | Phase 5 | Complete |
 

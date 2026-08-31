@@ -98,6 +98,11 @@ export class FavoritesRecentsRepository {
                 "INSERT INTO recents (device_id, entity_type, entity_id, viewed_at) VALUES (@deviceId, @entityType, @entityId, @viewedAt) ON CONFLICT (device_id, entity_type, entity_id) DO UPDATE SET viewed_at = @viewedAt",
             )
             .run({ deviceId, entityType, entityId, viewedAt });
+        (this.db as DatabaseInstance)
+            .prepare(
+                "DELETE FROM recents WHERE device_id = @deviceId AND id NOT IN (SELECT id FROM recents WHERE device_id = @deviceId ORDER BY viewed_at DESC, id DESC LIMIT 5)",
+            )
+            .run({ deviceId });
     }
 
     public async listRecents(deviceId: string): Promise<RecentRecord[]> {
