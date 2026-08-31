@@ -22,3 +22,9 @@ export interface HydratedFavorite {
     favoritedAt: string;
     entity: BusRoute | BusStop;
 }
+
+export interface HydratedRecent {
+    entityType: EntityType;
+    viewedAt: string;
+    entity: BusRoute | BusStop;
+}
