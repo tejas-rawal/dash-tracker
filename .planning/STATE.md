@@ -24,7 +24,7 @@ current_phase: 07
 See: .planning/PROJECT.md (updated 2026-09-01)
 
 **Core value:** Riders can always see accurate, near-real-time arrival predictions for their stop.
-**Current focus:** v0.3 Favorited & Recent Routes — all phases complete, ready to close milestone
+**Current focus:** v0.3 shipped and tagged — planning next milestone via `/gsd-new-milestone`
 
 ## Current Position
 
