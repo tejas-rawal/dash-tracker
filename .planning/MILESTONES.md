@@ -1,5 +1,17 @@
 # Milestones
 
+## v0.3 Favorited & Recent Routes (Shipped: 2026-09-01)
+
+**Phases completed:** 3 phases, 4 plans, 9 tasks
+
+**Key accomplishments:**
+
+- FavoritesRecentsRepository — a singleton, WAL-mode SQLite repository with atomic upsert CRUD for favorites and recents, covering both routes and stops through one entity-typed table per concern, wired into app.ts's startup/shutdown lifecycle alongside BusDataRepository
+- Anonymous device-scoped Favorites HTTP API (POST/DELETE/GET /api/v1/favorites) with requireDeviceId middleware, entity hydration via BusDataRepository, and idempotent add/no-op-remove semantics
+- Fire-and-forget stop/route recents logging on every REST prediction lookup, cap-at-5 oldest-evicted-first eviction inside `FavoritesRecentsRepository.upsertRecent`, and a new `GET /api/v1/recents` endpoint mirroring the Favorites pattern
+
+---
+
 ## v0.2 Real-Time Arrival Predictions (Shipped: 2026-08-27)
 
 **Phases completed:** 2 phases, 3 plans, 7 tasks
