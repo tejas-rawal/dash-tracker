@@ -96,6 +96,53 @@ describe("ServiceAlertRepository", () => {
             expect(alerts).toEqual([]);
         });
 
+        it("includes an alert when referenceTime exactly equals activePeriod.end (inclusive boundary)", () => {
+            // Arrange
+            const referenceTime = new Date("2026-01-01T13:00:00.000Z");
+            const alert = makeAlert({
+                id: "boundary-end-alert",
+                activePeriod: { start: "2026-01-01T11:00:00.000Z", end: "2026-01-01T13:00:00.000Z" },
+            });
+            repo.applyAlerts([alert]);
+
+            // Act
+            const alerts = repo.getActiveAlerts(referenceTime);
+
+            // Assert
+            expect(alerts.map((a) => a.id)).toEqual(["boundary-end-alert"]);
+        });
+
+        it("includes an alert when referenceTime exactly equals activePeriod.start (inclusive boundary)", () => {
+            // Arrange
+            const referenceTime = new Date("2026-01-01T11:00:00.000Z");
+            const alert = makeAlert({
+                id: "boundary-start-alert",
+                activePeriod: { start: "2026-01-01T11:00:00.000Z", end: "2026-01-01T13:00:00.000Z" },
+            });
+            repo.applyAlerts([alert]);
+
+            // Act
+            const alerts = repo.getActiveAlerts(referenceTime);
+
+            // Assert
+            expect(alerts.map((a) => a.id)).toEqual(["boundary-start-alert"]);
+        });
+
+        it("returns multiple currently-active alerts in the same insertion order passed to applyAlerts()", () => {
+            // Arrange
+            const referenceTime = new Date("2026-01-01T12:00:00.000Z");
+            const alwaysActive = { start: null, end: null } as const;
+            const first = makeAlert({ id: "first-alert", activePeriod: alwaysActive });
+            const second = makeAlert({ id: "second-alert", activePeriod: alwaysActive });
+            repo.applyAlerts([first, second]);
+
+            // Act
+            const alerts = repo.getActiveAlerts(referenceTime);
+
+            // Assert
+            expect(alerts.map((a) => a.id)).toEqual(["first-alert", "second-alert"]);
+        });
+
         it("excludes an alert whose start is after referenceTime", () => {
             // Arrange
             const referenceTime = new Date("2026-01-01T12:00:00.000Z");

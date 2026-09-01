@@ -132,5 +132,78 @@ describe("ServiceAlertService", () => {
             // Act & Assert
             await expect(fetchAlerts()).rejects.toThrow("network error");
         });
+
+        it("collapses two active_period entries to {start: earliest start, end: latest end} (D-02)", async () => {
+            // Arrange
+            const entity = makeDashAlertEntity({
+                // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
+                active_period: [
+                    { start: 1_700_010_000, end: 1_700_020_000 },
+                    { start: 1_700_000_000, end: 1_700_030_000 },
+                ],
+            });
+            mockAxiosGet.mockResolvedValue({ data: makeDashAlertsApiResponse([entity]) });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act
+            const [alert] = await fetchAlerts();
+
+            // Assert
+            expect(alert.activePeriod.start).toBe(new Date(1_700_000_000 * 1000).toISOString());
+            expect(alert.activePeriod.end).toBe(new Date(1_700_030_000 * 1000).toISOString());
+        });
+
+        it("returns {start: null, end: null} when active_period is omitted entirely (D-03)", async () => {
+            // Arrange
+            // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
+            const entity = makeDashAlertEntity({ active_period: undefined });
+            mockAxiosGet.mockResolvedValue({ data: makeDashAlertsApiResponse([entity]) });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act
+            const [alert] = await fetchAlerts();
+
+            // Assert
+            expect(alert.activePeriod).toEqual({ start: null, end: null });
+        });
+
+        it("rejects with UpstreamApiError when entity is present but not an array", async () => {
+            // Arrange
+            mockAxiosGet.mockResolvedValue({ data: { entity: "bad" } });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act & Assert
+            await expect(fetchAlerts()).rejects.toThrow(UpstreamApiError);
+        });
+
+        it("maps an alert with an empty informed_entity array to empty route/stop id lists without throwing", async () => {
+            // Arrange
+            // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
+            const entity = makeDashAlertEntity({ informed_entity: [] });
+            mockAxiosGet.mockResolvedValue({ data: makeDashAlertsApiResponse([entity]) });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act
+            const [alert] = await fetchAlerts();
+
+            // Assert
+            expect(alert.informedRouteIds).toEqual([]);
+            expect(alert.informedStopIds).toEqual([]);
+        });
+
+        it("maps an alert with omitted informed_entity to empty route/stop id lists without throwing", async () => {
+            // Arrange
+            // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
+            const entity = makeDashAlertEntity({ informed_entity: undefined });
+            mockAxiosGet.mockResolvedValue({ data: makeDashAlertsApiResponse([entity]) });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act
+            const [alert] = await fetchAlerts();
+
+            // Assert
+            expect(alert.informedRouteIds).toEqual([]);
+            expect(alert.informedStopIds).toEqual([]);
+        });
     });
 });
