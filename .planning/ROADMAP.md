@@ -50,7 +50,9 @@
   3. Each fetched alert is normalized into a `ServiceAlert` model capturing affected route(s)/stop(s), a description, severity/cause when provided by the feed, and an active window (start/end).
   4. Querying the in-memory alert store at any point in time returns only alerts whose active window contains the current time — expired or not-yet-started alerts are filtered out server-side.
 
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 05-01-PLAN.md — Ingest, normalize, and filter GTFS-RT service alerts (fetch, model, boot-triggered 5-min poll, active-window query)
 
 ### Phase 6: Alerts Surfaced on Routes, Stops & Predictions
 
@@ -77,7 +79,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Full-Repo Reformat | 1/1 | Complete | 2026-08-26 |
 | 3. Stop Discovery | 2/2 | Complete | 2026-08-26 |
 | 4. Live Predictions via SSE | 1/1 | Complete | 2026-08-27 |
-| 5. Service Alerts Ingestion | 0/TBD | Not started | - |
+| 5. Service Alerts Ingestion | 0/1 | Not started | - |
 | 6. Alerts Surfaced on Routes, Stops & Predictions | 0/TBD | Not started | - |
 
 ---
