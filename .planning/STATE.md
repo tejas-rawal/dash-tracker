@@ -46,6 +46,8 @@ Last activity: 2026-09-01 — Milestone v0.4 started
 | 3 (v0.2) | 2 | - | - |
 | 4 (v0.2) | TBD | - | - |
 | 04 | 1 | - | - |
+| 5 (v0.4) | TBD | - | - |
+| 6 (v0.4) | TBD | - | - |
 
 **Recent Trend:**
 

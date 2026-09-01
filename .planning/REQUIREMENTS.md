@@ -57,21 +57,21 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ALRT-01 | TBD | Pending |
-| ALRT-02 | TBD | Pending |
-| ALRT-03 | TBD | Pending |
-| ALRT-04 | TBD | Pending |
-| ALRT-05 | TBD | Pending |
-| ALRT-06 | TBD | Pending |
-| ALRT-07 | TBD | Pending |
-| ALRT-08 | TBD | Pending |
-| ALRT-09 | TBD | Pending |
+| ALRT-01 | Phase 5 | Pending |
+| ALRT-02 | Phase 5 | Pending |
+| ALRT-03 | Phase 5 | Pending |
+| ALRT-04 | Phase 5 | Pending |
+| ALRT-05 | Phase 6 | Pending |
+| ALRT-06 | Phase 6 | Pending |
+| ALRT-07 | Phase 6 | Pending |
+| ALRT-08 | Phase 6 | Pending |
+| ALRT-09 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 9 total
-- Mapped to phases: 0
-- Unmapped: 9 ⚠️ (roadmap not yet created)
+- Mapped to phases: 9
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-09-01*
-*Last updated: 2026-09-01 after initial definition*
+*Last updated: 2026-09-01 after roadmap creation (Phase 5: Service Alerts Ingestion, Phase 6: Alerts Surfaced on Routes, Stops & Predictions)*
