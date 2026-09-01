@@ -162,3 +162,7 @@ Phase complete, ready for next step. `ServiceAlertRepository.getActiveAlerts()` 
 ---
 *Phase: 05-service-alerts-ingestion*
 *Completed: 2026-09-01*
+
+## Self-Check: PASSED
+
+All 7 created files verified present on disk; all 5 task commits (`e08be36`, `26b9c89`, `e357e5f`, `9490a90`, `19a55cd`) verified present in git history.
