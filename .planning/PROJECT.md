@@ -8,7 +8,12 @@ dash-tracker is a Node.js/Express REST API that proxies and structures data from
 
 Riders can always see accurate, near-real-time arrival predictions for their stop.
 
-## Current Milestone: v0.3 Favorited & Recent Routes
+## Current State
+
+**Shipped:** v0.3 Favorited & Recent Routes (2026-09-01) — anonymous device-scoped favorites and auto-tracked recents for both routes and stops, backed by a new isolated SQLite repository. All 13 v0.3 requirements delivered; three milestones shipped to date (v0.1 tooling cleanup, v0.2 stop discovery + live SSE predictions, v0.3 favorites/recents).
+
+<details>
+<summary>Archived: v0.3 Favorited & Recent Routes milestone goal (shipped 2026-09-01)</summary>
 
 **Goal:** Riders can save routes AND stops they care about, and jump back into ones they recently viewed, scoped per device, through this backend — so a home screen can take them straight to either.
 
@@ -16,6 +21,12 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 - Anonymous device-ID-scoped favorites, covering both routes and stops (add/remove, no cap, most-recently-favorited-first)
 - Auto-tracked recents, covering both routes and stops (last 5 per device, logged on explicit-route/stop REST prediction lookups only — not unfiltered stop lookups, not SSE subscriptions)
 - SQLite-backed persistence via a new repository layer, following the existing routes → controllers → services → repository architecture
+
+</details>
+
+## Next Milestone Goals
+
+Not yet defined — run `/gsd-new-milestone` to scope the next milestone. The Expo/React Native frontend (monorepo, deferred since v0.1) remains the most likely next candidate, along with any v2 requirements deferred from v0.3 (see PERS-01..05 in the archived `.planning/milestones/v0.3-REQUIREMENTS.md`).
 
 ## Requirements
 
@@ -41,7 +52,7 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 
 ### Active
 
-_None — all v0.3 requirements shipped._
+_None yet — defined at the start of the next milestone via `/gsd-new-milestone`._
 
 ### Out of Scope
 
@@ -111,4 +122,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-01 after Phase 7*
+*Last updated: 2026-09-01 after v0.3 milestone*
