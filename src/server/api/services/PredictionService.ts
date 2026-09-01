@@ -28,6 +28,14 @@ export function createPredictionService(
         await Promise.all(writes);
     }
 
+    function resolveRouteIdForRecent(routeShortName?: string): string | undefined {
+        const trimmed = routeShortName?.trim();
+        if (!trimmed) {
+            return undefined;
+        }
+        return repository.getRouteByShortName(trimmed)?.id;
+    }
+
     function getValidatedStop(stopId: string): BusStop {
         const stop = repository.getStopById(stopId);
         if (!stop) {
@@ -111,7 +119,7 @@ export function createPredictionService(
 
         const deviceId = options.deviceId;
         if (deviceId !== undefined && deviceId.trim().length > 0) {
-            recordRecentView(deviceId, stopId, options.route).catch((error) => {
+            recordRecentView(deviceId, stopId, resolveRouteIdForRecent(options.route)).catch((error) => {
                 const message = error instanceof Error ? error.message : "Unknown error";
                 logger.warn(`Failed to record recents for device ${deviceId}: ${message}`);
             });
