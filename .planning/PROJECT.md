@@ -2,7 +2,7 @@
 
 ## What This Is
 
-dash-tracker is a Node.js/Express REST API that proxies and structures data from the DASH public transit API (goswift.ly), exposing bus routes, stop discovery, and arrival predictions — via both REST and a live Server-Sent Events feed — through a layered architecture (routes → controllers → services → repositories). v0.1 shipped a dev-tooling cleanup (Biome-only lint/format); v0.2 shipped the first real feature set: riders (via a future client) can discover stops and get near-real-time arrival predictions that update automatically over a live connection.
+dash-tracker is a Node.js/Express REST API that proxies and structures data from the DASH public transit API (goswift.ly), exposing bus routes, stop discovery, arrival predictions (via both REST and a live Server-Sent Events feed), and anonymous device-scoped favorites/recents — through a layered architecture (routes → controllers → services → repositories). v0.1 shipped a dev-tooling cleanup (Biome-only lint/format); v0.2 shipped the first real feature set (stop discovery, live SSE predictions); v0.3 added SQLite-backed favorites (routes and stops, no cap) and auto-tracked recents (last 5 per device), both scoped by an anonymous `X-Device-Id` header with no auth system.
 
 ## Core Value
 
@@ -37,10 +37,11 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 - ✓ `generatedAt` freshness timestamp added to REST and SSE prediction payloads — v0.2 Phase 4
 - ✓ SQLite-backed persistence layer for favorites/recents, isolated behind a repository (no changes to existing DASH proxy repository) — v0.3 Phase 5
 - ✓ Anonymous device-ID-scoped favorites: add/remove a route OR stop as favorite, list favorites with full details, most-recently-favorited-first, no cap — v0.3 Phase 6
+- ✓ Auto-tracked recents (routes and stops): last 5 per device, logged automatically on explicit-route/stop REST prediction lookups (not unfiltered stop lookups, not SSE subscriptions), list with full details — v0.3 Phase 7
 
 ### Active
 
-- [ ] Auto-tracked recents (routes and stops): last 5 per device, logged automatically on explicit-route/stop REST prediction lookups (not unfiltered stop lookups, not SSE subscriptions), list with full details
+_None — all v0.3 requirements shipped._
 
 ### Out of Scope
 
@@ -62,6 +63,8 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 - Note: an unrelated, pre-existing uncommitted fix to `BusDataRepository.ts` (dedupe `initialize()`/`refreshData()` load paths, commit `b52c130`) was swept into the v0.2 execution history by the automated code-review-fix pipeline picking up dirty working-tree state — not part of Phase 3/4 scope, flagged to the user during execution, left in place as a correct fix
 - Shipped v0.3 Phase 6 (2026-08-31): anonymous device-scoped Favorites HTTP API (`POST`/`DELETE`/`GET /api/v1/favorites`) on top of Phase 5's `FavoritesRecentsRepository`, plus a new `requireDeviceId` middleware (reusable by Phase 7 Recents) and `FavoritesService`/`FavoritesController` pattern for Phase 7 to mirror — 284/284 tests pass, existing v0.2 endpoints verified untouched
 - Known tech debt (v0.3 Phase 6): `FavoritesController.unfavorite` doesn't trim/validate `entityId` the way `favorite` does, and `favorite`'s `entityId` is trim-validated but the untrimmed value is what's persisted/looked up — both whitespace-padded-id edge cases, non-blocking, flagged as WR-01/WR-03 in `.planning/phases/06-favorites-routes-stops/06-REVIEW.md`
+- Shipped v0.3 Phase 7 (2026-09-01): automatic recents tracking — every prediction lookup fire-and-forget-logs its stop (and, when an explicit route filter is given, its route) as a recent via `FavoritesRecentsRepository`, capped at 5 combined entries per device (oldest-evicted-first), listable via `GET /api/v1/recents` (`RecentsService`/`RecentsController`, mirroring the Phase 6 Favorites pattern); SSE stream path untouched; 313/313 tests pass. Code review caught a pre-ship BLOCKER (CR-01): route recents were written keyed by the client-supplied route *short name* (e.g. `"1A"`) but read back via `getRouteById`, which is keyed by internal route id — every route recent silently vanished from the response. Fixed same-session by resolving short name → internal id (`getRouteByShortName(...)?.id`) before persisting, matching the convention `FavoritesService`/`RecentsService.resolveEntity` already assumes for routes.
+- Known tech debt (v0.3 Phase 7): `RecentsController.resolveDeviceId` unsafely casts the device-id header to `string` with no in-controller guard (relies entirely on `requireDeviceId` middleware ordering); its `NotFoundError`→404 branch is currently unreachable since `RecentsService.listRecents` never throws; device-id header parsing logic is duplicated across `RecentsController`/`PredictionController`/`requireDeviceId` middleware/`FavoritesController`; the recents cap (`5`) is a magic number embedded in a SQL string rather than a named constant; `resolveEntity` is duplicated verbatim between `RecentsService` and `FavoritesService` — all non-blocking, flagged as WR-02/WR-03/IN-01/IN-02/IN-03 in `.planning/phases/07-recents-routes-stops/07-REVIEW.md`
 
 ## Constraints
 
@@ -87,7 +90,8 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 | Favorites/recents identity is an anonymous device ID sent via `X-Device-Id` header, no auth system | Backend serves multiple clients, so favorites can't live in per-device local storage alone; full accounts are unnecessary complexity for v1 and the device ID becomes a natural foreign key if real accounts are added later | ✓ Shipped Phase 6 |
 | Favorites/recents persisted in SQLite behind a new repository, isolated from the existing DASH-proxy `BusDataRepository` | Zero ops (file-based, no external service), fits the existing repository-pattern architecture, easy to swap for Postgres later without touching services/controllers | ✓ Shipped Phase 5/6 |
 | Unfavorite is a plain SQL DELETE with no rows-affected check, and repository upsert uses `INSERT ... ON CONFLICT DO UPDATE` | Makes both favorite-an-already-favorited and unfavorite-a-non-favorite true no-op successes without a read-then-write race | ✓ Shipped Phase 6 |
-| Recents are auto-logged on any prediction/stop lookup rather than requiring a dedicated "log view" call | Reflects actual usage automatically; avoids relying on clients to remember to call a separate endpoint | — Pending (v0.3, Phase 7) |
+| Recents are auto-logged on any prediction/stop lookup rather than requiring a dedicated "log view" call | Reflects actual usage automatically; avoids relying on clients to remember to call a separate endpoint | ✓ Shipped Phase 7 |
+| Route recents are persisted keyed by the route's internal `id`, resolved from the client-supplied short name at write time, not the short name itself | Matches the id-keyed lookup `resolveEntity`/`getRouteById` already uses for route favorites and recents hydration — keeping one canonical identifier avoids a write/read mismatch (caught as CR-01 in code review) | ✓ Shipped Phase 7 |
 
 ## Evolution
 
@@ -107,4 +111,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-31 after Phase 6*
+*Last updated: 2026-09-01 after Phase 7*
