@@ -35,7 +35,7 @@
 
 - [x] **Phase 5: SQLite Persistence Foundation** - A tested, isolated SQLite-backed repository exists for favorites and recents, covering both routes and stops via a single entity-typed schema (completed 2026-08-31)
 - [x] **Phase 6: Favorites (Routes & Stops)** - Riders can favorite/unfavorite any route or stop and list their combined, type-tagged favorites (completed 2026-08-31)
-- [ ] **Phase 7: Recents (Routes & Stops)** - Riders' route/stop views are auto-tracked as recents and listable as a combined, type-tagged, capped list
+- [x] **Phase 7: Recents (Routes & Stops)** - Riders' route/stop views are auto-tracked as recents and listable as a combined, type-tagged, capped list (completed 2026-09-01)
 
 ## Phase Details
 
@@ -115,7 +115,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 4. Live Predictions via SSE | 1/1 | Complete | 2026-08-27 |
 | 5. SQLite Persistence Foundation | 2/2 | Complete    | 2026-08-31 |
 | 6. Favorites (Routes & Stops) | 1/1 | Complete    | 2026-08-31 |
-| 7. Recents (Routes & Stops) | 1/1 | In Progress|  |
+| 7. Recents (Routes & Stops) | 1/1 | Complete    | 2026-09-01 |
 
 ---
 
