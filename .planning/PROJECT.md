@@ -8,9 +8,14 @@ dash-tracker is a Node.js/Express REST API that proxies and structures data from
 
 Riders can always see accurate, near-real-time arrival predictions for their stop.
 
-## Current Milestone: Planning Next (post-v0.2)
+## Current Milestone: v0.4 Service Alerts
 
-v0.2 Real-Time Arrival Predictions shipped 2026-08-27. No milestone is currently in progress — run `/gsd-new-milestone` to scope the next one (the Expo/React Native client is the natural next candidate per Context below).
+**Goal:** Surface DASH/Swiftly's GTFS-RT service alerts (detours, disruptions, stop closures) so riders can see when a route or stop is affected, instead of only seeing an ETA for a bus that isn't actually coming.
+
+**Target features:**
+- New `ServiceAlert` model + repository fetch against the DASH service-alerts endpoint, mirroring the existing `BusRoute`/`PredictionService` pattern (repo fetch, model, service/controller layer, factory-function DI)
+- Background poll loop for alerts on a dedicated 5-minute interval, separate from the 30s prediction poll
+- Alerts embedded into existing route, stop, and REST prediction responses (no new dedicated alerts endpoint, no SSE stream changes)
 
 ## Requirements
 
@@ -33,7 +38,11 @@ v0.2 Real-Time Arrival Predictions shipped 2026-08-27. No milestone is currently
 
 ### Active
 
-(None yet — scope the next milestone via `/gsd-new-milestone`. The Expo/React Native client, listed under Out of Scope below, is the natural next candidate.)
+- [ ] Fetch and cache GTFS-RT service alerts from the DASH/Swiftly API on a dedicated background poll (~5 min)
+- [ ] New `ServiceAlert` model representing a single alert (affected routes/stops, description, active window)
+- [ ] Embed active alerts on `GET /api/v1/routes/all` and `/routes/:shortName` responses
+- [ ] Embed active alerts on `GET /api/v1/routes/:shortName/stops` and `/stops/nearby` responses
+- [ ] Embed active alerts on `GET /api/v1/predictions` (REST) responses
 
 ### Out of Scope
 
@@ -41,6 +50,9 @@ v0.2 Real-Time Arrival Predictions shipped 2026-08-27. No milestone is currently
 - Offline caching and countdown animation UI — client-side concerns that land with the future Expo milestone
 - Replacing `tsc` as the build tool (e.g. with Vite/esbuild) — Vite is a frontend bundler/dev server and doesn't fit compiling this Node/Express backend; not part of this cleanup
 - Replacing Vitest — it's a test runner only, unrelated to lint/format consolidation
+- Schedule adherence (SEED-002, on-time performance vs. schedule) — companion idea to service alerts but deliberately deferred to its own future milestone
+- A standalone alerts-browsing endpoint (e.g. `GET /api/v1/alerts`) — alerts are embedded into existing route/stop/prediction responses only for v0.4
+- Pushing alert updates over the SSE prediction stream — SSE carries prediction updates only; alerts stay REST-only for now
 
 ## Context
 
@@ -53,6 +65,7 @@ v0.2 Real-Time Arrival Predictions shipped 2026-08-27. No milestone is currently
 - Known tech debt: `lint:fix`'s `--apply-unsafe` flag is deprecated by Biome 1.9.4 in favor of `--write --unsafe` (non-blocking, flagged in Phase 1 code review); 15 pre-existing Biome warnings remain by design (Axios `baseURL` naming, `*.test.ts` filename convention, intentional non-Error throws in tests) — see 02-CONTEXT.md D-02
 - Known tech debt (v0.2): `PredictionStreamController`'s initial SSE write is guarded only against synchronous throws — a mid-write client-socket error surfaces asynchronously via an `'error'` event, which no handler currently catches anywhere in `src/server` (no `res.on("error", ...)` or process-level `unhandledRejection` handler). Flagged as residual Warning WR-05 in `.planning/phases/04-live-predictions-via-sse/04-REVIEW.md` after a 3-iteration code-review fix cycle that closed 3 Critical race/leak bugs and 4 other Warnings; does not violate any LIVE-01..05 requirement as scoped
 - Note: an unrelated, pre-existing uncommitted fix to `BusDataRepository.ts` (dedupe `initialize()`/`refreshData()` load paths, commit `b52c130`) was swept into the v0.2 execution history by the automated code-review-fix pipeline picking up dirty working-tree state — not part of Phase 3/4 scope, flagged to the user during execution, left in place as a correct fix
+- v0.4 originates from a planted seed (SEED-001) captured in a prior session, itself from research over the Swiftly API docs cross-checked against the DASH real-time API already integrated here; this worktree treats v0.4 as the next milestone after v0.2 independent of the unmerged v0.3 (Favorited & Recent Routes) branch
 
 ## Constraints
 
@@ -94,4 +107,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-27 after v0.2 milestone*
+*Last updated: 2026-09-01 after starting v0.4 milestone*
