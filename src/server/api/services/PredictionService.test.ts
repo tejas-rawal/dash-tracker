@@ -19,6 +19,7 @@ const mockAxiosGet = vi.mocked(axios.get);
 
 const makeMockRepo = () => ({
     getStopById: vi.fn(),
+    getRouteByShortName: vi.fn(),
 });
 
 const makeMockRecentsRepo = () => ({
@@ -431,10 +432,11 @@ describe("PredictionService", () => {
             expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining("device-a"));
         });
 
-        it("logs both the stop and the route as recents when a deviceId and an explicit route are provided", async () => {
+        it("logs both the stop and the route (by internal route id) as recents when a deviceId and an explicit route short name are provided", async () => {
             // Arrange
             const mockRepo = makeMockRepo();
             mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
+            mockRepo.getRouteByShortName.mockReturnValue({ id: "route-1", shortName: "1A" });
             mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
             const mockRecentsRepo = makeMockRecentsRepo();
             const { getPredictionsForStop } = createPredictionService(mockRepo as never, mockRecentsRepo as never);
@@ -444,9 +446,46 @@ describe("PredictionService", () => {
             await new Promise((resolve) => setImmediate(resolve));
 
             // Assert
+            expect(mockRepo.getRouteByShortName).toHaveBeenCalledWith("1A");
             expect(mockRecentsRepo.upsertRecent).toHaveBeenCalledTimes(2);
             expect(mockRecentsRepo.upsertRecent).toHaveBeenCalledWith("device-a", "stop", "stop-1");
-            expect(mockRecentsRepo.upsertRecent).toHaveBeenCalledWith("device-a", "route", "1A");
+            expect(mockRecentsRepo.upsertRecent).toHaveBeenCalledWith("device-a", "route", "route-1");
+        });
+
+        it("logs only the stop as a recent when the route short name does not resolve to a known route", async () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
+            mockRepo.getRouteByShortName.mockReturnValue(undefined);
+            mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
+            const mockRecentsRepo = makeMockRecentsRepo();
+            const { getPredictionsForStop } = createPredictionService(mockRepo as never, mockRecentsRepo as never);
+
+            // Act
+            await getPredictionsForStop("stop-1", { deviceId: "device-a", route: "unknown-route" });
+            await new Promise((resolve) => setImmediate(resolve));
+
+            // Assert
+            expect(mockRecentsRepo.upsertRecent).toHaveBeenCalledTimes(1);
+            expect(mockRecentsRepo.upsertRecent).toHaveBeenCalledWith("device-a", "stop", "stop-1");
+        });
+
+        it("logs only the stop as a recent when the route query param is an empty or whitespace-only string", async () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            mockRepo.getStopById.mockReturnValue(makeStop("stop-1"));
+            mockAxiosGet.mockResolvedValue({ data: makeDashApiResponse([makeDashPredictionData()]) });
+            const mockRecentsRepo = makeMockRecentsRepo();
+            const { getPredictionsForStop } = createPredictionService(mockRepo as never, mockRecentsRepo as never);
+
+            // Act
+            await getPredictionsForStop("stop-1", { deviceId: "device-a", route: "   " });
+            await new Promise((resolve) => setImmediate(resolve));
+
+            // Assert
+            expect(mockRepo.getRouteByShortName).not.toHaveBeenCalled();
+            expect(mockRecentsRepo.upsertRecent).toHaveBeenCalledTimes(1);
+            expect(mockRecentsRepo.upsertRecent).toHaveBeenCalledWith("device-a", "stop", "stop-1");
         });
 
         it("logs only the stop as a recent when a deviceId is provided without a route", async () => {
