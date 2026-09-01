@@ -19,11 +19,15 @@ const mockAxiosGet = vi.mocked(axios.get);
 const makeDashAlertEntity = (overrides: Partial<DashAlertEntity["alert"]> = {}, id = "alert-1"): DashAlertEntity => ({
     id,
     alert: {
+        // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
         active_period: [{ start: 1_700_000_000, end: 1_700_003_600 }],
+        // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
         informed_entity: [{ route_id: "route-1", stop_id: "stop-1" }],
         cause: "MAINTENANCE",
         effect: "DETOUR",
+        // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
         header_text: { translation: [{ text: "Detour on Route 1", language: "en" }] },
+        // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
         description_text: { translation: [{ text: "Bus detoured due to road work", language: "en" }] },
         ...overrides,
     },
@@ -93,6 +97,7 @@ describe("ServiceAlertService", () => {
 
         it("converts unix-seconds active_period start/end to ISO 8601 strings", async () => {
             // Arrange
+            // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
             const entity = makeDashAlertEntity({ active_period: [{ start: 1_700_000_000, end: 1_700_003_600 }] });
             mockAxiosGet.mockResolvedValue({ data: makeDashAlertsApiResponse([entity]) });
             const { fetchAlerts } = createServiceAlertService();
@@ -107,6 +112,7 @@ describe("ServiceAlertService", () => {
 
         it("returns activePeriod {start: null, end: null} for an alert with zero active_period entries", async () => {
             // Arrange
+            // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
             const entity = makeDashAlertEntity({ active_period: [] });
             mockAxiosGet.mockResolvedValue({ data: makeDashAlertsApiResponse([entity]) });
             const { fetchAlerts } = createServiceAlertService();
