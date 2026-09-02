@@ -82,7 +82,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Full-Repo Reformat | 1/1 | Complete | 2026-08-26 |
 | 3. Stop Discovery | 2/2 | Complete | 2026-08-26 |
 | 4. Live Predictions via SSE | 1/1 | Complete | 2026-08-27 |
-| 5. Service Alerts Ingestion | 2/2 | In Progress|  |
+| 5. Service Alerts Ingestion | 2/3 | In Progress|  |
 | 6. Alerts Surfaced on Routes, Stops & Predictions | 0/TBD | Not started | - |
 
 ---
