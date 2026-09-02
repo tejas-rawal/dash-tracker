@@ -74,5 +74,14 @@ blocked: 0
         }
       ]
     }
-  root_cause: ""     # Filled by diagnosis
-  debug_session: ""  # Filled by diagnosis
+  root_cause: "Two independent bugs. (1) Top-level field name mismatch: code reads response.entity (singular) but the live DASH/Swiftly payload uses entities (plural) — undetected today because that path silently returns [] with a warn log rather than throwing. (2) fetchFromDashApi() rejects any response.data that isn't already a parsed object, with no fallback for a JSON-encoded string body — which is what axios's default transform produces when the upstream Content-Type isn't recognized as JSON. (2) is the proximate cause of the observed 'body is not an object' error."
+  artifacts:
+    - path: "src/server/api/services/ServiceAlertService.ts"
+      issue: "fetchFromDashApi() has no string-body JSON.parse fallback before the object-shape check; fetchAlerts() reads response.entity instead of response.entities"
+    - path: "src/server/api/models/ServiceAlert.ts"
+      issue: "DashAlertsApiResponse.entity should be entities to match the live API"
+  missing:
+    - "JSON.parse fallback in fetchFromDashApi() when response.data is a string, before the object-shape check"
+    - "Rename entity -> entities in DashAlertsApiResponse and all ServiceAlertService.ts call sites"
+    - "Tests: string-body JSON parsing, entities-keyed response mapping, existing malformed-body/entity guards still pass post-rename"
+  debug_session: ".planning/debug/service-alerts-malformed-body.md"
