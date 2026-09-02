@@ -15,9 +15,9 @@
 | `header_text` / `description_text` (first available translation) | INTEGRATE | Required — ALRT-03 "description". |
 | `url` (link to more info) | INTEGRATE | Low-cost optional passthrough field alongside cause/effect/description; no reason to drop a free, already-typed field. |
 | entity `id` (alert identifier) | INTEGRATE | Required to key the in-memory store / dedupe on refresh. |
-| server-side route/stop filtering (query params) | OPT-OUT | GTFS-RT alert feeds are full-feed snapshots with no server-side filtering support in the spec; this phase fetches the whole feed and filters server-side in-memory instead (ALRT-04's active-window filter). |
+| server-side route/stop filtering (query params) | OPT-OUT | GTFS-RT is a full-feed snapshot with no server-side filtering in the spec; this phase fetches the whole feed and filters in-memory instead (ALRT-04). |
 | pagination / cursor | OPT-OUT | GTFS-RT is a single-response snapshot per poll; no pagination concept exists in the spec. |
-| `informed_entity[].trip_id` / `agency_id` / `route_type` / `direction_id` | OPT-OUT | ALRT-03 scopes affected-entity capture to route(s)/stop(s) only; no Phase 6 requirement (ALRT-05..09, which embed alerts into route/stop/prediction responses) consumes trip/agency/route-type/direction-scoped alerts. Can be added later without an architecture change if a future phase needs them. |
+| `informed_entity[].trip_id` / `agency_id` / `route_type` / `direction_id` | OPT-OUT | ALRT-03 scopes affected-entity capture to route(s)/stop(s) only; no Phase 6 requirement (ALRT-05..09) consumes these. Addable later without an architecture change. |
 | multiple-language `translation[]` entries (i18n) | OPT-OUT | dash-tracker has no i18n/Accept-Language handling anywhere else in the codebase; first available translation is used, matching existing project scope. |
 | `alert.image` (media/image URL) | OPT-OUT | Not referenced by ALRT-01..04; no client rendering surface exists yet to consume it (Phase 6 embeds JSON fields, not media). |
 | `severity_level` (GTFS-RT enum: UNKNOWN/INFO/WARNING/SEVERE) | OPT-OUT | Explicitly deferred per CONTEXT.md D-05 — no derived/typed severity in this phase, raw `cause`/`effect` passthrough only. |
