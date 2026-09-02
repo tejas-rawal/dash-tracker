@@ -226,6 +226,24 @@ describe("ServiceAlertService", () => {
             await expect(fetchAlerts()).rejects.toThrow(UpstreamApiError);
         });
 
+        it("rejects with UpstreamApiError when the response body is an array-rooted value (WR-01)", async () => {
+            // Arrange
+            mockAxiosGet.mockResolvedValue({ data: [] });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act & Assert
+            await expect(fetchAlerts()).rejects.toThrow(UpstreamApiError);
+        });
+
+        it("rejects with UpstreamApiError when the response body is a JSON-encoded string that parses to an array-rooted value (WR-01)", async () => {
+            // Arrange
+            mockAxiosGet.mockResolvedValue({ data: "[]" });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act & Assert
+            await expect(fetchAlerts()).rejects.toThrow(UpstreamApiError);
+        });
+
         it("rejects with UpstreamApiError when an entity item is null (WR-02)", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue({ data: { entities: [null] } });
