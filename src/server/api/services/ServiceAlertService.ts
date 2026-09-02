@@ -34,7 +34,7 @@ export function createServiceAlertService(): ServiceAlertService {
             }
         }
 
-        if (body === null || typeof body !== "object") {
+        if (body === null || typeof body !== "object" || Array.isArray(body)) {
             throw new UpstreamApiError("DASH API returned a malformed service alerts response (body is not an object)");
         }
         return body as DashAlertsApiResponse;
