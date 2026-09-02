@@ -3,7 +3,7 @@ status: complete
 phase: 05-service-alerts-ingestion
 source: [05-VERIFICATION.md, 05-02-SUMMARY.md]
 started: 2026-09-01T23:52:00Z
-updated: 2026-09-02T01:20:00Z
+updated: 2026-09-02T11:05:00Z
 ---
 
 ## Current Test
@@ -18,11 +18,18 @@ result: issue
 reported: "error: Failed to poll service alerts: DASH API returned a malformed service alerts response (body is not an object)"
 severity: major
 
+### 2. Real-payload field-shape check for headerText/descriptionText/url
+expected: |
+  Boot the real server (`bun run dev-server` or `bun run start-server`) against the live DASH/Swiftly API while at least one active alert exists. Inspect ServiceAlertRepository's in-memory store (temporary log line or debugger) for a real alert's headerText/descriptionText/url values. These fields should contain the actual alert text from the feed, not undefined.
+result: issue
+reported: "error: Failed to poll service alerts: DASH API returned a malformed service alerts response (body is not an object) — string body failed JSON.parse"
+severity: major
+
 ## Summary
 
-total: 1
+total: 2
 passed: 0
-issues: 1
+issues: 2
 pending: 0
 skipped: 0
 blocked: 0
@@ -50,7 +57,9 @@ blocked: 0
 
 - gap_id: G-05-2
   truth: "The server logs \"Server is running on port ...\" and begins accepting requests immediately — startup is not measurably delayed by the service-alerts poll succeeding, failing, or hanging."
-  status: failed
+  status: resolved
+  resolved_by: 05-03-PLAN.md
+  resolved_at: 2026-09-02
   reason: "User reported: error: Failed to poll service alerts: DASH API returned a malformed service alerts response (body is not an object)"
   severity: major
   test: 1
@@ -85,3 +94,18 @@ blocked: 0
     - "Rename entity -> entities in DashAlertsApiResponse and all ServiceAlertService.ts call sites"
     - "Tests: string-body JSON parsing, entities-keyed response mapping, existing malformed-body/entity guards still pass post-rename"
   debug_session: ".planning/debug/service-alerts-malformed-body.md"
+
+- gap_id: G-05-4
+  truth: "Boot the real server against the live DASH/Swiftly API while at least one active alert exists, and headerText/descriptionText/url are populated from the feed, not undefined."
+  status: failed
+  reason: "User reported (regression of G-05-2's symptom, new root cause): error: Failed to poll service alerts: DASH API returned a malformed service alerts response (body is not an object) — string body failed JSON.parse"
+  severity: major
+  test: 2
+  root_cause: "The DASH/Swiftly gtfs-rt-alerts/v2 endpoint's default response format is the Google Protocol Buffer BINARY encoding, not JSON — confirmed by the user from Swiftly's own API docs (JSON is available only via an explicit format query parameter, format=json). fetchFromDashApi() requests the endpoint with no format parameter, so axios receives raw protobuf bytes. When axios coerces that binary body into a JS string, the result is not valid JSON text, so JSON.parse() at ServiceAlertService.ts:31 throws — this is the true root cause of both the original G-05-2 report and today's recurrence; the 05-03 gap-closure fix (JSON.parse string-body fallback + entity->entities rename) handled the JSON-shape assumptions correctly but never addressed why the body wasn't JSON in the first place."
+  artifacts:
+    - path: "src/server/api/services/ServiceAlertService.ts"
+      issue: "buildDashApiUrl() (line 18-21) builds the URL with no query parameter, so the DASH API defaults to returning protobuf-binary instead of JSON"
+  missing:
+    - "Append ?format=json to the URL built by buildDashApiUrl() so the DASH API returns JSON text/object instead of protobuf binary"
+    - "Re-verify against the live API that fetchAlerts() succeeds end-to-end and headerText/descriptionText/url populate correctly (this closes Test 2 as well, since the field-shape check cannot run until the poll succeeds)"
+  debug_session: "diagnosed inline during /gsd-verify-work 05 session (2026-09-02) — user identified the root cause directly from Swiftly API docs, no separate debug agent spawned"
