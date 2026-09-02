@@ -9,7 +9,7 @@ Requirements for milestone v0.4 (Service Alerts).
 
 ### Alerts Ingestion
 
-- [ ] **ALRT-01**: The server fetches GTFS-RT service alerts (detours, disruptions, stop closures) from the DASH/Swiftly service-alerts endpoint
+- [x] **ALRT-01**: The server fetches GTFS-RT service alerts (detours, disruptions, stop closures) from the DASH/Swiftly service-alerts endpoint
 - [ ] **ALRT-02**: Alerts are refreshed on a dedicated background poll every 5 minutes, independent of the 30s prediction poll
 - [ ] **ALRT-03**: A `ServiceAlert` model represents a single alert — affected route(s)/stop(s), description, severity/cause if provided by the feed, and active window (start/end)
 - [ ] **ALRT-04**: Only currently-active alerts (within their active window) are surfaced to clients; expired/future alerts are filtered out server-side
@@ -57,7 +57,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ALRT-01 | Phase 5 | Gaps Found |
+| ALRT-01 | Phase 5 | Complete |
 | ALRT-02 | Phase 5 | Gaps Found |
 | ALRT-03 | Phase 5 | Gaps Found |
 | ALRT-04 | Phase 5 | Gaps Found |
