@@ -12,6 +12,8 @@ export interface ServiceAlertService {
     fetchAlerts(): Promise<ServiceAlert[]>;
 }
 
+const MALFORMED_BODY_MESSAGE = "DASH API returned a malformed service alerts response (body is not an object)";
+
 export function createServiceAlertService(): ServiceAlertService {
     function buildDashApiUrl(): string {
         const { agency } = environment.dashApi;
@@ -28,14 +30,12 @@ export function createServiceAlertService(): ServiceAlertService {
             try {
                 body = JSON.parse(body);
             } catch {
-                throw new UpstreamApiError(
-                    "DASH API returned a malformed service alerts response (body is not an object)",
-                );
+                throw new UpstreamApiError(`${MALFORMED_BODY_MESSAGE} — string body failed JSON.parse`);
             }
         }
 
         if (body === null || typeof body !== "object" || Array.isArray(body)) {
-            throw new UpstreamApiError("DASH API returned a malformed service alerts response (body is not an object)");
+            throw new UpstreamApiError(MALFORMED_BODY_MESSAGE);
         }
         return body as DashAlertsApiResponse;
     }

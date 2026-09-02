@@ -51,7 +51,7 @@ describe("ServiceAlertService", () => {
             );
         });
 
-        it("resolves to an empty array when the response has entity: []", async () => {
+        it("resolves to an empty array when the response has entities: []", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue({ data: makeDashAlertsApiResponse([]) });
             const { fetchAlerts } = createServiceAlertService();
@@ -63,7 +63,7 @@ describe("ServiceAlertService", () => {
             expect(result).toEqual([]);
         });
 
-        it("logs a warning and resolves to an empty array when entity is undefined", async () => {
+        it("logs a warning and resolves to an empty array when entities is undefined", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue({ data: {} });
             const { fetchAlerts } = createServiceAlertService();
