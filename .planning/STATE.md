@@ -5,16 +5,16 @@ milestone_name: Service Alerts
 current_phase: 05
 current_phase_name: Service Alerts Ingestion
 status: executing
-stopped_at: Phase 5 gap closure executed, pending re-verification
-last_updated: "2026-09-02T01:00:00.000Z"
-last_activity: 2026-09-01
-last_activity_desc: Phase 05 gap closure (05-02) executed and merged
-state_head: 6820da3eda934bb9cb503cac9ec1c4294a6723b7
+stopped_at: Phase 5 gap closure (05-03/G-05-2) executed and merged; re-verification found new gaps
+last_updated: "2026-09-02T14:06:18.774Z"
+last_activity: 2026-09-02
+last_activity_desc: Phase 05 gap closure (05-03) executed and merged; verification found gaps (array-root body guard, alert field shape mismatch)
+state_head: 7ece6f9
 progress:
   total_phases: 2
   completed_phases: 0
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 3
+  completed_plans: 3
   percent: 0
 ---
 
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-08-27)
 
 ## Current Position
 
-Phase: 05 (Service Alerts Ingestion) — GAP CLOSURE COMPLETE, PENDING RE-VERIFICATION
-Plan: 2 of 2
-Status: Gap closure 05-02 executed and merged; prior 05-VERIFICATION.md is stale
-Last activity: 2026-09-01 — Phase 05 gap closure (05-02) executed and merged
+Phase: 05 (Service Alerts Ingestion) — GAP CLOSURE EXECUTED, GAPS FOUND ON RE-VERIFICATION
+Plan: 3 of 3
+Status: Gap closure 05-03 (G-05-2) executed and merged; 05-VERIFICATION.md now shows gaps_found (array-root body guard unfixed; alert field-shape mismatch surfaced by 05-UAT.md's live-response sample)
+Last activity: 2026-09-02 — Phase 05 gap closure (05-03) executed, code-reviewed, and re-verified
 
 ## Performance Metrics
 
