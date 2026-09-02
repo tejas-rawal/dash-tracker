@@ -229,6 +229,15 @@ describe("ServiceAlertService", () => {
             await expect(fetchAlerts()).rejects.toThrow(UpstreamApiError);
         });
 
+        it("rejects with UpstreamApiError when an entity item's alert property is explicitly null (WR-02)", async () => {
+            // Arrange
+            mockAxiosGet.mockResolvedValue({ data: { entity: [{ id: "x", alert: null }] } });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act & Assert
+            await expect(fetchAlerts()).rejects.toThrow(UpstreamApiError);
+        });
+
         it("maps an alert with an empty informed_entity array to empty route/stop id lists without throwing", async () => {
             // Arrange
             // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
