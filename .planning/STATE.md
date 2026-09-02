@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v0.3
 milestone_name: Favorited & Recent Routes
-status: Awaiting next milestone
+status: Milestone v0.3 shipped — PR #8
 stopped_at: Phase 07 complete — all phases complete
-last_updated: "2026-09-01T14:31:28.549Z"
-last_activity: 2026-09-01
-last_activity_desc: Milestone v0.3 completed and archived
+last_updated: "2026-09-02T14:10:00.000Z"
+last_activity: 2026-09-02
+last_activity_desc: Milestone v0.3 shipped via PR #8 (branch rebuilt after main history rewrite orphaned PR #6)
 state_head: a2946c4f1259fcf83e9b7c9fac71ae91ba9887b6
 progress:
   total_phases: 3
@@ -30,8 +30,8 @@ See: .planning/PROJECT.md (updated 2026-09-01)
 
 Phase: Milestone v0.3 complete
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-09-01 — Milestone v0.3 completed and archived
+Status: Milestone v0.3 shipped — PR #8
+Last activity: 2026-09-02 — Milestone v0.3 shipped via PR #8
 
 ## Performance Metrics
 
