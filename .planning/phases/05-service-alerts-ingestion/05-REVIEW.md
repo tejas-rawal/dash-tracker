@@ -1,128 +1,85 @@
 ---
 phase: 05-service-alerts-ingestion
-reviewed: 2026-09-01T00:00:00Z
+reviewed: 2026-09-02T00:00:00Z
 depth: standard
-files_reviewed: 10
+files_reviewed: 4
 files_reviewed_list:
-  - src/server/api/models/ServiceAlert.ts
   - src/server/api/services/ServiceAlertService.ts
+  - src/server/api/models/ServiceAlert.ts
   - src/server/api/services/ServiceAlertService.test.ts
-  - src/server/api/repositories/ServiceAlertRepository.ts
   - src/server/api/repositories/ServiceAlertRepository.test.ts
-  - src/server/api/services/ServiceAlertPollService.ts
-  - src/server/api/services/ServiceAlertPollService.test.ts
-  - src/server/app.ts
-  - src/server/api/models/index.ts
-  - src/server/api/repositories/index.ts
 findings:
   critical: 0
-  warning: 3
-  info: 3
-  total: 6
+  warning: 2
+  info: 2
+  total: 4
 status: issues_found
 ---
 
 # Phase 05: Code Review Report
 
-**Reviewed:** 2026-09-01T00:00:00Z
+**Reviewed:** 2026-09-02T00:00:00Z
 **Depth:** standard
-**Files Reviewed:** 10
+**Files Reviewed:** 4
 **Status:** issues_found
 
 ## Summary
 
-Reviewed the service-alerts ingestion pipeline: `ServiceAlert` model, `ServiceAlertService` (fetch + Dash-to-domain mapping), `ServiceAlertRepository` (singleton in-memory store + active-window query), `ServiceAlertPollService` (boot-triggered 5-minute poll driver), and the `app.ts` wiring. Full test suite for these files passes (27/27), typecheck is clean, and Biome reports no new lint errors attributable to this phase (the only filename-convention warning on `ServiceAlertRepository.test.ts` mirrors an identical pre-existing warning already present on `BusDataRepository.test.ts`/`BusRouteService.test.ts`, so it is not a regression).
+This review is scoped to the source changes made by plan `05-03` (gap closure `G-05-2`): a `JSON.parse` fallback for a string-encoded `response.data` in `ServiceAlertService.fetchFromDashApi()`, and the `entity` → `entities` field rename in `DashAlertsApiResponse`/`fetchAlerts()`, plus the corresponding test updates. It supersedes the WR-01/WR-02 findings in this file's prior revision (dated 2026-09-01), which were already resolved by plan `05-02`'s malformed-body/malformed-entity guards; those guards are retained and correctly re-keyed to `entities` by this plan.
 
-No critical/blocker-level defects were found — error handling around the poll loop is sound (`pollAlerts()`'s try/catch prevents any upstream failure from crashing the process or clearing the store), the singleton/atomic-swap pattern in the repository avoids torn state under concurrent poll ticks, and the active-window boundary logic matches its documented (and tested) inclusive-both-ends semantics. The issues below are robustness/defensive-coding gaps and minor code-quality nits that should be addressed but do not block shipping this ingestion-only slice.
+Verified independently: `bun run test -- src/server/api/services/ServiceAlertService.test.ts src/server/api/repositories/ServiceAlertRepository.test.ts src/server/api/services/ServiceAlertPollService.test.ts` passes 34/34, and `bun run build` (`tsc` strict) succeeds clean. No lingering `response.entity`/`entity:`-keyed top-level references remain anywhere in `src/server/api/`. The core fixes are correct and match the plan's stated intent: a JSON-encoded string body is now parsed and mapped correctly, the pre-existing WR-01 null-body/invalid-JSON guards still throw `UpstreamApiError` unmodified, and the live API's actual `entities` field is now read end-to-end.
+
+No blocker-level defects were found in the new logic itself. Two warnings and two info items below are robustness/documentation-accuracy gaps worth addressing, one of which (WR-01 below) is directly relevant because it reproduces the exact failure class — a malformed upstream body silently resolving to "no alerts" instead of failing loud — that this very gap-closure plan exists to prevent.
 
 ## Warnings
 
-### WR-01: `fetchAlerts()` will throw an unhandled generic `TypeError` if the DASH response body itself is not an object
+### WR-01: Body-shape guard accepts a JSON array root, contradicting the plan's own threat-model claim and reintroducing a silent-data-loss path
 
-**File:** `src/server/api/services/ServiceAlertService.ts:70`
-**Issue:** `fetchFromDashApi()` blindly casts `response.data as DashAlertsApiResponse` with no runtime shape check on `response.data` itself (only `response.data.entity` is checked, and only for "is it defined" / "is it an array"). If the DASH API ever returns `null`, a bare string, or no body (e.g. a 204, or a proxy/error page returned with a 200 status), `response.entity` on line 70 throws `TypeError: Cannot read properties of null (reading 'entity')` instead of the intended `UpstreamApiError`. The error is still caught by `ServiceAlertPollService.pollAlerts()`'s try/catch (so the process never crashes), but the logged message becomes a generic, low-signal `TypeError` rather than the descriptive `UpstreamApiError` this code path was clearly designed to produce for malformed upstream payloads (see the sibling check at line 76 for the `entity`-not-an-array case, and the STRIDE T-05-01 mitigation notes in the phase plan, which only account for the `entity` field, not the response body itself).
+**File:** `src/server/api/services/ServiceAlertService.ts:37-40`
+**Issue:** After the new `JSON.parse` fallback, the guard is `body === null || typeof body !== "object"`. In JavaScript, `typeof []` is `"object"`, so a `response.data` that is (or JSON-parses to) a bare array — e.g. `response.data = "[]"` or `response.data = []` — passes this guard undetected. `body` is then cast to `DashAlertsApiResponse` and returned; `fetchAlerts()` reads `response.entities` on an array, which is `undefined`, so it silently logs "No service alerts found in API response" and resolves to `[]` instead of throwing `UpstreamApiError`.
+
+This directly contradicts 05-03-PLAN.md's own STRIDE mitigation text for T-05-01, which claims: *"a string that parses to a non-object JSON value (array-at-root, primitive, or invalid JSON) still throws `UpstreamApiError` exactly as before"* — that claim is false for the array-at-root case, and no test in `ServiceAlertService.test.ts` exercises it (only the invalid-JSON-string and `null` cases are covered). The failure mode this produces — a malformed/unexpected upstream shape silently degrading to "zero alerts" rather than failing loud — is precisely the class of live-breaking bug (`entity`/`entities` mismatch) this plan was created to close for the top-level field; the same silent-degradation risk now exists one level up, at the body-shape check itself, and is unverified by any test.
 **Fix:**
 ```ts
-async function fetchFromDashApi(): Promise<DashAlertsApiResponse> {
-    const url = buildDashApiUrl();
-    logger.info(`Fetching service alerts from DASH API: ${url}`);
-    const response = await axios.get(url);
-    if (response.data === null || typeof response.data !== "object") {
-        throw new UpstreamApiError("DASH API returned a malformed service alerts response (body is not an object)");
-    }
-    return response.data as DashAlertsApiResponse;
+if (body === null || typeof body !== "object" || Array.isArray(body)) {
+    throw new UpstreamApiError("DASH API returned a malformed service alerts response (body is not an object)");
 }
 ```
+Add a regression test asserting `data: "[]"` (or `data: []`) rejects with `UpstreamApiError`.
 
-### WR-02: `mapToServiceAlert()` will throw if any entity in `response.entity` is not a well-formed object
+### WR-02: Two distinct failure modes collapse into one duplicated, non-descriptive error message
 
-**File:** `src/server/api/services/ServiceAlertService.ts:44-65`, `81`
-**Issue:** `fetchAlerts()` validates that `response.entity` is an array (line 75), but never validates the individual elements. `response.entity.map(mapToServiceAlert)` destructures `entity.alert` on line 45 with no guard — a malformed/malicious upstream payload such as `{ entity: [null] }` or `{ entity: [{ id: "x" }] }` (missing `alert`) causes a `TypeError` inside the `.map()` callback instead of the deliberate `UpstreamApiError` the sibling array-shape check was designed to produce. Same downstream effect as WR-01 (swallowed by the poll loop's try/catch, but with a less actionable error message), and the same gap exists for any future direct caller of `ServiceAlertService.fetchAlerts()` (e.g. a Phase 6 controller) that does not wrap the call in its own try/catch.
-**Fix:** Add a lightweight per-entity guard before mapping, e.g.:
+**File:** `src/server/api/services/ServiceAlertService.ts:31-33`, `38`
+**Issue:** The `catch` block for a `JSON.parse` failure (invalid JSON string) and the subsequent non-null/`typeof`-object guard (valid JSON that isn't an object, or a non-string non-object body) both throw `new UpstreamApiError("DASH API returned a malformed service alerts response (body is not an object)")` — the exact same literal string, duplicated verbatim in two places. Collapsing "the body wasn't valid JSON at all" and "the body parsed fine but isn't an object" into one indistinguishable log message reduces operational diagnosability for exactly the kind of live-API surprise this gap-closure plan was written to debug (`.planning/debug/service-alerts-malformed-body.md` describes multi-step manual diagnosis required because the original error message didn't distinguish root causes). This is a deliberate choice per the plan's action text, but it reproduces the same log-message ambiguity that made G-05-2 take a dedicated debug session to diagnose.
+**Fix:** Extract the shared literal to a local constant to prevent drift, and consider distinguishing the two messages for future debuggability:
 ```ts
-function isValidDashAlertEntity(entity: unknown): entity is DashAlertEntity {
-    return (
-        typeof entity === "object" &&
-        entity !== null &&
-        typeof (entity as DashAlertEntity).id === "string" &&
-        typeof (entity as DashAlertEntity).alert === "object"
-    );
+const MALFORMED_BODY_MESSAGE = "DASH API returned a malformed service alerts response (body is not an object)";
+// ...
+} catch {
+    throw new UpstreamApiError(`${MALFORMED_BODY_MESSAGE} — string body failed JSON.parse`);
 }
 // ...
-if (!response.entity.every(isValidDashAlertEntity)) {
-    throw new UpstreamApiError("DASH API returned a malformed service alerts response (entity item is malformed)");
-}
-return response.entity.map(mapToServiceAlert);
-```
-
-### WR-03: `deriveActiveWindow`'s min/max collapse silently loses "open-ended" semantics when only some periods lack an end
-
-**File:** `src/server/api/services/ServiceAlertService.ts:30-42`
-**Issue:** When `periods` contains more than one entry and only some of them omit `end` (a real-world GTFS-RT pattern meaning "this window continues indefinitely"), the current logic computes `end` from only the entries that *do* have a defined `end`, silently discarding the open-ended signal from the entry that has none. For example `periods = [{start: 100, end: 200}, {start: 300}]` (the second period has no end, i.e. active forever from t=300 onward) collapses to `{start: 100, end: 200}` — telling `ServiceAlertRepository.getActiveAlerts()` the alert expired at t=200, even though the feed says it is still active indefinitely from t=300. This is a correctness gap in the min/max-collapse strategy (D-02), not just a missing test case: `starts`/`ends` are computed independently by filtering out `undefined` per-array rather than tracking whether *any* period lacked an `end` (which should force the collapsed `end` to `null`).
-**Fix:**
-```ts
-function deriveActiveWindow(periods: DashActivePeriod[] | undefined): ServiceAlertActivePeriod {
-    if (!periods || periods.length === 0) {
-        return { start: null, end: null };
-    }
-
-    const starts = periods.map((p) => p.start).filter((s): s is number => s !== undefined);
-    const anyOpenEnded = periods.some((p) => p.end === undefined);
-    const ends = periods.map((p) => p.end).filter((e): e is number => e !== undefined);
-
-    return {
-        start: starts.length > 0 ? new Date(Math.min(...starts) * 1000).toISOString() : null,
-        end: !anyOpenEnded && ends.length > 0 ? new Date(Math.max(...ends) * 1000).toISOString() : null,
-    };
+if (body === null || typeof body !== "object") {
+    throw new UpstreamApiError(MALFORMED_BODY_MESSAGE);
 }
 ```
 
 ## Info
 
-### IN-01: `ServiceAlertPollService`'s `setInterval` handle is discarded, with no way to stop the poll loop
+### IN-01: Stale "entity" wording left in test titles after the entities rename
 
-**File:** `src/server/api/services/ServiceAlertPollService.ts:30-33`
-**Issue:** `start()` calls `setInterval(...)` but never captures or exposes the returned timer handle, and the `ServiceAlertPollService` interface exposes only `start()`, no `stop()`. This is consistent with the fact the loop is meant to run for the life of the process, and `app.ts`'s `process.exit(0)` on shutdown terminates it regardless — so this is not a functional bug today. It does, however, make the poll loop untestable/unstoppable in isolation (e.g. impossible to unit-test "the loop stops polling after some external signal", and impossible to reuse `ServiceAlertPollService` in an integration test harness that spins the app up/down repeatedly within one process, which would otherwise leak `setInterval` timers across test runs).
-**Fix:** Consider returning `{ start, stop }` where `stop()` calls `clearInterval` on the captured handle, mirroring the cleanup pattern already used in `PredictionStreamService.unsubscribeFrom()`.
+**File:** `src/server/api/services/ServiceAlertService.test.ts:54`, `66`
+**Issue:** The `entity` → `entities` rename (Task 2) updated the `makeDashAlertsApiResponse` factory and four inline fixtures per the plan's explicit list, but two pre-existing test titles were not updated and now describe a field name that no longer exists in the codebase: `"resolves to an empty array when the response has entity: []"` (line 54) and `"logs a warning and resolves to an empty array when entity is undefined"` (line 66). Both tests still pass and exercise the correct (`entities`) behavior — this is a naming/documentation drift only, but it will confuse a future reader grepping test titles for the current field name.
+**Fix:** Rename both titles to reference `entities`, e.g. `"resolves to an empty array when the response has entities: []"` and `"logs a warning and resolves to an empty array when entities is undefined"`.
 
-### IN-02: `informedRouteIds`/`informedStopIds` lose the per-entity route↔stop association from `informed_entity`
+### IN-02: `DashAlertsApiResponse.entities` is typed as required but is treated as optional at runtime
 
-**File:** `src/server/api/services/ServiceAlertService.ts:47-52`
-**Issue:** GTFS-RT `informed_entity` items can specify `route_id` and `stop_id` together on the same entry (meaning "this specific stop on this specific route"). The current mapping flattens all `route_id`s into one array and all `stop_id`s into a separate array independently, so the pairing information is lost — e.g. an alert with `informed_entity: [{route_id: "1", stop_id: "A"}, {route_id: "2", stop_id: "B"}]` becomes indistinguishable from one with `informed_entity: [{route_id: "1", stop_id: "B"}, {route_id: "2", stop_id: "A"}]`. This is very likely an intentional simplification per the flagged assumptions in `05-01-PLAN.md` (Phase 6 is explicitly tasked with route/stop matching logic), so it is not classified as a Warning, but flagging it here since it constrains what Phase 6 can correctly do with this data without re-deriving the association from the raw `DashAlert.informed_entity` array instead of the flattened `ServiceAlert` fields.
-**Fix:** No action required in this phase; ensure Phase 6's matching logic is aware of this limitation, or preserve the raw `informed_entity` pairing on `ServiceAlert` if precise per-route/per-stop targeting is needed later.
-
-### IN-03: Sloppy internal comment text left in from planning/authoring process
-
-**File:** `src/server/api/repositories/ServiceAlertRepository.ts:3`
-**Issue:** The comment `// Inclusive boundary on both ends (D-Claude's-discretion / flagged assumption 2):` mixes a project decision-log shorthand ("D-Claude's-discretion") into a permanent source comment. It reads as an artifact of the planning/authoring process rather than an intentional, durable code comment, and will be confusing to a future reader with no access to `05-CONTEXT.md`.
-**Fix:**
-```ts
-// Inclusive boundary on both ends: an alert is active when start <= referenceTime <= end.
-// A null bound is unbounded on that side. (See 05-CONTEXT.md flagged assumption 2.)
-```
+**File:** `src/server/api/models/ServiceAlert.ts:59`
+**Issue:** `entities: DashAlertEntity[]` declares the field as always present, yet `fetchAlerts()` explicitly checks `response.entities === undefined` and treats that as a valid "no alerts" case rather than a type error. This mismatch between the declared type and the actual runtime contract predates this plan (the same shape existed for the singular `entity` field) and was carried through unchanged by the rename, so it isn't a regression, but it means `tsc` can't catch a caller that forgets to guard against a missing `entities` field — the type says it's always there.
+**Fix:** Change the type to `entities?: DashAlertEntity[]` so the type system reflects the documented "undefined means no alerts" branch in `fetchAlerts()`.
 
 ---
 
-_Reviewed: 2026-09-01T00:00:00Z_
+_Reviewed: 2026-09-02T00:00:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
