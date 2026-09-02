@@ -37,7 +37,7 @@ const makeDashAlertsApiResponse = (entity: DashAlertEntity[] = []): DashAlertsAp
 
 describe("ServiceAlertService", () => {
     describe("fetchAlerts", () => {
-        it("calls the DASH API with a URL containing the service-alerts path and agency", async () => {
+        it("calls the DASH API with a URL containing the gtfs-rt-alerts/v2 path and agency", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue({ data: makeDashAlertsApiResponse([]) });
             const { fetchAlerts } = createServiceAlertService();
@@ -47,7 +47,7 @@ describe("ServiceAlertService", () => {
 
             // Assert
             expect(mockAxiosGet).toHaveBeenCalledWith(
-                expect.stringContaining("/real-time/alexandria-dash/service-alerts"),
+                expect.stringContaining("/real-time/alexandria-dash/gtfs-rt-alerts/v2"),
             );
         });
 
@@ -151,6 +151,23 @@ describe("ServiceAlertService", () => {
             // Assert
             expect(alert.activePeriod.start).toBe(new Date(1_700_000_000 * 1000).toISOString());
             expect(alert.activePeriod.end).toBe(new Date(1_700_030_000 * 1000).toISOString());
+        });
+
+        it("collapses mixed-boundedness active_period entries to an open-ended window (WR-03)", async () => {
+            // Arrange
+            const entity = makeDashAlertEntity({
+                // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
+                active_period: [{ start: 1_700_010_000, end: 1_700_020_000 }, { start: 1_700_000_000 }],
+            });
+            mockAxiosGet.mockResolvedValue({ data: makeDashAlertsApiResponse([entity]) });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act
+            const [alert] = await fetchAlerts();
+
+            // Assert
+            expect(alert.activePeriod.start).toBe(new Date(1_700_000_000 * 1000).toISOString());
+            expect(alert.activePeriod.end).toBeNull();
         });
 
         it("returns {start: null, end: null} when active_period is omitted entirely (D-03)", async () => {
