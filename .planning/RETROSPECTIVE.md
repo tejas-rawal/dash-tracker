@@ -73,6 +73,43 @@
 
 ---
 
+## Milestone: v0.3 — Favorited & Recent Routes
+
+**Shipped:** 2026-09-01
+**Phases:** 3 | **Plans:** 4
+
+### What Was Built
+- `FavoritesRecentsRepository`: a singleton, WAL-mode SQLite repository with atomic upsert CRUD for favorites and recents, covering both routes and stops through one entity-typed table per concern, wired into `app.ts`'s startup/shutdown lifecycle alongside `BusDataRepository`
+- Anonymous device-scoped Favorites HTTP API (`POST`/`DELETE`/`GET /api/v1/favorites`) with a reusable `requireDeviceId` middleware, entity hydration via `BusDataRepository`, and idempotent add/no-op-remove semantics
+- Fire-and-forget stop/route recents logging on every REST prediction lookup, cap-at-5 oldest-evicted-first eviction inside `upsertRecent`, and `GET /api/v1/recents` mirroring the Favorites pattern
+- 313/313 tests passing at ship, all 13 v0.3 requirements (FAV-01..05, RECENT-01..06, DEVICE-01, PERSIST-01) delivered
+
+### What Worked
+- Sequencing the repository (Phase 5) before both feature phases meant Favorites (Phase 6) and Recents (Phase 7) could both build on one already-tested persistence layer instead of each inventing its own storage
+- Phase 6's `requireDeviceId` middleware and `FavoritesService`/`FavoritesController` pattern was deliberately built to be mirrored by Phase 7 — Recents reused that shape directly, which kept Phase 7 fast and consistent
+- A package-legitimacy checkpoint (05-01, better-sqlite3) run as its own plan before the real implementation plan (05-02) caught a real compatibility problem (v13 requires Node ≥22 and crashed under this environment's Bun/Node) before it could block the actual repository work
+
+### What Was Inefficient
+- Phase 7's code review caught a pre-ship BLOCKER (CR-01) that unit tests never would have: route recents were written keyed by the client-supplied route *short name* but read back via an id-keyed lookup, so every route recent silently vanished. Every layer was unit-tested against mocks in isolation, so no test exercised the real write→read round trip until review traced it manually
+- The same root cause (id-keyed reads vs. short-name-keyed or unvalidated writes) also produced two lower-severity whitespace/validation edge cases in Phase 6 (WR-01/WR-03) — a recurring shape of bug across both feature phases, not a one-off
+- `resolveEntity` ended up duplicated verbatim between `FavoritesService` and `RecentsService` (flagged IN-03) — the "mirror the pattern" approach that made Phase 7 fast also copied logic that should have been shared instead
+
+### Patterns Established
+- Run a dedicated package-legitimacy checkpoint plan before any phase that introduces a new native/compiled dependency (like `better-sqlite3`), separate from the implementation plan that consumes it
+- When one phase's service/controller pair is explicitly designed as the template for a later phase, say so directly in the roadmap/plan (as Phase 6 did for Phase 7) — but budget a follow-up pass to extract genuinely shared logic (e.g. `resolveEntity`) into one place rather than leaving it duplicated
+- For any entity keyed differently on write vs. read (e.g. short name vs. internal id), add an integration-level test that exercises the real write→read round trip — unit tests against mocks in isolation will not catch a key mismatch
+
+### Key Lessons
+1. Cross-cutting id/key mismatches between a write path and a read path are the kind of bug that isolated unit tests systematically miss — code review that traces a real data-flow path end-to-end (not just per-file) is what caught CR-01, and that's worth keeping as a standing review focus for any new persistence-backed feature
+2. Mirroring a working pattern (Favorites → Recents) is a legitimate way to move fast on a second, structurally similar feature, but it trades near-term velocity for duplicated logic that should be flagged as tech debt immediately, not silently accepted
+3. A cheap, isolated "will this dependency even run here" checkpoint plan before the real implementation plan is worth it for any new native/compiled package — the better-sqlite3 v13/Node-version incompatibility would have been far more expensive to discover mid-implementation
+
+### Cost Observations
+- Sessions: not tracked separately this milestone
+- Notable: the Phase 7 code-review cycle catching CR-01 pre-ship was the milestone's highest-value single finding — a silent, total feature failure (route recents never hydrating) that no test suite green-lit
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -81,6 +118,7 @@
 |-----------|----------|--------|------------|
 | v0.1 | 1 | 2 | First milestone — established Biome-only tooling baseline |
 | v0.2 | 1 | 2 | First feature milestone — stop discovery + live SSE predictions; first milestone with a multi-iteration code-review fix cycle |
+| v0.3 | not tracked | 3 | First milestone with persistence (SQLite); first milestone where code review caught a pre-ship BLOCKER (write/read key mismatch) that unit tests missed entirely |
 
 ### Cumulative Quality
 
@@ -88,8 +126,10 @@
 |-----------|-------|----------|---------------------|
 | v0.1 | 141 | (80% threshold enforced, not separately measured this milestone) | 0 (Prettier removed, no new deps added) |
 | v0.2 | 217 | ~97% on new code (phase-level); 80% threshold enforced repo-wide | 0 (no new dependencies — SSE built on existing Express/`res.write`) |
+| v0.3 | 313 | 80% threshold enforced repo-wide | 1 (`better-sqlite3`, vetted via a dedicated package-legitimacy checkpoint) |
 
 ### Top Lessons (Verified Across Milestones)
 
 1. Keep local `main` pushed to `origin` when the runtime's worktree isolation bases off the remote branch — otherwise isolated dispatch fails closed on every attempt
 2. Worktree isolation protects against *concurrent* edits, not against pre-existing dirty state on the branch it forks from — always check `git status` before merging an isolated agent's branch back
+3. Unit tests run against mocks in isolation cannot catch a write-path/read-path key mismatch (e.g. short name vs. internal id) — only an end-to-end data-flow trace or a real round-trip integration test will, and this bit v0.3's Recents feature as a pre-ship BLOCKER (CR-01)

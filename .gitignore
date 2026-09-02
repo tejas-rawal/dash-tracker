@@ -129,3 +129,10 @@ docs/
 
 # Proto tools
 .proto*
+
+### SQLite ###
+data/
+
+### GSD tool-internal state (generated, session-local) ###
+.gsd/
+.planning/state.json

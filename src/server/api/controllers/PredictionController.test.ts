@@ -13,7 +13,10 @@ const makeMockRes = () => {
     return res;
 };
 
-const makeMockReq = (query: Record<string, string> = {}): Request => ({ query }) as unknown as Request;
+const makeMockReq = (
+    query: Record<string, string> = {},
+    headers: Record<string, string | string[] | undefined> = {},
+): Request => ({ query, headers }) as unknown as Request;
 
 const makeStopPredictionsResponse = (stopId = "stop-1"): StopPredictionsResponse => ({
     success: true,
@@ -108,6 +111,60 @@ describe("PredictionController", () => {
             expect(mockService.getPredictionsForStop).toHaveBeenCalledWith("stop-1", expect.any(Object));
         });
 
+        it("calls the service with deviceId set when X-Device-Id header is present", async () => {
+            // Arrange
+            const mockService = makeMockService();
+            mockService.getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse());
+            const { getPredictions } = createPredictionController(mockService);
+            const req = makeMockReq({ stop: "stop-1" }, { "x-device-id": "device-a" });
+            const res = makeMockRes();
+
+            // Act
+            await getPredictions(req, res, vi.fn());
+
+            // Assert
+            expect(mockService.getPredictionsForStop).toHaveBeenCalledWith(
+                "stop-1",
+                expect.objectContaining({ deviceId: "device-a" }),
+            );
+        });
+
+        it("calls the service with deviceId undefined when X-Device-Id header is absent", async () => {
+            // Arrange
+            const mockService = makeMockService();
+            mockService.getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse());
+            const { getPredictions } = createPredictionController(mockService);
+            const req = makeMockReq({ stop: "stop-1" });
+            const res = makeMockRes();
+
+            // Act
+            await getPredictions(req, res, vi.fn());
+
+            // Assert
+            expect(mockService.getPredictionsForStop).toHaveBeenCalledWith(
+                "stop-1",
+                expect.objectContaining({ deviceId: undefined }),
+            );
+        });
+
+        it("calls the service with deviceId undefined when X-Device-Id header is whitespace-only", async () => {
+            // Arrange
+            const mockService = makeMockService();
+            mockService.getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse());
+            const { getPredictions } = createPredictionController(mockService);
+            const req = makeMockReq({ stop: "stop-1" }, { "x-device-id": "   " });
+            const res = makeMockRes();
+
+            // Act
+            await getPredictions(req, res, vi.fn());
+
+            // Assert
+            expect(mockService.getPredictionsForStop).toHaveBeenCalledWith(
+                "stop-1",
+                expect.objectContaining({ deviceId: undefined }),
+            );
+        });
+
         it("passes parsed number option to the service", async () => {
             // Arrange
             const mockService = makeMockService();
@@ -120,7 +177,11 @@ describe("PredictionController", () => {
             await getPredictions(req, res, vi.fn());
 
             // Assert
-            expect(mockService.getPredictionsForStop).toHaveBeenCalledWith("stop-1", { number: 5, route: undefined });
+            expect(mockService.getPredictionsForStop).toHaveBeenCalledWith("stop-1", {
+                number: 5,
+                route: undefined,
+                deviceId: undefined,
+            });
         });
 
         it("passes route option to the service when provided", async () => {
@@ -138,6 +199,7 @@ describe("PredictionController", () => {
             expect(mockService.getPredictionsForStop).toHaveBeenCalledWith("stop-1", {
                 number: undefined,
                 route: "1A",
+                deviceId: undefined,
             });
         });
 
