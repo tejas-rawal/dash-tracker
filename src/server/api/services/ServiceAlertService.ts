@@ -22,10 +22,22 @@ export function createServiceAlertService(): ServiceAlertService {
         const url = buildDashApiUrl();
         logger.info(`Fetching service alerts from DASH API: ${url}`);
         const response = await axios.get(url);
-        if (response.data === null || typeof response.data !== "object") {
+
+        let body: unknown = response.data;
+        if (typeof body === "string") {
+            try {
+                body = JSON.parse(body);
+            } catch {
+                throw new UpstreamApiError(
+                    "DASH API returned a malformed service alerts response (body is not an object)",
+                );
+            }
+        }
+
+        if (body === null || typeof body !== "object") {
             throw new UpstreamApiError("DASH API returned a malformed service alerts response (body is not an object)");
         }
-        return response.data as DashAlertsApiResponse;
+        return body as DashAlertsApiResponse;
     }
 
     function isValidDashAlertEntity(entity: unknown): entity is DashAlertEntity {

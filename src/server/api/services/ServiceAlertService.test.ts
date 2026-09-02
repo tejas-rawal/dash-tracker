@@ -202,6 +202,21 @@ describe("ServiceAlertService", () => {
             await expect(fetchAlerts()).rejects.toThrow(UpstreamApiError);
         });
 
+        it("parses a JSON-encoded string response body and maps the alert correctly", async () => {
+            // Arrange
+            const entity = makeDashAlertEntity({}, "alert-1");
+            mockAxiosGet.mockResolvedValue({ data: JSON.stringify(makeDashAlertsApiResponse([entity])) });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act
+            const [alert] = await fetchAlerts();
+
+            // Assert
+            expect(alert.id).toBe("alert-1");
+            expect(alert.informedRouteIds).toEqual(["route-1"]);
+            expect(alert.informedStopIds).toEqual(["stop-1"]);
+        });
+
         it("rejects with UpstreamApiError when the response body is a non-object value (WR-01)", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue({ data: "not-an-object" });
