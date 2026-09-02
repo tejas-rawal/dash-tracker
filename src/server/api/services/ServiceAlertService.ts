@@ -93,24 +93,24 @@ export function createServiceAlertService(): ServiceAlertService {
     async function fetchAlerts(): Promise<ServiceAlert[]> {
         const response = await fetchFromDashApi();
 
-        if (response.entity === undefined) {
+        if (response.entities === undefined) {
             logger.warn("No service alerts found in API response");
             return [];
         }
 
-        if (!Array.isArray(response.entity)) {
+        if (!Array.isArray(response.entities)) {
             throw new UpstreamApiError(
-                "DASH API returned a malformed service alerts response (entity is not an array)",
+                "DASH API returned a malformed service alerts response (entities is not an array)",
             );
         }
 
-        if (!response.entity.every(isValidDashAlertEntity)) {
+        if (!response.entities.every(isValidDashAlertEntity)) {
             throw new UpstreamApiError(
                 "DASH API returned a malformed service alerts response (entity item is malformed)",
             );
         }
 
-        return response.entity.map(mapToServiceAlert);
+        return response.entities.map(mapToServiceAlert);
     }
 
     return { fetchAlerts };

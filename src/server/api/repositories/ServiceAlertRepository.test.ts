@@ -202,7 +202,7 @@ describe("ServiceAlertRepository", () => {
                     effect: "DETOUR",
                 },
             };
-            const response: DashAlertsApiResponse = { entity: [activeEntity, expiredEntity] };
+            const response: DashAlertsApiResponse = { entities: [activeEntity, expiredEntity] };
             mockAxiosGet.mockResolvedValue({ data: response });
 
             const service = createServiceAlertService();

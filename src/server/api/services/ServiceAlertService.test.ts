@@ -33,7 +33,7 @@ const makeDashAlertEntity = (overrides: Partial<DashAlertEntity["alert"]> = {}, 
     },
 });
 
-const makeDashAlertsApiResponse = (entity: DashAlertEntity[] = []): DashAlertsApiResponse => ({ entity });
+const makeDashAlertsApiResponse = (entities: DashAlertEntity[] = []): DashAlertsApiResponse => ({ entities });
 
 describe("ServiceAlertService", () => {
     describe("fetchAlerts", () => {
@@ -184,9 +184,9 @@ describe("ServiceAlertService", () => {
             expect(alert.activePeriod).toEqual({ start: null, end: null });
         });
 
-        it("rejects with UpstreamApiError when entity is present but not an array", async () => {
+        it("rejects with UpstreamApiError when entities is present but not an array", async () => {
             // Arrange
-            mockAxiosGet.mockResolvedValue({ data: { entity: "bad" } });
+            mockAxiosGet.mockResolvedValue({ data: { entities: "bad" } });
             const { fetchAlerts } = createServiceAlertService();
 
             // Act & Assert
@@ -228,7 +228,7 @@ describe("ServiceAlertService", () => {
 
         it("rejects with UpstreamApiError when an entity item is null (WR-02)", async () => {
             // Arrange
-            mockAxiosGet.mockResolvedValue({ data: { entity: [null] } });
+            mockAxiosGet.mockResolvedValue({ data: { entities: [null] } });
             const { fetchAlerts } = createServiceAlertService();
 
             // Act & Assert
@@ -237,7 +237,7 @@ describe("ServiceAlertService", () => {
 
         it("rejects with UpstreamApiError when an entity item is missing the alert property (WR-02)", async () => {
             // Arrange
-            mockAxiosGet.mockResolvedValue({ data: { entity: [{ id: "x" }] } });
+            mockAxiosGet.mockResolvedValue({ data: { entities: [{ id: "x" }] } });
             const { fetchAlerts } = createServiceAlertService();
 
             // Act & Assert
@@ -246,7 +246,7 @@ describe("ServiceAlertService", () => {
 
         it("rejects with UpstreamApiError when an entity item's alert property is explicitly null (WR-02)", async () => {
             // Arrange
-            mockAxiosGet.mockResolvedValue({ data: { entity: [{ id: "x", alert: null }] } });
+            mockAxiosGet.mockResolvedValue({ data: { entities: [{ id: "x", alert: null }] } });
             const { fetchAlerts } = createServiceAlertService();
 
             // Act & Assert
