@@ -37,7 +37,7 @@ const makeDashAlertsApiResponse = (entity: DashAlertEntity[] = []): DashAlertsAp
 
 describe("ServiceAlertService", () => {
     describe("fetchAlerts", () => {
-        it("calls the DASH API with a URL containing the service-alerts path and agency", async () => {
+        it("calls the DASH API with a URL containing the gtfs-rt-alerts/v2 path and agency", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue({ data: makeDashAlertsApiResponse([]) });
             const { fetchAlerts } = createServiceAlertService();
@@ -47,7 +47,7 @@ describe("ServiceAlertService", () => {
 
             // Assert
             expect(mockAxiosGet).toHaveBeenCalledWith(
-                expect.stringContaining("/real-time/alexandria-dash/service-alerts"),
+                expect.stringContaining("/real-time/alexandria-dash/gtfs-rt-alerts/v2"),
             );
         });
 
@@ -153,6 +153,23 @@ describe("ServiceAlertService", () => {
             expect(alert.activePeriod.end).toBe(new Date(1_700_030_000 * 1000).toISOString());
         });
 
+        it("collapses mixed-boundedness active_period entries to an open-ended window (WR-03)", async () => {
+            // Arrange
+            const entity = makeDashAlertEntity({
+                // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
+                active_period: [{ start: 1_700_010_000, end: 1_700_020_000 }, { start: 1_700_000_000 }],
+            });
+            mockAxiosGet.mockResolvedValue({ data: makeDashAlertsApiResponse([entity]) });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act
+            const [alert] = await fetchAlerts();
+
+            // Assert
+            expect(alert.activePeriod.start).toBe(new Date(1_700_000_000 * 1000).toISOString());
+            expect(alert.activePeriod.end).toBeNull();
+        });
+
         it("returns {start: null, end: null} when active_period is omitted entirely (D-03)", async () => {
             // Arrange
             // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
@@ -170,6 +187,51 @@ describe("ServiceAlertService", () => {
         it("rejects with UpstreamApiError when entity is present but not an array", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue({ data: { entity: "bad" } });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act & Assert
+            await expect(fetchAlerts()).rejects.toThrow(UpstreamApiError);
+        });
+
+        it("rejects with UpstreamApiError when the response body is null (WR-01)", async () => {
+            // Arrange
+            mockAxiosGet.mockResolvedValue({ data: null });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act & Assert
+            await expect(fetchAlerts()).rejects.toThrow(UpstreamApiError);
+        });
+
+        it("rejects with UpstreamApiError when the response body is a non-object value (WR-01)", async () => {
+            // Arrange
+            mockAxiosGet.mockResolvedValue({ data: "not-an-object" });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act & Assert
+            await expect(fetchAlerts()).rejects.toThrow(UpstreamApiError);
+        });
+
+        it("rejects with UpstreamApiError when an entity item is null (WR-02)", async () => {
+            // Arrange
+            mockAxiosGet.mockResolvedValue({ data: { entity: [null] } });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act & Assert
+            await expect(fetchAlerts()).rejects.toThrow(UpstreamApiError);
+        });
+
+        it("rejects with UpstreamApiError when an entity item is missing the alert property (WR-02)", async () => {
+            // Arrange
+            mockAxiosGet.mockResolvedValue({ data: { entity: [{ id: "x" }] } });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act & Assert
+            await expect(fetchAlerts()).rejects.toThrow(UpstreamApiError);
+        });
+
+        it("rejects with UpstreamApiError when an entity item's alert property is explicitly null (WR-02)", async () => {
+            // Arrange
+            mockAxiosGet.mockResolvedValue({ data: { entity: [{ id: "x", alert: null }] } });
             const { fetchAlerts } = createServiceAlertService();
 
             // Act & Assert

@@ -15,14 +15,27 @@ export interface ServiceAlertService {
 export function createServiceAlertService(): ServiceAlertService {
     function buildDashApiUrl(): string {
         const { agency } = environment.dashApi;
-        return `/real-time/${agency}/service-alerts`;
+        return `/real-time/${agency}/gtfs-rt-alerts/v2`;
     }
 
     async function fetchFromDashApi(): Promise<DashAlertsApiResponse> {
         const url = buildDashApiUrl();
         logger.info(`Fetching service alerts from DASH API: ${url}`);
         const response = await axios.get(url);
+        if (response.data === null || typeof response.data !== "object") {
+            throw new UpstreamApiError("DASH API returned a malformed service alerts response (body is not an object)");
+        }
         return response.data as DashAlertsApiResponse;
+    }
+
+    function isValidDashAlertEntity(entity: unknown): entity is DashAlertEntity {
+        return (
+            typeof entity === "object" &&
+            entity !== null &&
+            typeof (entity as DashAlertEntity).id === "string" &&
+            typeof (entity as DashAlertEntity).alert === "object" &&
+            (entity as DashAlertEntity).alert !== null
+        );
     }
 
     // D-02: multiple active_period entries collapse to earliest start / latest end.
@@ -33,11 +46,12 @@ export function createServiceAlertService(): ServiceAlertService {
         }
 
         const starts = periods.map((p) => p.start).filter((s): s is number => s !== undefined);
+        const anyOpenEnded = periods.some((p) => p.end === undefined);
         const ends = periods.map((p) => p.end).filter((e): e is number => e !== undefined);
 
         return {
             start: starts.length > 0 ? new Date(Math.min(...starts) * 1000).toISOString() : null,
-            end: ends.length > 0 ? new Date(Math.max(...ends) * 1000).toISOString() : null,
+            end: !anyOpenEnded && ends.length > 0 ? new Date(Math.max(...ends) * 1000).toISOString() : null,
         };
     }
 
@@ -75,6 +89,12 @@ export function createServiceAlertService(): ServiceAlertService {
         if (!Array.isArray(response.entity)) {
             throw new UpstreamApiError(
                 "DASH API returned a malformed service alerts response (entity is not an array)",
+            );
+        }
+
+        if (!response.entity.every(isValidDashAlertEntity)) {
+            throw new UpstreamApiError(
+                "DASH API returned a malformed service alerts response (entity item is malformed)",
             );
         }
 
