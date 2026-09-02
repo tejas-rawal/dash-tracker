@@ -51,7 +51,7 @@ describe("ServiceAlertService", () => {
             );
         });
 
-        it("resolves to an empty array when the response has entity: []", async () => {
+        it("resolves to an empty array when the response has entities: []", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue({ data: makeDashAlertsApiResponse([]) });
             const { fetchAlerts } = createServiceAlertService();
@@ -63,7 +63,7 @@ describe("ServiceAlertService", () => {
             expect(result).toEqual([]);
         });
 
-        it("logs a warning and resolves to an empty array when entity is undefined", async () => {
+        it("logs a warning and resolves to an empty array when entities is undefined", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue({ data: {} });
             const { fetchAlerts } = createServiceAlertService();
@@ -220,6 +220,24 @@ describe("ServiceAlertService", () => {
         it("rejects with UpstreamApiError when the response body is a non-object value (WR-01)", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue({ data: "not-an-object" });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act & Assert
+            await expect(fetchAlerts()).rejects.toThrow(UpstreamApiError);
+        });
+
+        it("rejects with UpstreamApiError when the response body is an array-rooted value (WR-01)", async () => {
+            // Arrange
+            mockAxiosGet.mockResolvedValue({ data: [] });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act & Assert
+            await expect(fetchAlerts()).rejects.toThrow(UpstreamApiError);
+        });
+
+        it("rejects with UpstreamApiError when the response body is a JSON-encoded string that parses to an array-rooted value (WR-01)", async () => {
+            // Arrange
+            mockAxiosGet.mockResolvedValue({ data: "[]" });
             const { fetchAlerts } = createServiceAlertService();
 
             // Act & Assert

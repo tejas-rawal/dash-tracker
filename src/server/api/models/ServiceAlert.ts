@@ -56,5 +56,5 @@ export interface DashAlertEntity {
 }
 
 export interface DashAlertsApiResponse {
-    entities: DashAlertEntity[];
+    entities?: DashAlertEntity[];
 }
