@@ -15,7 +15,7 @@ export interface ServiceAlertService {
 export function createServiceAlertService(): ServiceAlertService {
     function buildDashApiUrl(): string {
         const { agency } = environment.dashApi;
-        return `/real-time/${agency}/service-alerts`;
+        return `/real-time/${agency}/gtfs-rt-alerts/v2`;
     }
 
     async function fetchFromDashApi(): Promise<DashAlertsApiResponse> {
@@ -33,11 +33,12 @@ export function createServiceAlertService(): ServiceAlertService {
         }
 
         const starts = periods.map((p) => p.start).filter((s): s is number => s !== undefined);
+        const anyOpenEnded = periods.some((p) => p.end === undefined);
         const ends = periods.map((p) => p.end).filter((e): e is number => e !== undefined);
 
         return {
             start: starts.length > 0 ? new Date(Math.min(...starts) * 1000).toISOString() : null,
-            end: ends.length > 0 ? new Date(Math.max(...ends) * 1000).toISOString() : null,
+            end: !anyOpenEnded && ends.length > 0 ? new Date(Math.max(...ends) * 1000).toISOString() : null,
         };
     }
 
