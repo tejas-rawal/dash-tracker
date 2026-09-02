@@ -193,6 +193,42 @@ describe("ServiceAlertService", () => {
             await expect(fetchAlerts()).rejects.toThrow(UpstreamApiError);
         });
 
+        it("rejects with UpstreamApiError when the response body is null (WR-01)", async () => {
+            // Arrange
+            mockAxiosGet.mockResolvedValue({ data: null });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act & Assert
+            await expect(fetchAlerts()).rejects.toThrow(UpstreamApiError);
+        });
+
+        it("rejects with UpstreamApiError when the response body is a non-object value (WR-01)", async () => {
+            // Arrange
+            mockAxiosGet.mockResolvedValue({ data: "not-an-object" });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act & Assert
+            await expect(fetchAlerts()).rejects.toThrow(UpstreamApiError);
+        });
+
+        it("rejects with UpstreamApiError when an entity item is null (WR-02)", async () => {
+            // Arrange
+            mockAxiosGet.mockResolvedValue({ data: { entity: [null] } });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act & Assert
+            await expect(fetchAlerts()).rejects.toThrow(UpstreamApiError);
+        });
+
+        it("rejects with UpstreamApiError when an entity item is missing the alert property (WR-02)", async () => {
+            // Arrange
+            mockAxiosGet.mockResolvedValue({ data: { entity: [{ id: "x" }] } });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act & Assert
+            await expect(fetchAlerts()).rejects.toThrow(UpstreamApiError);
+        });
+
         it("maps an alert with an empty informed_entity array to empty route/stop id lists without throwing", async () => {
             // Arrange
             // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
