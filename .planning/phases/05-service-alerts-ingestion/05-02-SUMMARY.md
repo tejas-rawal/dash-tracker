@@ -181,3 +181,11 @@ None - no external service configuration required.
 ---
 *Phase: 05-service-alerts-ingestion*
 *Completed: 2026-09-02*
+
+## Self-Check: PASSED
+
+- FOUND: `.planning/phases/05-service-alerts-ingestion/05-02-SUMMARY.md`
+- FOUND: `src/server/api/services/ServiceAlertService.ts`
+- FOUND: `src/server/api/services/ServiceAlertService.test.ts`
+- FOUND commits: `bf90c0a`, `8cda063`, `64c4435`, `2f68347`, `095b3f6`, `4278527`
+- Re-ran plan-level `<verification>`: `bun run test` (250/250 pass), `bun run build` (clean), `bun run test:coverage` (98.08% stmts / 94.18% branch / 97.77% funcs / 98.08% lines, above 80% threshold)
