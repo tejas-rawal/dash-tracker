@@ -143,3 +143,10 @@ None - no external service configuration required.
 ---
 *Phase: 05-service-alerts-ingestion*
 *Completed: 2026-09-03*
+
+## Self-Check: PASSED
+
+- FOUND: `.planning/phases/05-service-alerts-ingestion/05-05-SUMMARY.md`
+- FOUND: commit `5b06404` (Task 1)
+- FOUND: commit `0334f50` (Task 2)
+- FOUND: commit `cf593f3` (SUMMARY)
