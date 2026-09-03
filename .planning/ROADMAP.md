@@ -50,7 +50,7 @@
   3. Each fetched alert is normalized into a `ServiceAlert` model capturing affected route(s)/stop(s), a description, severity/cause when provided by the feed, and an active window (start/end).
   4. Querying the in-memory alert store at any point in time returns only alerts whose active window contains the current time — expired or not-yet-started alerts are filtered out server-side.
 
-**Plans**: 5/5 plans executed
+**Plans**: 5/6 plans executed
 Plans:
 
 - [x] 05-01-PLAN.md — Ingest, normalize, and filter GTFS-RT service alerts (fetch, model, boot-triggered 5-min poll, active-window query)
@@ -58,6 +58,7 @@ Plans:
 - [x] 05-03-PLAN.md — Gap closure (G-05-2): JSON.parse fallback for string-encoded response body + entity -> entities field rename to match live API
 - [x] 05-04-PLAN.md — Gap closure (G-05-3): array-root body-shape guard fix (WR-01) + carried-forward review findings
 - [x] 05-05-PLAN.md — Gap closure (G-05-4): request format=json from DASH gtfs-rt-alerts/v2 to fix protobuf-vs-JSON root cause
+- [ ] 05-06-PLAN.md — Gap closure (G-05-5): confirm the live response's real top-level body shape via a human-run diagnostic capture, then fix fetchFromDashApi()/fetchAlerts() to handle it (no {entities} envelope required)
 
 ### Phase 6: Alerts Surfaced on Routes, Stops & Predictions
 
