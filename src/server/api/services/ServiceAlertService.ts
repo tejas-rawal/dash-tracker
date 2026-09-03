@@ -17,7 +17,8 @@ const MALFORMED_BODY_MESSAGE = "DASH API returned a malformed service alerts res
 export function createServiceAlertService(): ServiceAlertService {
     function buildDashApiUrl(): string {
         const { agency } = environment.dashApi;
-        return `/real-time/${agency}/gtfs-rt-alerts/v2`;
+        const params = new URLSearchParams({ format: "json" });
+        return `/real-time/${agency}/gtfs-rt-alerts/v2?${params.toString()}`;
     }
 
     async function fetchFromDashApi(): Promise<DashAlertsApiResponse> {
@@ -26,6 +27,10 @@ export function createServiceAlertService(): ServiceAlertService {
         const response = await axios.get(url);
 
         let body: unknown = response.data;
+        // Some upstream responses may still arrive as a JSON-encoded string served under a
+        // Content-Type axios doesn't recognize as JSON (e.g. text/plain), which skips axios's
+        // default JSON-parsing response transform — this guards that real case even though
+        // format=json is now explicitly requested above.
         if (typeof body === "string") {
             try {
                 body = JSON.parse(body);

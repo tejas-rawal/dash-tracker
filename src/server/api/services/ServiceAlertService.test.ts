@@ -51,6 +51,18 @@ describe("ServiceAlertService", () => {
             );
         });
 
+        it("calls the DASH API with a URL containing format=json", async () => {
+            // Arrange
+            mockAxiosGet.mockResolvedValue({ data: makeDashAlertsApiResponse([]) });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act
+            await fetchAlerts();
+
+            // Assert
+            expect(mockAxiosGet).toHaveBeenCalledWith(expect.stringContaining("format=json"));
+        });
+
         it("resolves to an empty array when the response has entities: []", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue({ data: makeDashAlertsApiResponse([]) });
