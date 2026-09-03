@@ -1,9 +1,9 @@
 ---
 status: complete
 phase: 05-service-alerts-ingestion
-source: [05-VERIFICATION.md, 05-02-SUMMARY.md]
+source: [05-VERIFICATION.md, 05-02-SUMMARY.md, 05-05-SUMMARY.md]
 started: 2026-09-01T23:52:00Z
-updated: 2026-09-02T11:05:00Z
+updated: 2026-09-03T00:10:00Z
 ---
 
 ## Current Test
@@ -13,7 +13,7 @@ updated: 2026-09-02T11:05:00Z
 ## Tests
 
 ### 1. Non-blocking startup timing
-expected: Boot the real server (`bun run dev-server` or `bun run start-server`) against the live DASH/Swiftly API. The server logs "Server is running on port ..." and begins accepting requests immediately — startup is not measurably delayed by the service-alerts poll. No "Failed to poll service alerts: Request failed with status code 404" is logged (gap G-05-1 fix: endpoint corrected to /real-time/{agency}/gtfs-rt-alerts/v2).
+expected: Boot the real server (`bun run dev-server` or `bun run start-server`) against the live DASH/Swiftly API. The server logs "Server is running on port ..." and begins accepting requests immediately — startup is not measurably delayed by the service-alerts poll. No "Failed to poll service alerts: ..." error is logged (gaps G-05-1/G-05-2/G-05-4 fixed).
 result: issue
 reported: "error: Failed to poll service alerts: DASH API returned a malformed service alerts response (body is not an object)"
 severity: major
@@ -22,7 +22,7 @@ severity: major
 expected: |
   Boot the real server (`bun run dev-server` or `bun run start-server`) against the live DASH/Swiftly API while at least one active alert exists. Inspect ServiceAlertRepository's in-memory store (temporary log line or debugger) for a real alert's headerText/descriptionText/url values. These fields should contain the actual alert text from the feed, not undefined.
 result: issue
-reported: "error: Failed to poll service alerts: DASH API returned a malformed service alerts response (body is not an object) — string body failed JSON.parse"
+reported: "Blocked by the same failure as Test 1 (G-05-5): error: Failed to poll service alerts: DASH API returned a malformed service alerts response (body is not an object). Polling never succeeds, so the field-shape check cannot run."
 severity: major
 
 ## Summary
@@ -97,7 +97,9 @@ blocked: 0
 
 - gap_id: G-05-4
   truth: "Boot the real server against the live DASH/Swiftly API while at least one active alert exists, and headerText/descriptionText/url are populated from the feed, not undefined."
-  status: failed
+  status: resolved
+  resolved_by: 05-05-PLAN.md
+  resolved_at: 2026-09-03
   reason: "User reported (regression of G-05-2's symptom, new root cause): error: Failed to poll service alerts: DASH API returned a malformed service alerts response (body is not an object) — string body failed JSON.parse"
   severity: major
   test: 2
@@ -109,3 +111,16 @@ blocked: 0
     - "Append ?format=json to the URL built by buildDashApiUrl() so the DASH API returns JSON text/object instead of protobuf binary"
     - "Re-verify against the live API that fetchAlerts() succeeds end-to-end and headerText/descriptionText/url populate correctly (this closes Test 2 as well, since the field-shape check cannot run until the poll succeeds)"
   debug_session: "diagnosed inline during /gsd-verify-work 05 session (2026-09-02) — user identified the root cause directly from Swiftly API docs, no separate debug agent spawned"
+
+- gap_id: G-05-5
+  truth: "The server logs \"Server is running on port ...\" and begins accepting requests immediately — startup is not measurably delayed by the service-alerts poll succeeding, failing, or hanging."
+  status: failed
+  reason: "User reported (regression of G-05-4's symptom, after the format=json fix landed): error: Failed to poll service alerts: DASH API returned a malformed service alerts response (body is not an object)"
+  severity: major
+  test: 1
+  also_blocks_test: 2
+  artifacts: []
+  missing: []
+  note: "Error message lacks the '— string body failed JSON.parse' suffix that G-05-4's error carried, meaning this throw comes from the plain object/null/array guard (ServiceAlertService.ts:43), not the string JSON.parse fallback at line 38 — body is arriving as null, a non-object primitive, or array-rooted despite format=json being requested. format=json may not be taking effect (wrong param name/casing, ignored by upstream, or overridden elsewhere), or the live response shape differs from what G-05-2's live_response_example assumed. Test 2 cannot run until this is fixed since polling never succeeds."
+  root_cause: ""
+  debug_session: ""
