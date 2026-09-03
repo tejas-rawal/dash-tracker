@@ -39,6 +39,10 @@ export function createServiceAlertService(): ServiceAlertService {
             }
         }
 
+        // TEMPORARY diagnostic to confirm the real live top-level shape (G-05-5); Task 3 of
+        // 05-06-PLAN.md removes this once the shape is confirmed via a human-reported boot.
+        logger.warn(`SERVICE-ALERTS-SHAPE-DIAG typeof body=${typeof body} body=${JSON.stringify(body).slice(0, 2000)}`);
+
         if (body === null || typeof body !== "object" || Array.isArray(body)) {
             throw new UpstreamApiError(MALFORMED_BODY_MESSAGE);
         }
