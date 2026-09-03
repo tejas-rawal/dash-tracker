@@ -107,6 +107,23 @@ describe("ServiceAlertService", () => {
             expect(alert.descriptionText).toBe("Bus detoured due to road work");
         });
 
+        it("maps headerText, descriptionText, and url all together from a fully-populated, realistic alert payload", async () => {
+            // Arrange
+            const entity = makeDashAlertEntity({
+                url: { translation: [{ text: "https://goswift.ly/alerts/alert-1", language: "en" }] },
+            });
+            mockAxiosGet.mockResolvedValue({ data: makeDashAlertsApiResponse([entity]) });
+            const { fetchAlerts } = createServiceAlertService();
+
+            // Act
+            const [alert] = await fetchAlerts();
+
+            // Assert
+            expect(alert.headerText).toBe("Detour on Route 1");
+            expect(alert.descriptionText).toBe("Bus detoured due to road work");
+            expect(alert.url).toBe("https://goswift.ly/alerts/alert-1");
+        });
+
         it("converts unix-seconds active_period start/end to ISO 8601 strings", async () => {
             // Arrange
             // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
