@@ -1,9 +1,9 @@
 ---
-status: complete
+status: diagnosed
 phase: 05-service-alerts-ingestion
 source: [05-VERIFICATION.md, 05-02-SUMMARY.md, 05-05-SUMMARY.md]
 started: 2026-09-01T23:52:00Z
-updated: 2026-09-03T00:10:00Z
+updated: 2026-09-03T00:20:00Z
 ---
 
 ## Current Test
@@ -114,13 +114,21 @@ blocked: 0
 
 - gap_id: G-05-5
   truth: "The server logs \"Server is running on port ...\" and begins accepting requests immediately — startup is not measurably delayed by the service-alerts poll succeeding, failing, or hanging."
-  status: failed
+  status: diagnosed
   reason: "User reported (regression of G-05-4's symptom, after the format=json fix landed): error: Failed to poll service alerts: DASH API returned a malformed service alerts response (body is not an object)"
   severity: major
   test: 1
   also_blocks_test: 2
-  artifacts: []
-  missing: []
-  note: "Error message lacks the '— string body failed JSON.parse' suffix that G-05-4's error carried, meaning this throw comes from the plain object/null/array guard (ServiceAlertService.ts:43), not the string JSON.parse fallback at line 38 — body is arriving as null, a non-object primitive, or array-rooted despite format=json being requested. format=json may not be taking effect (wrong param name/casing, ignored by upstream, or overridden elsewhere), or the live response shape differs from what G-05-2's live_response_example assumed. Test 2 cannot run until this is fixed since polling never succeeds."
-  root_cause: ""
-  debug_session: ""
+  root_cause: "The format=json fix from plan 05-05 IS working — the upstream returns a syntactically valid JSON body (confirmed by tracing axios 1.7.9's real transformResponse pipeline: any parse failure would deterministically hit the OTHER throw site with the '— string body failed JSON.parse' suffix, which this error lacks). The actual failure is a top-level SHAPE mismatch: fetchFromDashApi()'s guard (ServiceAlertService.ts:42-43) rejects any parsed value that is null, a non-object primitive, or an array — and the real live response's parsed top-level value is most likely a bare JSON array of alert entities (no envelope), not the {header, entities: [...]} object shape assumed by DashAlertsApiResponse. That envelope assumption traces back to G-05-2's 'confirmed' live_response_example, which bears strong hallmarks of an auto-generated OpenAPI/Stoplight documentation example (generic \"string\"/0 placeholders, and an internally-inconsistent header_text-as-array shape that contradicts this same code's own DashAlertTranslatedString type) rather than a genuine captured live payload — this assumption was never actually verified against reality. All 19 existing tests mock axios.get directly and inject response.data as a hand-picked value, bypassing axios's real transform pipeline, so no test has ever exercised the real live JSON shape."
+  artifacts:
+    - path: "src/server/api/services/ServiceAlertService.ts"
+      issue: "fetchFromDashApi() guard (lines 42-43) rejects a top-level array body outright instead of treating it as the entities list directly; fetchAlerts() assumes an {entities: [...]} object envelope"
+    - path: "src/server/api/models/ServiceAlert.ts"
+      issue: "DashAlertsApiResponse { entities?: DashAlertEntity[] } envelope shape is unverified against the real live payload"
+    - path: ".planning/phases/05-service-alerts-ingestion/05-UAT.md"
+      issue: "G-05-2's live_response_example (lines 68-85) is the unverified source of the object-envelope assumption — likely an auto-generated doc example, not a real capture"
+  missing:
+    - "Capture one real raw response (temporary diagnostic log of typeof response.data + truncated JSON.stringify before the guard, run once live against the real API, then removed) to confirm the exact top-level shape"
+    - "Handle a top-level array body as the entities list directly (no envelope) while still rejecting genuinely invalid bodies (null, non-object/non-array primitives)"
+    - "Re-check the header_text/description_text single-object-vs-array assumption against the same live capture once entities are reachable"
+  debug_session: ".planning/debug/service-alerts-body-shape.md"
