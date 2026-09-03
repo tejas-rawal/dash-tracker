@@ -57,7 +57,7 @@ Plans:
 - [x] 05-02-PLAN.md — Gap closure (G-05-1): fix service-alerts endpoint 404 + open-ended active-window bug (WR-01/02/03)
 - [x] 05-03-PLAN.md — Gap closure (G-05-2): JSON.parse fallback for string-encoded response body + entity -> entities field rename to match live API
 - [x] 05-04-PLAN.md — Gap closure (G-05-3): array-root body-shape guard fix (WR-01) + carried-forward review findings
-- [ ] 05-05-PLAN.md — Gap closure (G-05-4): request format=json from DASH gtfs-rt-alerts/v2 to fix protobuf-vs-JSON root cause
+- [x] 05-05-PLAN.md — Gap closure (G-05-4): request format=json from DASH gtfs-rt-alerts/v2 to fix protobuf-vs-JSON root cause
 
 ### Phase 6: Alerts Surfaced on Routes, Stops & Predictions
 
@@ -84,7 +84,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Full-Repo Reformat | 1/1 | Complete | 2026-08-26 |
 | 3. Stop Discovery | 2/2 | Complete | 2026-08-26 |
 | 4. Live Predictions via SSE | 1/1 | Complete | 2026-08-27 |
-| 5. Service Alerts Ingestion | 4/4 | In Progress|  |
+| 5. Service Alerts Ingestion | 5/5 | In Progress|  |
 | 6. Alerts Surfaced on Routes, Stops & Predictions | 0/TBD | Not started | - |
 
 ---
