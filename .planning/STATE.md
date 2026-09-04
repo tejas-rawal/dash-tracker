@@ -5,11 +5,11 @@ milestone_name: Service Alerts
 current_phase: 6
 current_phase_name: Alerts Surfaced on Routes, Stops & Predictions
 status: planning
-stopped_at: Phase 05 complete, ready to plan Phase 6
-last_updated: "2026-09-04T17:50:45.181Z"
+stopped_at: Phase 6 context gathered
+last_updated: "2026-09-04T18:28:33.775Z"
 last_activity: 2026-09-04
 last_activity_desc: Phase 05 complete, transitioned to Phase 6
-state_head: 911303678119dd909ea5b65d8fff191562ffbd66
+state_head: fca133b60cdd3b4157cd782e9e1052dc02f313dc
 progress:
   total_phases: 2
   completed_phases: 1
@@ -112,9 +112,9 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-04
-Stopped at: Phase 5 complete, ready to plan Phase 6
-Resume file: None
+Last session: 2026-09-04T18:28:33.684Z
+Stopped at: Phase 6 context gathered
+Resume file: .planning/phases/06-alerts-surfaced-on-routes-stops-predictions/06-CONTEXT.md
 
 ## Operator Next Steps
 
