@@ -1,9 +1,9 @@
 ---
-status: diagnosed
+status: complete
 phase: 05-service-alerts-ingestion
-source: [05-VERIFICATION.md, 05-02-SUMMARY.md, 05-05-SUMMARY.md]
+source: [05-VERIFICATION.md, 05-02-SUMMARY.md, 05-05-SUMMARY.md, 05-06-SUMMARY.md]
 started: 2026-09-01T23:52:00Z
-updated: 2026-09-03T00:20:00Z
+updated: 2026-09-04T00:00:00Z
 ---
 
 ## Current Test
@@ -13,23 +13,19 @@ updated: 2026-09-03T00:20:00Z
 ## Tests
 
 ### 1. Non-blocking startup timing
-expected: Boot the real server (`bun run dev-server` or `bun run start-server`) against the live DASH/Swiftly API. The server logs "Server is running on port ..." and begins accepting requests immediately — startup is not measurably delayed by the service-alerts poll. No "Failed to poll service alerts: ..." error is logged (gaps G-05-1/G-05-2/G-05-4 fixed).
-result: issue
-reported: "error: Failed to poll service alerts: DASH API returned a malformed service alerts response (body is not an object)"
-severity: major
+expected: Boot the real server (`bun run dev-server` or `bun run start-server`) against the live DASH/Swiftly API. The server logs "Server is running on port ..." and begins accepting requests immediately — startup is not measurably delayed by the service-alerts poll. No "Failed to poll service alerts: ..." error is logged (gaps G-05-1/G-05-2/G-05-4/G-05-5 fixed).
+result: pass
 
 ### 2. Real-payload field-shape check for headerText/descriptionText/url
 expected: |
   Boot the real server (`bun run dev-server` or `bun run start-server`) against the live DASH/Swiftly API while at least one active alert exists. Inspect ServiceAlertRepository's in-memory store (temporary log line or debugger) for a real alert's headerText/descriptionText/url values. These fields should contain the actual alert text from the feed, not undefined.
-result: issue
-reported: "Blocked by the same failure as Test 1 (G-05-5): error: Failed to poll service alerts: DASH API returned a malformed service alerts response (body is not an object). Polling never succeeds, so the field-shape check cannot run."
-severity: major
+result: pass
 
 ## Summary
 
 total: 2
-passed: 0
-issues: 2
+passed: 2
+issues: 0
 pending: 0
 skipped: 0
 blocked: 0
@@ -114,7 +110,9 @@ blocked: 0
 
 - gap_id: G-05-5
   truth: "The server logs \"Server is running on port ...\" and begins accepting requests immediately — startup is not measurably delayed by the service-alerts poll succeeding, failing, or hanging."
-  status: diagnosed
+  status: resolved
+  resolved_by: 05-06-PLAN.md
+  resolved_at: 2026-09-04
   reason: "User reported (regression of G-05-4's symptom, after the format=json fix landed): error: Failed to poll service alerts: DASH API returned a malformed service alerts response (body is not an object)"
   severity: major
   test: 1
