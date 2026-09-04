@@ -257,6 +257,103 @@ describe("ServiceAlertRepository", () => {
         });
     });
 
+    describe("getActiveAlertsForStop", () => {
+        it("returns an active alert whose informedStopIds includes the given stopId", () => {
+            // Arrange
+            const referenceTime = new Date("2026-01-01T12:00:00.000Z");
+            const alwaysActive = { start: null, end: null } as const;
+            const alert = makeAlert({
+                id: "matching-alert",
+                informedStopIds: ["stop-1"],
+                activePeriod: alwaysActive,
+            });
+            repo.applyAlerts([alert]);
+
+            // Act
+            const alerts = repo.getActiveAlertsForStop("stop-1", referenceTime);
+
+            // Assert
+            expect(alerts.map((a) => a.id)).toEqual(["matching-alert"]);
+        });
+
+        it("excludes an alert whose informedStopIds does not include the given stopId, even if active", () => {
+            // Arrange
+            const referenceTime = new Date("2026-01-01T12:00:00.000Z");
+            const alwaysActive = { start: null, end: null } as const;
+            const alert = makeAlert({
+                id: "other-stop-alert",
+                informedStopIds: ["stop-2"],
+                activePeriod: alwaysActive,
+            });
+            repo.applyAlerts([alert]);
+
+            // Act
+            const alerts = repo.getActiveAlertsForStop("stop-1", referenceTime);
+
+            // Assert
+            expect(alerts).toEqual([]);
+        });
+
+        it("excludes an inactive alert even when its informedStopIds matches the given stopId", () => {
+            // Arrange
+            const referenceTime = new Date("2026-01-01T12:00:00.000Z");
+            const expired = makeAlert({
+                id: "expired-alert",
+                informedStopIds: ["stop-1"],
+                activePeriod: { start: "2026-01-01T09:00:00.000Z", end: "2026-01-01T10:00:00.000Z" },
+            });
+            repo.applyAlerts([expired]);
+
+            // Act
+            const alerts = repo.getActiveAlertsForStop("stop-1", referenceTime);
+
+            // Assert
+            expect(alerts).toEqual([]);
+        });
+
+        it("excludes an agency-wide alert (empty informedRouteIds and informedStopIds) for every stopId", () => {
+            // Arrange
+            const referenceTime = new Date("2026-01-01T12:00:00.000Z");
+            const alwaysActive = { start: null, end: null } as const;
+            const agencyWide = makeAlert({
+                id: "agency-wide-alert",
+                informedRouteIds: [],
+                informedStopIds: [],
+                activePeriod: alwaysActive,
+            });
+            repo.applyAlerts([agencyWide]);
+
+            // Act
+            const alerts = repo.getActiveAlertsForStop("stop-1", referenceTime);
+
+            // Assert
+            expect(alerts).toEqual([]);
+        });
+
+        it("returns multiple matching alerts in the same stable order as getActiveAlerts()", () => {
+            // Arrange
+            const referenceTime = new Date("2026-01-01T12:00:00.000Z");
+            const alwaysActive = { start: null, end: null } as const;
+            const first = makeAlert({ id: "first-alert", informedStopIds: ["stop-1"], activePeriod: alwaysActive });
+            const second = makeAlert({ id: "second-alert", informedStopIds: ["stop-1"], activePeriod: alwaysActive });
+            repo.applyAlerts([first, second]);
+
+            // Act
+            const alerts = repo.getActiveAlertsForStop("stop-1", referenceTime);
+
+            // Assert
+            expect(alerts.map((a) => a.id)).toEqual(["first-alert", "second-alert"]);
+        });
+
+        it("returns an empty array when no alerts are stored", () => {
+            // Arrange & Act
+            const alerts = repo.getActiveAlertsForStop("stop-1");
+
+            // Assert
+            expect(alerts).toEqual([]);
+        });
+    });
+
     describe("applyAlerts", () => {
         it("fully replaces the store on each call (no accumulation across calls)", () => {
             // Arrange
