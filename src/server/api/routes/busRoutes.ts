@@ -8,7 +8,7 @@ import { createStopService } from "../services/StopService";
 const service = createBusRouteService(BusDataRepository.getInstance(), ServiceAlertRepository.getInstance());
 const controller = createBusRouteController(service);
 
-const stopService = createStopService(BusDataRepository.getInstance());
+const stopService = createStopService(BusDataRepository.getInstance(), ServiceAlertRepository.getInstance());
 const stopController = createStopController(stopService);
 
 const router = Router();

@@ -16,6 +16,13 @@ import { createStopService } from "../services/StopService";
 // then stopRoutes.ts. Grab the second instance, the one wired to this router.
 const getMockService = () => vi.mocked(createStopService).mock.results[1]?.value;
 
+describe("DI wiring", () => {
+    it("invokes createStopService (this router's instance) with 2 arguments (route + service-alert repositories)", () => {
+        // Assert
+        expect(vi.mocked(createStopService).mock.calls[1]).toHaveLength(2);
+    });
+});
+
 describe("GET /api/v1/stops/nearby", () => {
     it("responds with 200 and an array body on success", async () => {
         // Arrange
