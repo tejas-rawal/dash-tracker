@@ -75,8 +75,12 @@ Predictions responses are unchanged (ALRT-09 deferred — alert visibility for a
 
 **Plans**: 2 plans
 Plans:
+**Wave 1**
 
 - [ ] 06-01-PLAN.md — Route alerts (ALRT-05, ALRT-06): ServiceAlertSummary model, mapping fn, ServiceAlertRepository.getActiveAlertsForRoute, BusRouteService embedding + DI wiring
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 06-02-PLAN.md — Stop alerts (ALRT-07, ALRT-08): ServiceAlertRepository.getActiveAlertsForStop, StopService embedding on getStopsForRoute/getNearbyStops + DI wiring
 
 ## Progress
