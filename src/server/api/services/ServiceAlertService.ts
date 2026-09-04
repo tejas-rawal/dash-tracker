@@ -39,24 +39,19 @@ export function createServiceAlertService(): ServiceAlertService {
             }
         }
 
-        // TEMPORARY diagnostic to confirm the real live top-level shape (G-05-5); Task 3 of
-        // 05-06-PLAN.md removes this once the shape is confirmed via a human-reported boot.
-        logger.warn(`SERVICE-ALERTS-SHAPE-DIAG typeof body=${typeof body} body=${JSON.stringify(body).slice(0, 2000)}`);
-
-        if (body === null || typeof body !== "object" || Array.isArray(body)) {
+        if (body === null || typeof body !== "object") {
             throw new UpstreamApiError(MALFORMED_BODY_MESSAGE);
         }
-        return body as DashAlertsApiResponse;
+
+        // Confirmed live shape (G-05-5): a bare top-level array of entities, with no
+        // {entities:[...]} envelope. The pre-existing envelope shape is still supported
+        // for any body that arrives as a plain object instead.
+        const entities = Array.isArray(body) ? (body as DashAlertEntity[]) : (body as DashAlertsApiResponse).entities;
+        return { entities };
     }
 
     function isValidDashAlertEntity(entity: unknown): entity is DashAlertEntity {
-        return (
-            typeof entity === "object" &&
-            entity !== null &&
-            typeof (entity as DashAlertEntity).id === "string" &&
-            typeof (entity as DashAlertEntity).alert === "object" &&
-            (entity as DashAlertEntity).alert !== null
-        );
+        return typeof entity === "object" && entity !== null && typeof (entity as DashAlertEntity).id === "string";
     }
 
     // D-02: multiple active_period entries collapse to earliest start / latest end.
@@ -66,36 +61,40 @@ export function createServiceAlertService(): ServiceAlertService {
             return { start: null, end: null };
         }
 
-        const starts = periods.map((p) => p.start).filter((s): s is number => s !== undefined);
-        const anyOpenEnded = periods.some((p) => p.end === undefined);
-        const ends = periods.map((p) => p.end).filter((e): e is number => e !== undefined);
+        const starts = periods.map((p) => p.start).filter((s): s is string => s != null);
+        const anyOpenEnded = periods.some((p) => p.end == null);
+        const ends = periods.map((p) => p.end).filter((e): e is string => e != null);
 
         return {
-            start: starts.length > 0 ? new Date(Math.min(...starts) * 1000).toISOString() : null,
-            end: !anyOpenEnded && ends.length > 0 ? new Date(Math.max(...ends) * 1000).toISOString() : null,
+            start:
+                starts.length > 0
+                    ? new Date(Math.min(...starts.map((s) => new Date(s).getTime()))).toISOString()
+                    : null,
+            end:
+                !anyOpenEnded && ends.length > 0
+                    ? new Date(Math.max(...ends.map((e) => new Date(e).getTime()))).toISOString()
+                    : null,
         };
     }
 
     function mapToServiceAlert(entity: DashAlertEntity): ServiceAlert {
-        const { alert } = entity;
-
-        const informedRouteIds = (alert.informed_entity ?? [])
-            .map((ie) => ie.route_id)
+        const informedRouteIds = (entity.informedEntities ?? [])
+            .map((ie) => ie.routeId)
             .filter((id): id is string => id !== undefined);
-        const informedStopIds = (alert.informed_entity ?? [])
-            .map((ie) => ie.stop_id)
+        const informedStopIds = (entity.informedEntities ?? [])
+            .map((ie) => ie.stopId)
             .filter((id): id is string => id !== undefined);
 
         return {
             id: entity.id,
-            cause: alert.cause,
-            effect: alert.effect,
-            headerText: alert.header_text?.translation?.[0]?.text,
-            descriptionText: alert.description_text?.translation?.[0]?.text,
-            url: alert.url?.translation?.[0]?.text,
+            cause: entity.cause,
+            effect: entity.effect,
+            headerText: entity.headerText ?? undefined,
+            descriptionText: entity.descriptionText ?? undefined,
+            url: entity.url ?? undefined,
             informedRouteIds,
             informedStopIds,
-            activePeriod: deriveActiveWindow(alert.active_period),
+            activePeriod: deriveActiveWindow(entity.activePeriods),
         };
     }
 

@@ -182,25 +182,17 @@ describe("ServiceAlertRepository", () => {
             const fixedNow = new Date("2026-01-01T12:00:00.000Z");
             const activeEntity: DashAlertEntity = {
                 id: "active-alert",
-                alert: {
-                    // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
-                    active_period: [{ start: 1_767_265_200, end: 1_767_272_400 }], // 2026-01-01T11:00-13:00Z
-                    // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
-                    informed_entity: [{ route_id: "route-1" }],
-                    cause: "MAINTENANCE",
-                    effect: "DETOUR",
-                },
+                activePeriods: [{ start: "2026-01-01T11:00:00.000Z", end: "2026-01-01T13:00:00.000Z" }],
+                informedEntities: [{ routeId: "route-1" }],
+                cause: "MAINTENANCE",
+                effect: "DETOUR",
             };
             const expiredEntity: DashAlertEntity = {
                 id: "expired-alert",
-                alert: {
-                    // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
-                    active_period: [{ start: 1_767_250_800, end: 1_767_254_400 }], // 2026-01-01T07:00-08:00Z
-                    // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
-                    informed_entity: [{ route_id: "route-2" }],
-                    cause: "MAINTENANCE",
-                    effect: "DETOUR",
-                },
+                activePeriods: [{ start: "2026-01-01T07:00:00.000Z", end: "2026-01-01T08:00:00.000Z" }],
+                informedEntities: [{ routeId: "route-2" }],
+                cause: "MAINTENANCE",
+                effect: "DETOUR",
             };
             const response: DashAlertsApiResponse = { entities: [activeEntity, expiredEntity] };
             mockAxiosGet.mockResolvedValue({ data: response });

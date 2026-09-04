@@ -16,43 +16,27 @@ export interface ServiceAlert {
 }
 
 export interface DashActivePeriod {
-    start?: number;
-    end?: number;
+    start?: string | null;
+    end?: string | null;
 }
 
 export interface DashInformedEntity {
-    // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
-    route_id?: string;
-    // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
-    stop_id?: string;
+    routeId?: string;
+    stopId?: string;
 }
 
-export interface DashTranslation {
-    text: string;
-    language?: string;
-}
-
-export interface DashAlertTranslatedString {
-    translation: DashTranslation[];
-}
-
-export interface DashAlert {
-    // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
-    active_period?: DashActivePeriod[];
-    // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
-    informed_entity?: DashInformedEntity[];
-    cause?: string;
-    effect?: string;
-    // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
-    header_text?: DashAlertTranslatedString;
-    // biome-ignore lint/style/useNamingConvention: mirrors the GTFS-RT service-alerts wire format (snake_case)
-    description_text?: DashAlertTranslatedString;
-    url?: DashAlertTranslatedString;
-}
-
+// Confirmed live shape (G-05-5): a flat, custom Swiftly/Alexandria alerts format, not the
+// nested GTFS-RT-protobuf-derived shape originally assumed — no `alert` sub-object, and
+// headerText/descriptionText/url are plain strings, not {translation:[...]} wrappers.
 export interface DashAlertEntity {
     id: string;
-    alert: DashAlert;
+    cause?: string;
+    effect?: string;
+    headerText?: string | null;
+    descriptionText?: string | null;
+    url?: string | null;
+    activePeriods?: DashActivePeriod[];
+    informedEntities?: DashInformedEntity[];
 }
 
 export interface DashAlertsApiResponse {
