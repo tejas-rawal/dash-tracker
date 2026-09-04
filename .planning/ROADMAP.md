@@ -73,15 +73,15 @@ Plans:
 
 Predictions responses are unchanged (ALRT-09 deferred — alert visibility for a stop/route is already covered by its route/stop response).
 
-**Plans**: 2 plans
+**Plans**: 2/2 plans executed
 Plans:
 **Wave 1**
 
-- [ ] 06-01-PLAN.md — Route alerts (ALRT-05, ALRT-06): ServiceAlertSummary model, mapping fn, ServiceAlertRepository.getActiveAlertsForRoute, BusRouteService embedding + DI wiring
+- [x] 06-01-PLAN.md — Route alerts (ALRT-05, ALRT-06): ServiceAlertSummary model, mapping fn, ServiceAlertRepository.getActiveAlertsForRoute, BusRouteService embedding + DI wiring
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 06-02-PLAN.md — Stop alerts (ALRT-07, ALRT-08): ServiceAlertRepository.getActiveAlertsForStop, StopService embedding on getStopsForRoute/getNearbyStops + DI wiring
+- [x] 06-02-PLAN.md — Stop alerts (ALRT-07, ALRT-08): ServiceAlertRepository.getActiveAlertsForStop, StopService embedding on getStopsForRoute/getNearbyStops + DI wiring
 
 ## Progress
 
@@ -95,7 +95,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Stop Discovery | 2/2 | Complete | 2026-08-26 |
 | 4. Live Predictions via SSE | 1/1 | Complete | 2026-08-27 |
 | 5. Service Alerts Ingestion | 6/6 | Complete    | 2026-09-04 |
-| 6. Alerts Surfaced on Routes, Stops & Predictions | 0/2 | Planned | - |
+| 6. Alerts Surfaced on Routes, Stops & Predictions | 2/2 | In Progress|  |
 
 ---
 
