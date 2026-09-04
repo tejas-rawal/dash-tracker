@@ -160,6 +160,103 @@ describe("ServiceAlertRepository", () => {
         });
     });
 
+    describe("getActiveAlertsForRoute", () => {
+        it("returns an active alert whose informedRouteIds includes the given routeId", () => {
+            // Arrange
+            const referenceTime = new Date("2026-01-01T12:00:00.000Z");
+            const alwaysActive = { start: null, end: null } as const;
+            const alert = makeAlert({
+                id: "matching-alert",
+                informedRouteIds: ["route-1"],
+                activePeriod: alwaysActive,
+            });
+            repo.applyAlerts([alert]);
+
+            // Act
+            const alerts = repo.getActiveAlertsForRoute("route-1", referenceTime);
+
+            // Assert
+            expect(alerts.map((a) => a.id)).toEqual(["matching-alert"]);
+        });
+
+        it("excludes an alert whose informedRouteIds does not include the given routeId, even if active", () => {
+            // Arrange
+            const referenceTime = new Date("2026-01-01T12:00:00.000Z");
+            const alwaysActive = { start: null, end: null } as const;
+            const alert = makeAlert({
+                id: "other-route-alert",
+                informedRouteIds: ["route-2"],
+                activePeriod: alwaysActive,
+            });
+            repo.applyAlerts([alert]);
+
+            // Act
+            const alerts = repo.getActiveAlertsForRoute("route-1", referenceTime);
+
+            // Assert
+            expect(alerts).toEqual([]);
+        });
+
+        it("excludes an inactive alert even when its informedRouteIds matches the given routeId", () => {
+            // Arrange
+            const referenceTime = new Date("2026-01-01T12:00:00.000Z");
+            const expired = makeAlert({
+                id: "expired-alert",
+                informedRouteIds: ["route-1"],
+                activePeriod: { start: "2026-01-01T09:00:00.000Z", end: "2026-01-01T10:00:00.000Z" },
+            });
+            repo.applyAlerts([expired]);
+
+            // Act
+            const alerts = repo.getActiveAlertsForRoute("route-1", referenceTime);
+
+            // Assert
+            expect(alerts).toEqual([]);
+        });
+
+        it("excludes an agency-wide alert (empty informedRouteIds and informedStopIds) for every routeId", () => {
+            // Arrange
+            const referenceTime = new Date("2026-01-01T12:00:00.000Z");
+            const alwaysActive = { start: null, end: null } as const;
+            const agencyWide = makeAlert({
+                id: "agency-wide-alert",
+                informedRouteIds: [],
+                informedStopIds: [],
+                activePeriod: alwaysActive,
+            });
+            repo.applyAlerts([agencyWide]);
+
+            // Act
+            const alerts = repo.getActiveAlertsForRoute("route-1", referenceTime);
+
+            // Assert
+            expect(alerts).toEqual([]);
+        });
+
+        it("returns multiple matching alerts in the same stable order as getActiveAlerts()", () => {
+            // Arrange
+            const referenceTime = new Date("2026-01-01T12:00:00.000Z");
+            const alwaysActive = { start: null, end: null } as const;
+            const first = makeAlert({ id: "first-alert", informedRouteIds: ["route-1"], activePeriod: alwaysActive });
+            const second = makeAlert({ id: "second-alert", informedRouteIds: ["route-1"], activePeriod: alwaysActive });
+            repo.applyAlerts([first, second]);
+
+            // Act
+            const alerts = repo.getActiveAlertsForRoute("route-1", referenceTime);
+
+            // Assert
+            expect(alerts.map((a) => a.id)).toEqual(["first-alert", "second-alert"]);
+        });
+
+        it("returns an empty array when no alerts are stored", () => {
+            // Arrange & Act
+            const alerts = repo.getActiveAlertsForRoute("route-1");
+
+            // Assert
+            expect(alerts).toEqual([]);
+        });
+    });
+
     describe("applyAlerts", () => {
         it("fully replaces the store on each call (no accumulation across calls)", () => {
             // Arrange
