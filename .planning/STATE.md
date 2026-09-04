@@ -2,37 +2,37 @@
 gsd_state_version: 1.0
 milestone: v0.4
 milestone_name: Service Alerts
-current_phase: 05
-current_phase_name: Service Alerts Ingestion
-status: executing
-stopped_at: Phase 5 gap closure (05-06/G-05-5) executed and closed with confirmed live shape; ready for re-verification
-last_updated: "2026-09-04T00:00:00.000Z"
+current_phase: 6
+current_phase_name: Alerts Surfaced on Routes, Stops & Predictions
+status: planning
+stopped_at: Phase 05 complete, ready to plan Phase 6
+last_updated: "2026-09-04T17:50:45.181Z"
 last_activity: 2026-09-04
-last_activity_desc: Phase 05 gap closure (05-06) closed G-05-5 — confirmed live DASH alert response shape is flat/custom, not GTFS-RT-protobuf JSON; rewrote parsing/mapping accordingly
-state_head: 4a25edd
+last_activity_desc: Phase 05 complete, transitioned to Phase 6
+state_head: 911303678119dd909ea5b65d8fff191562ffbd66
 progress:
   total_phases: 2
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 6
   completed_plans: 6
-  percent: 0
+  percent: 50
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-08-27)
+See: .planning/PROJECT.md (updated 2026-09-04)
 
 **Core value:** Riders can always see accurate, near-real-time arrival predictions for their stop.
-**Current focus:** Phase 05 — Service Alerts Ingestion
+**Current focus:** Phase 6 — Alerts Surfaced on Routes, Stops & Predictions
 
 ## Current Position
 
-Phase: 05 (Service Alerts Ingestion) — GAP CLOSURE 05-06 (G-05-5) EXECUTED
-Plan: 6 of 6
-Status: Gap closure 05-06 (G-05-5) executed — confirmed the live gtfs-rt-alerts/v2 response is a flat, custom Swiftly shape (not GTFS-RT-protobuf JSON); rewrote parsing/models/mapping against the confirmed capture; user re-verified live boot with no poll error (no alert was active at that moment to re-confirm field text visually — covered by a unit test built from the actual live capture instead)
-Last activity: 2026-09-04 — Phase 05 gap closure (05-06) executed and user-verified
+Phase: 6 — Alerts Surfaced on Routes, Stops & Predictions
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-04 — Phase 05 complete, transitioned to Phase 6
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Last activity: 2026-09-04 — Phase 05 gap closure (05-06) executed and user-ver
 | 04 | 1 | - | - |
 | 5 (v0.4) | TBD | - | - |
 | 6 (v0.4) | TBD | - | - |
+| 05 | 6 | - | - |
 
 **Recent Trend:**
 
@@ -78,6 +79,8 @@ Recent decisions affecting current work:
 - v0.2: Repo will eventually house both backend and Expo/React Native frontend (monorepo); frontend itself deferred
 - [Phase 3] Stop discovery lives in a new `StopController`/`StopService` pair, kept separate from `BusRouteController`/`BusRouteService`
 - [Phase 3] `GET /:shortName/stops` groups stops by direction (not a deduped flat list) — locked public contract, iterate `route.directions` directly
+- [Phase 5] Request `?format=json` explicitly from DASH/Swiftly's `gtfs-rt-alerts/v2` endpoint — it defaults to protobuf-binary otherwise
+- [Phase 5] Live alert payload is a flat, custom Swiftly/Alexandria JSON format (bare top-level array, camelCase, ISO-8601 dates) — not the nested GTFS-RT-protobuf-derived `{entities:[...]}` shape early rounds assumed from an auto-generated doc example
 
 ### Pending Todos
 
@@ -109,10 +112,11 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-01T19:52:57.026Z
-Stopped at: Phase 5 context gathered
-Resume file: .planning/phases/05-service-alerts-ingestion/05-CONTEXT.md
+Last session: 2026-09-04
+Stopped at: Phase 5 complete, ready to plan Phase 6
+Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- `/gsd-discuss-phase 6` — gather context and clarify approach for Phase 6
+- `/gsd-plan-phase 6` — skip discussion, plan directly

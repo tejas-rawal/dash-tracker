@@ -35,11 +35,11 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 - ✓ Shared per-stop upstream poll loop (30s), started on first subscriber and stopped when idle — v0.2 Phase 4
 - ✓ REST predictions endpoint retained as fallback/initial-load path, fully independent of SSE — v0.2 Phase 4
 - ✓ `generatedAt` freshness timestamp added to REST and SSE prediction payloads — v0.2 Phase 4
+- ✓ Fetch and cache GTFS-RT service alerts from the DASH/Swiftly API on a dedicated background poll (~5 min) — Phase 5
+- ✓ New `ServiceAlert` model representing a single alert (affected routes/stops, description, active window) — Phase 5
 
 ### Active
 
-- [ ] Fetch and cache GTFS-RT service alerts from the DASH/Swiftly API on a dedicated background poll (~5 min)
-- [ ] New `ServiceAlert` model representing a single alert (affected routes/stops, description, active window)
 - [ ] Embed active alerts on `GET /api/v1/routes/all` and `/routes/:shortName` responses
 - [ ] Embed active alerts on `GET /api/v1/routes/:shortName/stops` and `/stops/nearby` responses
 - [ ] Embed active alerts on `GET /api/v1/predictions` (REST) responses
@@ -66,6 +66,7 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 - Known tech debt (v0.2): `PredictionStreamController`'s initial SSE write is guarded only against synchronous throws — a mid-write client-socket error surfaces asynchronously via an `'error'` event, which no handler currently catches anywhere in `src/server` (no `res.on("error", ...)` or process-level `unhandledRejection` handler). Flagged as residual Warning WR-05 in `.planning/phases/04-live-predictions-via-sse/04-REVIEW.md` after a 3-iteration code-review fix cycle that closed 3 Critical race/leak bugs and 4 other Warnings; does not violate any LIVE-01..05 requirement as scoped
 - Note: an unrelated, pre-existing uncommitted fix to `BusDataRepository.ts` (dedupe `initialize()`/`refreshData()` load paths, commit `b52c130`) was swept into the v0.2 execution history by the automated code-review-fix pipeline picking up dirty working-tree state — not part of Phase 3/4 scope, flagged to the user during execution, left in place as a correct fix
 - v0.4 originates from a planted seed (SEED-001) captured in a prior session, itself from research over the Swiftly API docs cross-checked against the DASH real-time API already integrated here; this worktree treats v0.4 as the next milestone after v0.2 independent of the unmerged v0.3 (Favorited & Recent Routes) branch
+- Shipped v0.4 Phase 5 (2026-09-04): `ServiceAlertService`/`ServiceAlertRepository`/`ServiceAlertPollService` ingest GTFS-RT service alerts from DASH/Swiftly's `gtfs-rt-alerts/v2?format=json` endpoint on a dedicated 5-minute poll, independent of the 30s prediction poll; alerts are filtered to only the currently-active window in-memory. Took 6 gap-closure rounds to reach the real live payload shape — the endpoint is a flat, custom Swiftly/Alexandria JSON format (bare top-level array, camelCase fields, ISO-8601 dates), not the nested GTFS-RT-protobuf-derived `{entities:[...]}` envelope with `{translation:[...]}` wrappers that early rounds assumed from an unreliable auto-generated API-doc example. Ingestion-only phase — no HTTP surface yet, wired into responses in Phase 6. 255/255 tests pass, `bun run build` clean, 0 open security threats (12/12 closed, see `05-SECURITY.md`)
 
 ## Constraints
 
@@ -88,6 +89,8 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 | Stop discovery lives in a new `StopController`/`StopService` pair, not folded into `BusRouteController`/`BusRouteService` | Stop discovery is a distinct concern from route CRUD even though one URL nests under `/routes`; splitting it out later would touch call sites and tests | ✓ Shipped Phase 3 |
 | `GET /:shortName/stops` groups stops by direction (`[{ directionId, title, stops }]`) instead of a deduped flat list | Response shape is a public contract — flattening later would be a breaking change for client apps; iterating `route.directions` preserves real sequence order that `getAllStops()` loses | ✓ Shipped Phase 3 |
 | Nearby-search radius/distance in miles, default radius 0.5mi, default count 10 (cap 50), results sorted ascending by distance | Matches how a rider thinks about "how far," and bounds response size against a dense stop dataset | ✓ Shipped Phase 3 |
+| Request `?format=json` explicitly from the DASH/Swiftly `gtfs-rt-alerts/v2` endpoint | Endpoint defaults to protobuf-binary with no format parameter; JSON is opt-in per Swiftly's own docs | ✓ Shipped Phase 5 — root-caused after 3 prior gap-closure rounds treated symptoms (string-body parsing, entity/entities rename) without addressing why the body wasn't JSON |
+| Accept a bare top-level JSON array (no `{entities:[...]}` envelope) as the alerts payload, confirmed via a temporary live-boot diagnostic log rather than re-guessing from API docs | The real live shape is a flat, custom Swiftly/Alexandria format, not the nested GTFS-RT-protobuf-derived shape an auto-generated doc example implied | ✓ Shipped Phase 5 |
 
 ## Evolution
 
@@ -107,4 +110,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-01 after starting v0.4 milestone*
+*Last updated: 2026-09-04 after Phase 5*
