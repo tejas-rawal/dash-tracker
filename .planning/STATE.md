@@ -5,16 +5,16 @@ milestone_name: Service Alerts
 current_phase: 05
 current_phase_name: Service Alerts Ingestion
 status: executing
-stopped_at: Phase 5 gap closure (05-03/G-05-2) executed and merged; re-verification found new gaps
-last_updated: "2026-09-02T14:06:18.774Z"
-last_activity: 2026-09-02
-last_activity_desc: Phase 05 gap closure (05-03) executed and merged; verification found gaps (array-root body guard, alert field shape mismatch)
-state_head: 7ece6f9
+stopped_at: Phase 5 gap closure (05-06/G-05-5) executed and closed with confirmed live shape; ready for re-verification
+last_updated: "2026-09-04T00:00:00.000Z"
+last_activity: 2026-09-04
+last_activity_desc: Phase 05 gap closure (05-06) closed G-05-5 — confirmed live DASH alert response shape is flat/custom, not GTFS-RT-protobuf JSON; rewrote parsing/mapping accordingly
+state_head: 4a25edd
 progress:
   total_phases: 2
   completed_phases: 0
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 6
+  completed_plans: 6
   percent: 0
 ---
 
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-08-27)
 
 ## Current Position
 
-Phase: 05 (Service Alerts Ingestion) — GAP CLOSURE EXECUTED, GAPS FOUND ON RE-VERIFICATION
-Plan: 3 of 3
-Status: Gap closure 05-03 (G-05-2) executed and merged; 05-VERIFICATION.md now shows gaps_found (array-root body guard unfixed; alert field-shape mismatch surfaced by 05-UAT.md's live-response sample)
-Last activity: 2026-09-02 — Phase 05 gap closure (05-03) executed, code-reviewed, and re-verified
+Phase: 05 (Service Alerts Ingestion) — GAP CLOSURE 05-06 (G-05-5) EXECUTED
+Plan: 6 of 6
+Status: Gap closure 05-06 (G-05-5) executed — confirmed the live gtfs-rt-alerts/v2 response is a flat, custom Swiftly shape (not GTFS-RT-protobuf JSON); rewrote parsing/models/mapping against the confirmed capture; user re-verified live boot with no poll error (no alert was active at that moment to re-confirm field text visually — covered by a unit test built from the actual live capture instead)
+Last activity: 2026-09-04 — Phase 05 gap closure (05-06) executed and user-verified
 
 ## Performance Metrics
 
@@ -89,6 +89,7 @@ None yet.
 - ⚠️ [Phase 3] Code review (archived: `.planning/milestones/v0.2-phases/03-stop-discovery/03-REVIEW.md`) flagged 2 non-blocking edge cases: empty-string `lat`/`lng` query params coerce to `0` instead of 400ing in `StopController`; `StopService.getNearbyStops` doesn't lower-bound `count` if called directly (not reachable via the controller today). Neither blocks Phase 3 completion.
 - ⚠️ [Phase 4, v0.2] Residual WR-05 from the 3-iteration code-review fix cycle (archived: `.planning/milestones/v0.2-phases/04-live-predictions-via-sse/04-REVIEW.md`): `PredictionStreamController`'s initial SSE write is guarded only against synchronous throws — a mid-write client-socket error surfaces asynchronously via an `'error'` event with no handler anywhere in `src/server`. Non-blocking, doesn't violate any LIVE-01..05 requirement.
 - ⚠️ [v0.2] An unrelated, pre-existing uncommitted fix to `BusDataRepository.ts` (dedupe `initialize()`/`refreshData()` load paths) was swept into the v0.2 execution history by the automated code-review-fix pipeline (commit `b52c130`) — correct fix, but out of Phase 3/4 scope and not explicitly approved before landing. Flagged to the user; left in place.
+- ⚠️ [Phase 5, v0.4] The confirmed live DASH alert payload (G-05-5) includes `deletedAt`/`deletedBy` fields that `ServiceAlertService`/`ServiceAlertRepository` currently ignore entirely. If the DASH admin tool soft-deletes alerts instead of removing them from the feed, a deleted-but-still-time-active alert could still surface via `getActiveAlerts()`. Not addressed — out of scope for G-05-5 (response-shape parsing only). Consider before Phase 6 exposes alerts publicly.
 
 ### Quick Tasks Completed
 
