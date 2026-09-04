@@ -24,10 +24,6 @@ Requirements for milestone v0.4 (Service Alerts).
 - [ ] **ALRT-07**: `GET /api/v1/routes/:shortName/stops` includes active alerts for each stop
 - [ ] **ALRT-08**: `GET /api/v1/stops/nearby` includes active alerts for each returned stop
 
-### Prediction Alerts
-
-- [ ] **ALRT-09**: `GET /api/v1/predictions` (REST) flags when the requested route/stop has an active alert
-
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
@@ -38,6 +34,7 @@ Deferred to future release. Tracked but not in current roadmap.
 
 ### Alerts (future)
 
+- **ALRT-09**: `GET /api/v1/predictions` (REST) flags when the requested route/stop has an active alert — deferred; alert visibility is already covered by embedding alerts on route/stop responses, which the client can look up for the same route/stop
 - **ALRT-10**: Standalone alerts-browsing endpoint (e.g. `GET /api/v1/alerts`)
 - **ALRT-11**: Push alert updates over the SSE prediction stream
 
@@ -65,12 +62,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ALRT-06 | Phase 6 | Pending |
 | ALRT-07 | Phase 6 | Pending |
 | ALRT-08 | Phase 6 | Pending |
-| ALRT-09 | Phase 6 | Pending |
 
 **Coverage:**
 
-- v1 requirements: 9 total
-- Mapped to phases: 9
+- v1 requirements: 8 total
+- Mapped to phases: 8
 - Unmapped: 0 ✓
 
 ---

@@ -62,15 +62,16 @@ Plans:
 
 ### Phase 6: Alerts Surfaced on Routes, Stops & Predictions
 
-**Goal**: Riders (via route, stop, and prediction responses) can see active service alerts affecting what they're viewing, without a separate alerts endpoint or any SSE stream changes.
+**Goal**: Riders (via route and stop responses) can see active service alerts affecting what they're viewing, without a separate alerts endpoint or any SSE stream changes.
 **Depends on**: Phase 5 (alerts must be ingested, modeled, and filterable before they can be embedded in responses)
-**Requirements**: ALRT-05, ALRT-06, ALRT-07, ALRT-08, ALRT-09
+**Requirements**: ALRT-05, ALRT-06, ALRT-07, ALRT-08
 **Success Criteria** (what must be TRUE):
 
   1. `GET /api/v1/routes/all` and `GET /api/v1/routes/:shortName` include each route's currently-active alerts in the response.
   2. `GET /api/v1/routes/:shortName/stops` and `GET /api/v1/stops/nearby` include each returned stop's currently-active alerts in the response.
-  3. `GET /api/v1/predictions` (REST) flags when the requested route/stop currently has an active alert.
-  4. Routes, stops, and predictions with no active alerts return the same response shape as before (e.g., an empty alerts array / a false flag) — no regression for existing consumers of these endpoints, and no new endpoint or SSE payload changes are introduced.
+  3. Routes and stops with no active alerts return the same response shape as before (e.g., an empty alerts array) — no regression for existing consumers of these endpoints, and no new endpoint or SSE payload changes are introduced.
+
+Predictions responses are unchanged (ALRT-09 deferred — alert visibility for a stop/route is already covered by its route/stop response).
 
 **Plans**: TBD
 
