@@ -44,6 +44,11 @@ describe("DI wiring", () => {
         // Assert
         expect(vi.mocked(createBusRouteService).mock.calls[0]).toHaveLength(2);
     });
+
+    it("invokes createStopService with 2 arguments (route + service-alert repositories)", () => {
+        // Assert
+        expect(vi.mocked(createStopService).mock.calls[0]).toHaveLength(2);
+    });
 });
 
 describe("GET /api/v1/routes/all", () => {
