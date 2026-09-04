@@ -44,4 +44,15 @@ export class ServiceAlertRepository {
     public getActiveAlerts(referenceTime: Date = new Date()): ServiceAlert[] {
         return Array.from(this.alerts.values()).filter((alert) => isAlertActive(alert, referenceTime));
     }
+
+    // D-03: matches against BusRoute.id, not shortName. D-04: an agency-wide alert (empty
+    // informedRouteIds) never matches any routeId here, so it is naturally excluded.
+    public getActiveAlertsForRoute(routeId: string, referenceTime: Date = new Date()): ServiceAlert[] {
+        return this.getActiveAlerts(referenceTime).filter((alert) => alert.informedRouteIds.includes(routeId));
+    }
+
+    // Defined alongside getActiveAlertsForRoute for symmetry; wired into StopService by Plan 06-02.
+    public getActiveAlertsForStop(stopId: string, referenceTime: Date = new Date()): ServiceAlert[] {
+        return this.getActiveAlerts(referenceTime).filter((alert) => alert.informedStopIds.includes(stopId));
+    }
 }
