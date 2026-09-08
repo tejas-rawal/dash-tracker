@@ -1,8 +1,9 @@
 ---
-status: diagnosed
+status: resolved
 trigger: "G-05-5 UAT gap: after 05-05 added format=json, live boot still logs 'error: Failed to poll service alerts: DASH API returned a malformed service alerts response (body is not an object)' with NO '— string body failed JSON.parse' suffix"
 created: 2026-09-03T00:00:00Z
-updated: 2026-09-03T00:00:00Z
+updated: 2026-09-04T00:00:00Z
+resolution: "Fixed in 05-06 (commit range for 05-06-SUMMARY.md, completed 2026-09-04). fetchFromDashApi() now accepts a bare top-level array body directly as the entities list; confirmed against a real live-boot capture. See 05-06-SUMMARY.md and ServiceAlertService.ts's 'Confirmed live shape (G-05-5)' comment."
 ---
 
 ## Current Focus

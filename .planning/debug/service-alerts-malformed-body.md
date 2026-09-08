@@ -1,3 +1,8 @@
+---
+status: resolved
+resolution: "String-body JSON.parse fallback and entity->entities rename applied in 05-03. Superseded by the array-root shape fix in 05-06 (see service-alerts-body-shape.md and 05-06-SUMMARY.md) which is the final confirmed live shape."
+---
+
 # Debug: G-05-2 — "body is not an object" on live gtfs-rt-alerts/v2
 
 ## Symptom

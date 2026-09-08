@@ -1,3 +1,8 @@
+---
+status: resolved
+resolution: "Fixed in 05-02 (path corrected to gtfs-rt-alerts/v2) and 05-05 (format=json added). See ServiceAlertService.ts's buildDashApiUrl() and 05-06-SUMMARY.md for the final confirmed shape."
+---
+
 # Debug Session: service-alerts poll 404
 
 **Phase:** 05-service-alerts-ingestion
