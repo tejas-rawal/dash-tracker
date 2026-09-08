@@ -16,13 +16,13 @@ Requirements for milestone v0.4 (Service Alerts).
 
 ### Route Alerts
 
-- [ ] **ALRT-05**: `GET /api/v1/routes/all` includes active alerts for each route
-- [ ] **ALRT-06**: `GET /api/v1/routes/:shortName` includes active alerts for that route
+- [x] **ALRT-05**: `GET /api/v1/routes/all` includes active alerts for each route
+- [x] **ALRT-06**: `GET /api/v1/routes/:shortName` includes active alerts for that route
 
 ### Stop Alerts
 
-- [ ] **ALRT-07**: `GET /api/v1/routes/:shortName/stops` includes active alerts for each stop
-- [ ] **ALRT-08**: `GET /api/v1/stops/nearby` includes active alerts for each returned stop
+- [x] **ALRT-07**: `GET /api/v1/routes/:shortName/stops` includes active alerts for each stop
+- [x] **ALRT-08**: `GET /api/v1/stops/nearby` includes active alerts for each returned stop
 
 ## v2 Requirements
 
@@ -58,10 +58,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ALRT-02 | Phase 5 | Complete |
 | ALRT-03 | Phase 5 | Complete |
 | ALRT-04 | Phase 5 | Complete |
-| ALRT-05 | Phase 6 | Pending |
-| ALRT-06 | Phase 6 | Pending |
-| ALRT-07 | Phase 6 | Pending |
-| ALRT-08 | Phase 6 | Pending |
+| ALRT-05 | Phase 6 | Complete |
+| ALRT-06 | Phase 6 | Complete |
+| ALRT-07 | Phase 6 | Complete |
+| ALRT-08 | Phase 6 | Complete |
 
 **Coverage:**
 

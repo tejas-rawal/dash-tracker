@@ -34,7 +34,7 @@
 **Milestone Goal:** Surface DASH/Swiftly's GTFS-RT service alerts (detours, disruptions, stop closures) so riders can see when a route or stop is affected, instead of only seeing an ETA for a bus that isn't actually coming.
 
 - [x] **Phase 5: Service Alerts Ingestion** - The server fetches, models, and filters currently-active GTFS-RT service alerts from DASH/Swiftly on a dedicated background poll, independent of the existing prediction poll (completed 2026-09-04)
-- [ ] **Phase 6: Alerts Surfaced on Routes, Stops & Predictions** - Riders see active alerts embedded directly in route, stop, and prediction responses, with no new dedicated alerts endpoint
+- [x] **Phase 6: Alerts Surfaced on Routes, Stops & Predictions** - Riders see active alerts embedded directly in route, stop, and prediction responses, with no new dedicated alerts endpoint (completed 2026-09-08)
 
 ## Phase Details
 
@@ -95,7 +95,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Stop Discovery | 2/2 | Complete | 2026-08-26 |
 | 4. Live Predictions via SSE | 1/1 | Complete | 2026-08-27 |
 | 5. Service Alerts Ingestion | 6/6 | Complete    | 2026-09-04 |
-| 6. Alerts Surfaced on Routes, Stops & Predictions | 2/2 | In Progress|  |
+| 6. Alerts Surfaced on Routes, Stops & Predictions | 2/2 | Complete    | 2026-09-08 |
 
 ---
 
