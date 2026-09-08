@@ -1,20 +1,14 @@
 ---
-status: testing
+status: complete
 phase: 06-alerts-surfaced-on-routes-stops-predictions
 source: [06-VERIFICATION.md]
 started: 2026-09-04T21:48:28Z
-updated: 2026-09-04T21:48:28Z
+updated: 2026-09-08T00:00:00Z
 ---
 
 ## Current Test
 
-number: 1
-name: Route-alerts lookup reads a consistent Map snapshot during a concurrent poll swap
-expected: |
-  The in-flight request's route-alerts lookups all read from a single consistent Map
-  snapshot — either entirely pre-swap or entirely post-swap data, never a mix of both —
-  for every route in the same response.
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -23,20 +17,20 @@ expected: Under real concurrent load, triggering ServiceAlertPollService.applyAl
   5-minute-poll swap of the alerts Map) at the same moment a request is mid-flight through
   BusRouteService.getAgencyRoutes()/getAgencyRoute() must never produce a torn/partial read
   across the routes in that response.
-result: [pending]
+result: pass
 
 ### 2. Stop-alerts lookup during concurrent ServiceAlertPollService.applyAlerts() swap
 expected: Same as above, but for StopService.getStopsForRoute()/getNearbyStops() racing
   against a concurrent ServiceAlertPollService.applyAlerts() swap — no torn/partial read
   across the stops in that response.
-result: [pending]
+result: pass
 
 ## Summary
 
 total: 2
-passed: 0
+passed: 2
 issues: 0
-pending: 2
+pending: 0
 skipped: 0
 blocked: 0
 
