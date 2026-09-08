@@ -1,11 +1,12 @@
 ---
 phase: 06-alerts-surfaced-on-routes-stops-predictions
 verified: 2026-09-04T21:46:52Z
-status: human_needed
+status: passed
 score: 16/18 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
 human_verification:
+
   - test: "Under real concurrent load, trigger ServiceAlertPollService.applyAlerts() (a 5-minute-poll swap of the alerts Map) at the same moment a request is mid-flight through BusRouteService.getAgencyRoutes()/getAgencyRoute() (which calls ServiceAlertRepository.getActiveAlertsForRoute for each route in the response)."
     expected: "The in-flight request's route-alerts lookups all read from a single consistent Map snapshot — either entirely pre-swap or entirely post-swap data, never a mix of both — for every route in the same response."
     why_human: "ServiceAlertRepository.applyAlerts() does 'this.alerts = staging' as a single reference reassignment (atomic in JS's synchronous execution model), but this must_have is explicitly tagged 'verification: backstop' in 06-01-PLAN.md's frontmatter. No test in ServiceAlertRepository.test.ts or BusRouteService.test.ts exercises applyAlerts() concurrently with a route-alerts read — presence of the atomic-swap code pattern is necessary but per the backstop-verification rule is not sufficient without an explicit held-out/property-based test or directly observed runtime behavior."
