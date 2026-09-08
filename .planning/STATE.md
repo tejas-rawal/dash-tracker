@@ -21,10 +21,10 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-04)
+See: .planning/PROJECT.md (updated 2026-09-08)
 
 **Core value:** Riders can always see accurate, near-real-time arrival predictions for their stop.
-**Current focus:** Phase 06 — Alerts Surfaced on Routes, Stops & Predictions
+**Current focus:** v0.4 milestone complete — awaiting next milestone
 
 ## Current Position
 
@@ -81,6 +81,8 @@ Recent decisions affecting current work:
 - [Phase 3] `GET /:shortName/stops` groups stops by direction (not a deduped flat list) — locked public contract, iterate `route.directions` directly
 - [Phase 5] Request `?format=json` explicitly from DASH/Swiftly's `gtfs-rt-alerts/v2` endpoint — it defaults to protobuf-binary otherwise
 - [Phase 5] Live alert payload is a flat, custom Swiftly/Alexandria JSON format (bare top-level array, camelCase, ISO-8601 dates) — not the nested GTFS-RT-protobuf-derived `{entities:[...]}` shape early rounds assumed from an auto-generated doc example
+- [Phase 6] Match alerts to routes/stops via internal `BusRoute.id`/`BusStop.id` (DASH's own ID space), not `shortName`/`code`
+- [Phase 6] Agency-wide alerts (no informed route/stop) are dropped from responses in v0.4; ALRT-09 (predictions embedding) deferred to v2
 
 ### Pending Todos
 
@@ -92,7 +94,9 @@ None yet.
 - ⚠️ [Phase 3] Code review (archived: `.planning/milestones/v0.2-phases/03-stop-discovery/03-REVIEW.md`) flagged 2 non-blocking edge cases: empty-string `lat`/`lng` query params coerce to `0` instead of 400ing in `StopController`; `StopService.getNearbyStops` doesn't lower-bound `count` if called directly (not reachable via the controller today). Neither blocks Phase 3 completion.
 - ⚠️ [Phase 4, v0.2] Residual WR-05 from the 3-iteration code-review fix cycle (archived: `.planning/milestones/v0.2-phases/04-live-predictions-via-sse/04-REVIEW.md`): `PredictionStreamController`'s initial SSE write is guarded only against synchronous throws — a mid-write client-socket error surfaces asynchronously via an `'error'` event with no handler anywhere in `src/server`. Non-blocking, doesn't violate any LIVE-01..05 requirement.
 - ⚠️ [v0.2] An unrelated, pre-existing uncommitted fix to `BusDataRepository.ts` (dedupe `initialize()`/`refreshData()` load paths) was swept into the v0.2 execution history by the automated code-review-fix pipeline (commit `b52c130`) — correct fix, but out of Phase 3/4 scope and not explicitly approved before landing. Flagged to the user; left in place.
-- ⚠️ [Phase 5, v0.4] The confirmed live DASH alert payload (G-05-5) includes `deletedAt`/`deletedBy` fields that `ServiceAlertService`/`ServiceAlertRepository` currently ignore entirely. If the DASH admin tool soft-deletes alerts instead of removing them from the feed, a deleted-but-still-time-active alert could still surface via `getActiveAlerts()`. Not addressed — out of scope for G-05-5 (response-shape parsing only). Consider before Phase 6 exposes alerts publicly.
+- ⚠️ [Phase 5, v0.4 — STILL OPEN after Phase 6] The confirmed live DASH alert payload (G-05-5) includes `deletedAt`/`deletedBy` fields that `ServiceAlertService`/`ServiceAlertRepository` currently ignore entirely. If the DASH admin tool soft-deletes alerts instead of removing them from the feed, a deleted-but-still-time-active alert could still surface via `getActiveAlerts()` — and Phase 6 now exposes that data publicly on route/stop responses without addressing it. Was flagged as "consider before Phase 6 exposes alerts publicly" but not picked up during Phase 6 planning/execution. Worth a follow-up before/early in the next milestone.
+- ⚠️ [Phase 6] `RouteWithAlerts` (`BusRoute & { alerts }`) is built via object spread over a `BusRoute` class instance, losing its prototype methods even though the static type doesn't reflect that (WR-01, `06-REVIEW.md`). No live call site hits it today.
+- ⚠️ [Phase 6] `ServiceAlertRepository.isAlertActive`'s date-boundary checks fail open on a malformed `activePeriod` date string rather than excluding/logging it (WR-02, `06-REVIEW.md`).
 
 ### Quick Tasks Completed
 
@@ -112,11 +116,11 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-04T18:28:33.684Z
-Stopped at: Phase 06 complete — all phases complete
-Resume file: .planning/phases/06-alerts-surfaced-on-routes-stops-predictions/06-CONTEXT.md
+Last session: 2026-09-08
+Stopped at: Phase 06 complete, v0.4 milestone complete
+Resume file: None
 
 ## Operator Next Steps
 
-- `/gsd-discuss-phase 6` — gather context and clarify approach for Phase 6
-- `/gsd-plan-phase 6` — skip discussion, plan directly
+- `/gsd-complete-milestone v0.4` — archive milestone and prepare for next
+- `/gsd-new-milestone` — start scoping the next milestone
