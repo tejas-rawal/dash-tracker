@@ -37,12 +37,12 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 - ✓ `generatedAt` freshness timestamp added to REST and SSE prediction payloads — v0.2 Phase 4
 - ✓ Fetch and cache GTFS-RT service alerts from the DASH/Swiftly API on a dedicated background poll (~5 min) — Phase 5
 - ✓ New `ServiceAlert` model representing a single alert (affected routes/stops, description, active window) — Phase 5
+- ✓ Embed active alerts on `GET /api/v1/routes/all` and `/routes/:shortName` responses — Phase 6
+- ✓ Embed active alerts on `GET /api/v1/routes/:shortName/stops` and `/stops/nearby` responses — Phase 6
 
 ### Active
 
-- [ ] Embed active alerts on `GET /api/v1/routes/all` and `/routes/:shortName` responses
-- [ ] Embed active alerts on `GET /api/v1/routes/:shortName/stops` and `/stops/nearby` responses
-- [ ] Embed active alerts on `GET /api/v1/predictions` (REST) responses
+*(none — v0.4 milestone complete)*
 
 ### Out of Scope
 
@@ -51,8 +51,9 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 - Replacing `tsc` as the build tool (e.g. with Vite/esbuild) — Vite is a frontend bundler/dev server and doesn't fit compiling this Node/Express backend; not part of this cleanup
 - Replacing Vitest — it's a test runner only, unrelated to lint/format consolidation
 - Schedule adherence (SEED-002, on-time performance vs. schedule) — companion idea to service alerts but deliberately deferred to its own future milestone
-- A standalone alerts-browsing endpoint (e.g. `GET /api/v1/alerts`) — alerts are embedded into existing route/stop/prediction responses only for v0.4
+- A standalone alerts-browsing endpoint (e.g. `GET /api/v1/alerts`) — alerts are embedded into existing route/stop responses only for v0.4
 - Pushing alert updates over the SSE prediction stream — SSE carries prediction updates only; alerts stay REST-only for now
+- Embedding active alerts on `GET /api/v1/predictions` (REST) responses (ALRT-09) — deferred to v2; a stop/route's own response already carries its active alerts via Phase 6's embedding, so a duplicate flag/array on the predictions response was judged redundant — Phase 6 D-05
 
 ## Context
 
@@ -65,8 +66,11 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 - Known tech debt: `lint:fix`'s `--apply-unsafe` flag is deprecated by Biome 1.9.4 in favor of `--write --unsafe` (non-blocking, flagged in Phase 1 code review); 15 pre-existing Biome warnings remain by design (Axios `baseURL` naming, `*.test.ts` filename convention, intentional non-Error throws in tests) — see 02-CONTEXT.md D-02
 - Known tech debt (v0.2): `PredictionStreamController`'s initial SSE write is guarded only against synchronous throws — a mid-write client-socket error surfaces asynchronously via an `'error'` event, which no handler currently catches anywhere in `src/server` (no `res.on("error", ...)` or process-level `unhandledRejection` handler). Flagged as residual Warning WR-05 in `.planning/phases/04-live-predictions-via-sse/04-REVIEW.md` after a 3-iteration code-review fix cycle that closed 3 Critical race/leak bugs and 4 other Warnings; does not violate any LIVE-01..05 requirement as scoped
 - Note: an unrelated, pre-existing uncommitted fix to `BusDataRepository.ts` (dedupe `initialize()`/`refreshData()` load paths, commit `b52c130`) was swept into the v0.2 execution history by the automated code-review-fix pipeline picking up dirty working-tree state — not part of Phase 3/4 scope, flagged to the user during execution, left in place as a correct fix
+- Known tech debt (Phase 6): `RouteWithAlerts` (`BusRoute & { alerts }`) is built via object spread over a `BusRoute` class instance, which loses its prototype methods (`getAllStops`, `getDirectionById`) even though the static type doesn't reflect that — a latent type-unsoundness (WR-01 in `06-REVIEW.md`), no live call site hits it today
+- Known tech debt (Phase 6): `ServiceAlertRepository.isAlertActive`'s date-boundary checks fail open (treat the alert as active) on a malformed `activePeriod` date string rather than excluding/logging it, since `NaN` comparisons are always false (WR-02 in `06-REVIEW.md`)
 - v0.4 originates from a planted seed (SEED-001) captured in a prior session, itself from research over the Swiftly API docs cross-checked against the DASH real-time API already integrated here; this worktree treats v0.4 as the next milestone after v0.2 independent of the unmerged v0.3 (Favorited & Recent Routes) branch
 - Shipped v0.4 Phase 5 (2026-09-04): `ServiceAlertService`/`ServiceAlertRepository`/`ServiceAlertPollService` ingest GTFS-RT service alerts from DASH/Swiftly's `gtfs-rt-alerts/v2?format=json` endpoint on a dedicated 5-minute poll, independent of the 30s prediction poll; alerts are filtered to only the currently-active window in-memory. Took 6 gap-closure rounds to reach the real live payload shape — the endpoint is a flat, custom Swiftly/Alexandria JSON format (bare top-level array, camelCase fields, ISO-8601 dates), not the nested GTFS-RT-protobuf-derived `{entities:[...]}` envelope with `{translation:[...]}` wrappers that early rounds assumed from an unreliable auto-generated API-doc example. Ingestion-only phase — no HTTP surface yet, wired into responses in Phase 6. 255/255 tests pass, `bun run build` clean, 0 open security threats (12/12 closed, see `05-SECURITY.md`)
+- Shipped v0.4 Phase 6 (2026-09-08), completing the v0.4 milestone: alerts embedded onto `GET /api/v1/routes/all`, `/routes/:shortName`, `/routes/:shortName/stops`, and `/stops/nearby` via a new trimmed `ServiceAlertSummary` response type and `ServiceAlertRepository.getActiveAlertsForRoute`/`getActiveAlertsForStop`, wired into `BusRouteService`/`StopService` via factory-DI. ALRT-09 (predictions) was descoped mid-phase to v2 — a route/stop's own response already carries its alerts, making a predictions-side duplicate redundant. 283/283 tests pass, 98% coverage, 0 open security threats (6/6 closed, see `06-SECURITY.md`). Code review surfaced 2 non-blocking warnings carried forward as tech debt (see Constraints/tech-debt note below). Human UAT confirmed the atomic Map-swap concurrency reasoning for the 5-minute alert-refresh poll.
 
 ## Constraints
 
@@ -91,6 +95,10 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 | Nearby-search radius/distance in miles, default radius 0.5mi, default count 10 (cap 50), results sorted ascending by distance | Matches how a rider thinks about "how far," and bounds response size against a dense stop dataset | ✓ Shipped Phase 3 |
 | Request `?format=json` explicitly from the DASH/Swiftly `gtfs-rt-alerts/v2` endpoint | Endpoint defaults to protobuf-binary with no format parameter; JSON is opt-in per Swiftly's own docs | ✓ Shipped Phase 5 — root-caused after 3 prior gap-closure rounds treated symptoms (string-body parsing, entity/entities rename) without addressing why the body wasn't JSON |
 | Accept a bare top-level JSON array (no `{entities:[...]}` envelope) as the alerts payload, confirmed via a temporary live-boot diagnostic log rather than re-guessing from API docs | The real live shape is a flat, custom Swiftly/Alexandria format, not the nested GTFS-RT-protobuf-derived shape an auto-generated doc example implied | ✓ Shipped Phase 5 |
+| Embed a trimmed alert summary (id/cause/effect/headerText/descriptionText/activePeriod), omitting `url`/`informedRouteIds`/`informedStopIds` | Those fields are redundant once an alert is attached to a specific route/stop, and keeping them off the wire limits public exposure to only what riders need | ✓ Shipped Phase 6 |
+| Match alerts to routes/stops via internal `BusRoute.id`/`BusStop.id` (DASH's own ID space), not `shortName`/`code` | Same ID space GTFS-RT `informedEntities.routeId`/`.stopId` already populate on ingestion (Phase 5) — no re-derivation needed | ✓ Shipped Phase 6 |
+| Drop agency-wide alerts (no informed route/stop at all) from route/stop responses in v0.4 | Scoping to explicitly-informed entities keeps the matching logic simple; a later phase can add agency-wide surfacing without touching it | ✓ Shipped Phase 6 |
+| Defer ALRT-09 (alerts on predictions responses) to v2 | A stop/route's own response already carries its active alerts via Phase 6's embedding — a duplicate flag/array on the predictions response was judged redundant | ✓ Deferred — moved out of v0.4 scope |
 
 ## Evolution
 
@@ -110,4 +118,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-04 after Phase 5*
+*Last updated: 2026-09-08 after Phase 6 (v0.4 milestone complete)*
