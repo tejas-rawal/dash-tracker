@@ -2,15 +2,31 @@
 
 ## What This Is
 
-dash-tracker is a Node.js/Express REST API that proxies and structures data from the DASH public transit API (goswift.ly), exposing bus routes, stop discovery, and arrival predictions — via both REST and a live Server-Sent Events feed — through a layered architecture (routes → controllers → services → repositories). v0.1 shipped a dev-tooling cleanup (Biome-only lint/format); v0.2 shipped the first real feature set: riders (via a future client) can discover stops and get near-real-time arrival predictions that update automatically over a live connection.
+dash-tracker is a Node.js/Express REST API that proxies and structures data from the DASH public transit API (goswift.ly), exposing bus routes, stop discovery, arrival predictions (via both REST and a live Server-Sent Events feed), and anonymous device-scoped favorites/recents — through a layered architecture (routes → controllers → services → repositories). v0.1 shipped a dev-tooling cleanup (Biome-only lint/format); v0.2 shipped the first real feature set (stop discovery, live SSE predictions); v0.3 added SQLite-backed favorites (routes and stops, no cap) and auto-tracked recents (last 5 per device), both scoped by an anonymous `X-Device-Id` header with no auth system.
 
 ## Core Value
 
 Riders can always see accurate, near-real-time arrival predictions for their stop.
 
-## Current Milestone: Planning Next (post-v0.2)
+## Current State
 
-v0.2 Real-Time Arrival Predictions shipped 2026-08-27. No milestone is currently in progress — run `/gsd-new-milestone` to scope the next one (the Expo/React Native client is the natural next candidate per Context below).
+**Shipped:** v0.3 Favorited & Recent Routes (2026-09-01) — anonymous device-scoped favorites and auto-tracked recents for both routes and stops, backed by a new isolated SQLite repository. All 13 v0.3 requirements delivered; three milestones shipped to date (v0.1 tooling cleanup, v0.2 stop discovery + live SSE predictions, v0.3 favorites/recents).
+
+<details>
+<summary>Archived: v0.3 Favorited & Recent Routes milestone goal (shipped 2026-09-01)</summary>
+
+**Goal:** Riders can save routes AND stops they care about, and jump back into ones they recently viewed, scoped per device, through this backend — so a home screen can take them straight to either.
+
+**Target features:**
+- Anonymous device-ID-scoped favorites, covering both routes and stops (add/remove, no cap, most-recently-favorited-first)
+- Auto-tracked recents, covering both routes and stops (last 5 per device, logged on explicit-route/stop REST prediction lookups only — not unfiltered stop lookups, not SSE subscriptions)
+- SQLite-backed persistence via a new repository layer, following the existing routes → controllers → services → repository architecture
+
+</details>
+
+## Next Milestone Goals
+
+Not yet defined — run `/gsd-new-milestone` to scope the next milestone. The Expo/React Native frontend (monorepo, deferred since v0.1) remains the most likely next candidate, along with any v2 requirements deferred from v0.3 (see PERS-01..05 in the archived `.planning/milestones/v0.3-REQUIREMENTS.md`).
 
 ## Requirements
 
@@ -30,10 +46,13 @@ v0.2 Real-Time Arrival Predictions shipped 2026-08-27. No milestone is currently
 - ✓ Shared per-stop upstream poll loop (30s), started on first subscriber and stopped when idle — v0.2 Phase 4
 - ✓ REST predictions endpoint retained as fallback/initial-load path, fully independent of SSE — v0.2 Phase 4
 - ✓ `generatedAt` freshness timestamp added to REST and SSE prediction payloads — v0.2 Phase 4
+- ✓ SQLite-backed persistence layer for favorites/recents, isolated behind a repository (no changes to existing DASH proxy repository) — v0.3 Phase 5
+- ✓ Anonymous device-ID-scoped favorites: add/remove a route OR stop as favorite, list favorites with full details, most-recently-favorited-first, no cap — v0.3 Phase 6
+- ✓ Auto-tracked recents (routes and stops): last 5 per device, logged automatically on explicit-route/stop REST prediction lookups (not unfiltered stop lookups, not SSE subscriptions), list with full details — v0.3 Phase 7
 
 ### Active
 
-(None yet — scope the next milestone via `/gsd-new-milestone`. The Expo/React Native client, listed under Out of Scope below, is the natural next candidate.)
+_None yet — defined at the start of the next milestone via `/gsd-new-milestone`._
 
 ### Out of Scope
 
@@ -53,6 +72,10 @@ v0.2 Real-Time Arrival Predictions shipped 2026-08-27. No milestone is currently
 - Known tech debt: `lint:fix`'s `--apply-unsafe` flag is deprecated by Biome 1.9.4 in favor of `--write --unsafe` (non-blocking, flagged in Phase 1 code review); 15 pre-existing Biome warnings remain by design (Axios `baseURL` naming, `*.test.ts` filename convention, intentional non-Error throws in tests) — see 02-CONTEXT.md D-02
 - Known tech debt (v0.2): `PredictionStreamController`'s initial SSE write is guarded only against synchronous throws — a mid-write client-socket error surfaces asynchronously via an `'error'` event, which no handler currently catches anywhere in `src/server` (no `res.on("error", ...)` or process-level `unhandledRejection` handler). Flagged as residual Warning WR-05 in `.planning/phases/04-live-predictions-via-sse/04-REVIEW.md` after a 3-iteration code-review fix cycle that closed 3 Critical race/leak bugs and 4 other Warnings; does not violate any LIVE-01..05 requirement as scoped
 - Note: an unrelated, pre-existing uncommitted fix to `BusDataRepository.ts` (dedupe `initialize()`/`refreshData()` load paths, commit `b52c130`) was swept into the v0.2 execution history by the automated code-review-fix pipeline picking up dirty working-tree state — not part of Phase 3/4 scope, flagged to the user during execution, left in place as a correct fix
+- Shipped v0.3 Phase 6 (2026-08-31): anonymous device-scoped Favorites HTTP API (`POST`/`DELETE`/`GET /api/v1/favorites`) on top of Phase 5's `FavoritesRecentsRepository`, plus a new `requireDeviceId` middleware (reusable by Phase 7 Recents) and `FavoritesService`/`FavoritesController` pattern for Phase 7 to mirror — 284/284 tests pass, existing v0.2 endpoints verified untouched
+- Known tech debt (v0.3 Phase 6): `FavoritesController.unfavorite` doesn't trim/validate `entityId` the way `favorite` does, and `favorite`'s `entityId` is trim-validated but the untrimmed value is what's persisted/looked up — both whitespace-padded-id edge cases, non-blocking, flagged as WR-01/WR-03 in `.planning/phases/06-favorites-routes-stops/06-REVIEW.md`
+- Shipped v0.3 Phase 7 (2026-09-01): automatic recents tracking — every prediction lookup fire-and-forget-logs its stop (and, when an explicit route filter is given, its route) as a recent via `FavoritesRecentsRepository`, capped at 5 combined entries per device (oldest-evicted-first), listable via `GET /api/v1/recents` (`RecentsService`/`RecentsController`, mirroring the Phase 6 Favorites pattern); SSE stream path untouched; 313/313 tests pass. Code review caught a pre-ship BLOCKER (CR-01): route recents were written keyed by the client-supplied route *short name* (e.g. `"1A"`) but read back via `getRouteById`, which is keyed by internal route id — every route recent silently vanished from the response. Fixed same-session by resolving short name → internal id (`getRouteByShortName(...)?.id`) before persisting, matching the convention `FavoritesService`/`RecentsService.resolveEntity` already assumes for routes.
+- Known tech debt (v0.3 Phase 7): `RecentsController.resolveDeviceId` unsafely casts the device-id header to `string` with no in-controller guard (relies entirely on `requireDeviceId` middleware ordering); its `NotFoundError`→404 branch is currently unreachable since `RecentsService.listRecents` never throws; device-id header parsing logic is duplicated across `RecentsController`/`PredictionController`/`requireDeviceId` middleware/`FavoritesController`; the recents cap (`5`) is a magic number embedded in a SQL string rather than a named constant; `resolveEntity` is duplicated verbatim between `RecentsService` and `FavoritesService` — all non-blocking, flagged as WR-02/WR-03/IN-01/IN-02/IN-03 in `.planning/phases/07-recents-routes-stops/07-REVIEW.md`
 
 ## Constraints
 
@@ -75,6 +98,11 @@ v0.2 Real-Time Arrival Predictions shipped 2026-08-27. No milestone is currently
 | Stop discovery lives in a new `StopController`/`StopService` pair, not folded into `BusRouteController`/`BusRouteService` | Stop discovery is a distinct concern from route CRUD even though one URL nests under `/routes`; splitting it out later would touch call sites and tests | ✓ Shipped Phase 3 |
 | `GET /:shortName/stops` groups stops by direction (`[{ directionId, title, stops }]`) instead of a deduped flat list | Response shape is a public contract — flattening later would be a breaking change for client apps; iterating `route.directions` preserves real sequence order that `getAllStops()` loses | ✓ Shipped Phase 3 |
 | Nearby-search radius/distance in miles, default radius 0.5mi, default count 10 (cap 50), results sorted ascending by distance | Matches how a rider thinks about "how far," and bounds response size against a dense stop dataset | ✓ Shipped Phase 3 |
+| Favorites/recents identity is an anonymous device ID sent via `X-Device-Id` header, no auth system | Backend serves multiple clients, so favorites can't live in per-device local storage alone; full accounts are unnecessary complexity for v1 and the device ID becomes a natural foreign key if real accounts are added later | ✓ Shipped Phase 6 |
+| Favorites/recents persisted in SQLite behind a new repository, isolated from the existing DASH-proxy `BusDataRepository` | Zero ops (file-based, no external service), fits the existing repository-pattern architecture, easy to swap for Postgres later without touching services/controllers | ✓ Shipped Phase 5/6 |
+| Unfavorite is a plain SQL DELETE with no rows-affected check, and repository upsert uses `INSERT ... ON CONFLICT DO UPDATE` | Makes both favorite-an-already-favorited and unfavorite-a-non-favorite true no-op successes without a read-then-write race | ✓ Shipped Phase 6 |
+| Recents are auto-logged on any prediction/stop lookup rather than requiring a dedicated "log view" call | Reflects actual usage automatically; avoids relying on clients to remember to call a separate endpoint | ✓ Shipped Phase 7 |
+| Route recents are persisted keyed by the route's internal `id`, resolved from the client-supplied short name at write time, not the short name itself | Matches the id-keyed lookup `resolveEntity`/`getRouteById` already uses for route favorites and recents hydration — keeping one canonical identifier avoids a write/read mismatch (caught as CR-01 in code review) | ✓ Shipped Phase 7 |
 
 ## Evolution
 
@@ -94,4 +122,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-27 after v0.2 milestone*
+*Last updated: 2026-09-01 after v0.3 milestone*

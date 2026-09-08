@@ -23,7 +23,7 @@ export function createBusRouteController(service: BusRouteService): BusRouteCont
     const getRoute: RequestHandler = (req: Request, res: Response) => {
         try {
             const { shortName } = req.params;
-            const route = service.getAgencyRoute(shortName);
+            const route = service.getAgencyRoute(Array.isArray(shortName) ? shortName[0] : shortName);
             res.json(route);
         } catch (error: unknown) {
             res.status(error instanceof NotFoundError ? 404 : 500).json({
