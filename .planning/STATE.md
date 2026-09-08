@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v0.4
 milestone_name: Service Alerts
-current_phase: 06
-status: completed
+status: Awaiting next milestone
 stopped_at: Phase 06 complete — all phases complete
-last_updated: "2026-09-08T14:09:29.188Z"
+last_updated: "2026-09-08T14:50:07.227Z"
 last_activity: 2026-09-08
-last_activity_desc: Phase 06 complete
-state_head: c2ff2158a5bcc7aae1e492bc3f713499be063508
+last_activity_desc: Milestone v0.4 completed and archived
+state_head: e78211f2d82be1717b72920f01500f605b1ddc58
 progress:
   total_phases: 2
   completed_phases: 2
   total_plans: 8
   completed_plans: 8
   percent: 100
+current_phase: 06
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-08)
 
 ## Current Position
 
-Phase: 06
-Plan: Not started
-Status: All phases complete
-Last activity: 2026-09-08 — Phase 06 complete
+Phase: Milestone v0.4 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-09-08 — Milestone v0.4 completed and archived
 
 ## Performance Metrics
 
@@ -122,5 +122,4 @@ Resume file: None
 
 ## Operator Next Steps
 
-- `/gsd-complete-milestone v0.4` — archive milestone and prepare for next
-- `/gsd-new-milestone` — start scoping the next milestone
+- Start the next milestone with /gsd-new-milestone

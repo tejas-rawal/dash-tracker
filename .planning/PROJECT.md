@@ -2,13 +2,22 @@
 
 ## What This Is
 
-dash-tracker is a Node.js/Express REST API that proxies and structures data from the DASH public transit API (goswift.ly), exposing bus routes, stop discovery, and arrival predictions — via both REST and a live Server-Sent Events feed — through a layered architecture (routes → controllers → services → repositories). v0.1 shipped a dev-tooling cleanup (Biome-only lint/format); v0.2 shipped the first real feature set: riders (via a future client) can discover stops and get near-real-time arrival predictions that update automatically over a live connection.
+dash-tracker is a Node.js/Express REST API that proxies and structures data from the DASH public transit API (goswift.ly), exposing bus routes, stop discovery, arrival predictions, and active service alerts — via both REST and a live Server-Sent Events feed — through a layered architecture (routes → controllers → services → repositories). v0.1 shipped a dev-tooling cleanup (Biome-only lint/format); v0.2 shipped the first real feature set (stop discovery + live SSE predictions); v0.4 shipped GTFS-RT service alerts, embedded directly into route and stop responses so riders can see when what they're looking at is actually disrupted.
 
 ## Core Value
 
 Riders can always see accurate, near-real-time arrival predictions for their stop.
 
-## Current Milestone: v0.4 Service Alerts
+## Current State
+
+**Shipped:** v0.4 Service Alerts (2026-09-08) — riders now see active service alerts (detours, disruptions, stop closures) embedded directly in route (`/routes/all`, `/routes/:shortName`) and stop (`/routes/:shortName/stops`, `/stops/nearby`) responses, refreshed on a dedicated 5-minute background poll independent of the 30s prediction poll.
+
+## Next Milestone Goals
+
+*(TBD — run `/gsd-new-milestone` to define the next milestone. Backlog candidates: ADHR-01 schedule adherence (SEED-002); ALRT-09/10/11 deferred alerts work; the Expo/React Native frontend.)*
+
+<details>
+<summary>v0.4 Service Alerts — original milestone goal (for reference)</summary>
 
 **Goal:** Surface DASH/Swiftly's GTFS-RT service alerts (detours, disruptions, stop closures) so riders can see when a route or stop is affected, instead of only seeing an ETA for a bus that isn't actually coming.
 
@@ -16,6 +25,8 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 - New `ServiceAlert` model + repository fetch against the DASH service-alerts endpoint, mirroring the existing `BusRoute`/`PredictionService` pattern (repo fetch, model, service/controller layer, factory-function DI)
 - Background poll loop for alerts on a dedicated 5-minute interval, separate from the 30s prediction poll
 - Alerts embedded into existing route, stop, and REST prediction responses (no new dedicated alerts endpoint, no SSE stream changes)
+
+</details>
 
 ## Requirements
 
@@ -42,7 +53,7 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 
 ### Active
 
-*(none — v0.4 milestone complete)*
+*(none — fresh requirements defined at next milestone kickoff via `/gsd-new-milestone`)*
 
 ### Out of Scope
 
@@ -118,4 +129,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-08 after Phase 6 (v0.4 milestone complete)*
+*Last updated: 2026-09-08 after v0.4 milestone*
