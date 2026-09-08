@@ -14,6 +14,12 @@ function parseNumberParam(raw: unknown): number | undefined {
     return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
+function resolveOptionalDeviceId(req: Request): string | undefined {
+    const raw = req.headers["x-device-id"];
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    return value !== undefined && value.trim().length > 0 ? value : undefined;
+}
+
 function resolveErrorStatus(error: unknown): number {
     if (error instanceof NotFoundError) {
         return 404;
@@ -54,7 +60,11 @@ export function createPredictionController(service: PredictionService): Predicti
         }
 
         try {
-            const result = await service.getPredictionsForStop(stop, { number, route });
+            const result = await service.getPredictionsForStop(stop, {
+                number,
+                route,
+                deviceId: resolveOptionalDeviceId(req),
+            });
             res.json(result);
         } catch (error: unknown) {
             res.status(resolveErrorStatus(error)).json(resolveErrorBody(error));

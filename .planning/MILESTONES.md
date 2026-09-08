@@ -9,9 +9,21 @@
 - GTFS-RT service alert fetch, normalize, and active-window filtering pipeline (ServiceAlert model, ServiceAlertService, ServiceAlertRepository, ServiceAlertPollService) with a boot-triggered, non-blocking 5-minute poll wired into app.ts.
 - Fixed the confirmed `gtfs-rt-alerts/v2` DASH/Swiftly endpoint path (closing G-05-1's live 404), corrected `deriveActiveWindow`'s silent open-ended-window collapse, and hardened `fetchAlerts()` against malformed upstream response shapes.
 - Fixed two independent live-breaking bugs in ServiceAlertService: a defensive JSON.parse fallback for a string-encoded response body, and an `entity` -> `entities` field rename matching the live DASH/Swiftly payload shape
-- Fixed `fetchFromDashApi()`'s body-shape guard to reject array-rooted upstream response bodies (`typeof [] === "object"` was letting them silently pass), closing 05-VERIFICATION.md's last confirmed blocking gap (G-05-3) with two TDD regression tests, plus closed three carried-forward code-review findings (WR-02, IN-01, IN-02) on the same file.
+- Fixed `fetchFromDashApi()`'s body-shape guard to reject array-rooted upstream response bodies (`typeof [] === "object"` was letting them silently pass), closing 08-VERIFICATION.md's last confirmed blocking gap (G-05-3) with two TDD regression tests, plus closed three carried-forward code-review findings (WR-02, IN-01, IN-02) on the same file.
 - Fixed the true root cause of G-05-2/G-05-4 by requesting `format=json` from Swiftly's gtfs-rt-alerts/v2 endpoint (which defaults to protobuf binary), removed a leftover debug `console.log`, and added a regression test proving headerText/descriptionText/url all map correctly together.
 - Rewrote ServiceAlertService's DASH response parsing against a confirmed live payload capture — the real feed is a flat, custom Swiftly format, not GTFS-RT-protobuf JSON as previously assumed.
+
+---
+
+## v0.3 Favorited & Recent Routes (Shipped: 2026-09-01)
+
+**Phases completed:** 3 phases, 4 plans, 9 tasks
+
+**Key accomplishments:**
+
+- FavoritesRecentsRepository — a singleton, WAL-mode SQLite repository with atomic upsert CRUD for favorites and recents, covering both routes and stops through one entity-typed table per concern, wired into app.ts's startup/shutdown lifecycle alongside BusDataRepository
+- Anonymous device-scoped Favorites HTTP API (POST/DELETE/GET /api/v1/favorites) with requireDeviceId middleware, entity hydration via BusDataRepository, and idempotent add/no-op-remove semantics
+- Fire-and-forget stop/route recents logging on every REST prediction lookup, cap-at-5 oldest-evicted-first eviction inside `FavoritesRecentsRepository.upsertRecent`, and a new `GET /api/v1/recents` endpoint mirroring the Favorites pattern
 
 ---
 

@@ -48,7 +48,7 @@ export function createStopController(service: StopService): StopController {
     const getStopsForRoute: RequestHandler = (req: Request, res: Response) => {
         try {
             const { shortName } = req.params;
-            const result = service.getStopsForRoute(shortName);
+            const result = service.getStopsForRoute(Array.isArray(shortName) ? shortName[0] : shortName);
             res.json(result);
         } catch (error: unknown) {
             res.status(resolveErrorStatus(error)).json(resolveErrorBody(error));
