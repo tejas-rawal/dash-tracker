@@ -69,4 +69,30 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 ---
 
+## Backlog
+
+### Phase 999.1: Solidify vehicle position work (BACKLOG)
+
+**Goal:** [Captured for future planning]
+**Requirements:** TBD
+**Plans:** 0 plans
+
+**Context — what's already done (quick task 260915-fc8, branch `feat/gtfs-realtime-endpoints`, commits `4a5c1f5`/`04a2b66`/`73b20b6`):**
+
+- Confirmed `PredictionService` already calls Swiftly's real-time predictions endpoint (`/real-time/{agency}/predictions` against `https://api.goswift.ly`) — no change needed there.
+- Added a first vertical slice for vehicle positions, following the existing layered architecture: `src/server/api/models/Vehicle.ts` (`DashVehicle`/`DashVehiclesApiResponse` vs. `VehiclePosition`/`VehiclePositionsResponse`/`VehicleOptions`), `VehicleService.ts` (fetches `/real-time/{agency}/vehicles`, optional `route` filter), `VehicleController.ts`, `vehicleRoutes.ts`, wired to `GET /api/v1/vehicles?route=`. 14 new tests (`VehicleService.test.ts`, `VehicleController.test.ts`), all passing.
+
+**What's remaining/missing before this is production-solid:**
+
+- `DashVehicle`'s field names (`id`, `routeId`, `routeShortName`, `tripId`, `directionId`, `headsign`, `lat`, `lon`, `heading`, `speed`, `lastUpdated`) are a best-effort inference, **not verified** against Swiftly's real-time vehicles API docs (the Stoplight page is JS-rendered and couldn't be fetched by either the planner or a follow-up check) or a live payload (no `DASH_API_KEY` was available in the dev environment). Needs verification against a real DASH API response before this is trusted in production — same risk class as the Phase 8 alerts payload, and isolated the same way (only `DashVehicle` + its mapping function would need to change).
+- No caching/polling strategy decided. Vehicle positions currently fetch live/uncached per request, same as predictions — but vehicles update more frequently than predictions and are a natural fit for the existing SSE infrastructure built for live predictions (Phase 4). Worth deciding whether `GET /api/v1/vehicles` should stay REST-only or grow a streaming variant.
+- No handling/tests yet for: filtering by multiple routes at once, malformed or missing coordinates in the upstream payload, or stale/out-of-date vehicle data (no `lastUpdated` staleness check).
+- No rate-limiting or upstream error-budget consideration for this new live call path.
+- This was intentionally scoped as a minimal quick task (no discussion, research, or plan-checker phases were run), so none of the above assumptions were validated — this backlog item should go through a full phase (discuss → plan → execute) rather than another quick task.
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+---
+
 _Full phase details for shipped milestones archived to `.planning/milestones/v0.1-ROADMAP.md`, `.planning/milestones/v0.2-ROADMAP.md`, `.planning/milestones/v0.3-ROADMAP.md`, and `.planning/milestones/v0.4-ROADMAP.md`._

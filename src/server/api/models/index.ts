@@ -6,3 +6,4 @@ export * from "./RouteDirection";
 export * from "./ServiceAlert";
 export * from "./ServiceAlertSummary";
 export * from "./StopDiscovery";
+export * from "./Vehicle";
