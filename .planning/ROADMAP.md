@@ -53,7 +53,7 @@ See `.planning/milestones/v0.4-ROADMAP.md` for full phase details.
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -66,15 +66,15 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. Recents (Routes & Stops) | 1/1 | Complete | 2026-09-01 |
 | 8. Service Alerts Ingestion | 6/6 | Complete | 2026-09-04 |
 | 9. Alerts Surfaced on Routes, Stops & Predictions | 2/2 | Complete | 2026-09-08 |
+| 10. Solidify vehicle position work | 0/0 | Not planned | - |
 
 ---
 
-## Backlog
+### Phase 10: Solidify vehicle position work
 
-### Phase 999.1: Solidify vehicle position work (BACKLOG)
-
-**Goal:** [Captured for future planning]
-**Requirements:** TBD
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 9
 **Plans:** 0 plans
 
 **Context — what's already done (quick task 260915-fc8, branch `feat/gtfs-realtime-endpoints`, commits `4a5c1f5`/`04a2b66`/`73b20b6`):**
@@ -91,7 +91,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 - This was intentionally scoped as a minimal quick task (no discussion, research, or plan-checker phases were run), so none of the above assumptions were validated — this backlog item should go through a full phase (discuss → plan → execute) rather than another quick task.
 
 Plans:
-- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+- [ ] TBD (run /gsd-plan-phase 10 to break down)
 
 ---
 
