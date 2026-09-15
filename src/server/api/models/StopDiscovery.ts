@@ -1,9 +1,9 @@
-import type { BusStop } from "./BusStop";
+import type { ServiceAlertSummary, StopWithAlerts } from "./ServiceAlertSummary";
 
 export interface RouteDirectionStops {
     directionId: string;
     title: string;
-    stops: BusStop[];
+    stops: StopWithAlerts[];
 }
 
 export interface NearbySearchOptions {
@@ -18,4 +18,5 @@ export interface NearbyStop {
     lat: number;
     lon: number;
     distance: number;
+    alerts: ServiceAlertSummary[];
 }

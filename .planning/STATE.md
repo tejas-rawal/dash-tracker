@@ -1,37 +1,37 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.3
-milestone_name: Favorited & Recent Routes
-status: Milestone v0.3 shipped — PR #8
-stopped_at: Phase 07 complete — all phases complete
-last_updated: "2026-09-02T14:10:00.000Z"
-last_activity: 2026-09-02
-last_activity_desc: Milestone v0.3 shipped via PR #8 (branch rebuilt after main history rewrite orphaned PR #6)
-state_head: a2946c4f1259fcf83e9b7c9fac71ae91ba9887b6
+milestone: v0.4
+milestone_name: Service Alerts
+status: Awaiting next milestone
+stopped_at: Phase 09 complete — all phases complete (merged with v0.3, shipped independently on main via PR #8)
+last_updated: "2026-09-08T14:50:07.227Z"
+last_activity: 2026-09-08
+last_activity_desc: Milestone v0.4 completed and archived; merged with v0.3 (shipped 2026-09-01 via PR #8), v0.4 phases renumbered 5-6 -> 8-9
+state_head: e78211f2d82be1717b72920f01500f605b1ddc58
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 4
-  completed_plans: 4
+  total_phases: 2
+  completed_phases: 2
+  total_plans: 8
+  completed_plans: 8
   percent: 100
-current_phase: 07
+current_phase: 09
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-01)
+See: .planning/PROJECT.md (updated 2026-09-08)
 
 **Core value:** Riders can always see accurate, near-real-time arrival predictions for their stop.
-**Current focus:** v0.3 shipped and tagged — planning next milestone via `/gsd-new-milestone`
+**Current focus:** v0.4 milestone complete — awaiting next milestone
 
 ## Current Position
 
-Phase: Milestone v0.3 complete
+Phase: Milestone v0.4 complete
 Plan: —
-Status: Milestone v0.3 shipped — PR #8
-Last activity: 2026-09-02 — Milestone v0.3 shipped via PR #8
+Status: Awaiting next milestone
+Last activity: 2026-09-08 — Milestone v0.4 completed and archived; merged with v0.3 (shipped 2026-09-01 via PR #8)
 
 ## Performance Metrics
 
@@ -52,9 +52,13 @@ Last activity: 2026-09-02 — Milestone v0.3 shipped via PR #8
 | 5 (v0.3) | TBD | - | - |
 | 6 (v0.3) | TBD | - | - |
 | 7 (v0.3) | TBD | - | - |
+| 8 (v0.4) | TBD | - | - |
+| 9 (v0.4) | TBD | - | - |
 | 05 | 2 | - | - |
 | 06 | 1 | - | - |
 | 07 | 1 | - | - |
+| 08 | 6 | - | - |
+| 09 | 2 | - | - |
 
 **Recent Trend:**
 
@@ -84,7 +88,14 @@ Recent decisions affecting current work:
 - [v0.3, Phase 7] Route recents are persisted keyed by the route's internal `id` (resolved from the client-supplied short name at write time), not the short name — matches the id-keyed lookup `resolveEntity`/`getRouteById` already uses; caught as a pre-ship BLOCKER (CR-01) in code review after route recents silently failed to hydrate
 - v0.2: Use Server-Sent Events (not WebSocket) for live predictions, with REST retained as fallback
 - v0.2: Server runs one shared 30s upstream poll per subscribed stop, stopping when idle, resuming on new subscriber
+- v0.2: Repo will eventually house both backend and Expo/React Native frontend (monorepo); frontend itself deferred
+- [Phase 3] Stop discovery lives in a new `StopController`/`StopService` pair, kept separate from `BusRouteController`/`BusRouteService`
+- [Phase 3] `GET /:shortName/stops` groups stops by direction (not a deduped flat list) — locked public contract, iterate `route.directions` directly
 - [Phase 05]: Installed better-sqlite3@^12.11.1 (not latest 13.0.3): v13 requires Node >=22 and its native binary crashed under both Bun 1.0.31 and system Node 20.20.2 in this environment
+- [Phase 8] Request `?format=json` explicitly from DASH/Swiftly's `gtfs-rt-alerts/v2` endpoint — it defaults to protobuf-binary otherwise
+- [Phase 8] Live alert payload is a flat, custom Swiftly/Alexandria JSON format (bare top-level array, camelCase, ISO-8601 dates) — not the nested GTFS-RT-protobuf-derived `{entities:[...]}` shape early rounds assumed from an auto-generated doc example
+- [Phase 9] Match alerts to routes/stops via internal `BusRoute.id`/`BusStop.id` (DASH's own ID space), not `shortName`/`code`
+- [Phase 9] Agency-wide alerts (no informed route/stop) are dropped from responses in v0.4; ALRT-09 (predictions embedding) deferred to v2
 
 ### Pending Todos
 
@@ -96,8 +107,11 @@ None yet.
 - ⚠️ [Phase 3] Code review (archived: `.planning/milestones/v0.2-phases/03-stop-discovery/03-REVIEW.md`) flagged 2 non-blocking edge cases: empty-string `lat`/`lng` query params coerce to `0` instead of 400ing in `StopController`; `StopService.getNearbyStops` doesn't lower-bound `count` if called directly (not reachable via the controller today). Neither blocks Phase 3 completion.
 - ⚠️ [Phase 4, v0.2] Residual WR-05 from the 3-iteration code-review fix cycle (archived: `.planning/milestones/v0.2-phases/04-live-predictions-via-sse/04-REVIEW.md`): `PredictionStreamController`'s initial SSE write is guarded only against synchronous throws — a mid-write client-socket error surfaces asynchronously via an `'error'` event with no handler anywhere in `src/server`. Non-blocking, doesn't violate any LIVE-01..05 requirement.
 - ⚠️ [v0.2] An unrelated, pre-existing uncommitted fix to `BusDataRepository.ts` (dedupe `initialize()`/`refreshData()` load paths) was swept into the v0.2 execution history by the automated code-review-fix pipeline (commit `b52c130`) — correct fix, but out of Phase 3/4 scope and not explicitly approved before landing. Flagged to the user; left in place.
-- ⚠️ [Phase 6, v0.3] `FavoritesController.unfavorite` doesn't validate `entityId` the way `favorite` does, and `favorite`'s `entityId` is trim-validated but the untrimmed value is what's persisted/looked up — both whitespace-padded-id edge cases (WR-01/WR-03, `.planning/phases/06-favorites-routes-stops/06-REVIEW.md`). Non-blocking, doesn't violate any FAV-01..05/DEVICE-01 requirement.
-- ⚠️ [Phase 7, v0.3] `RecentsController.resolveDeviceId` unsafely casts the device-id header to `string` with no in-controller guard; its `NotFoundError`→404 branch is unreachable; device-id header parsing is duplicated across 4 files; the recents cap (`5`) is a magic number in a SQL string; `resolveEntity` is duplicated verbatim between `RecentsService`/`FavoritesService` (WR-02/WR-03/IN-01/IN-02/IN-03, `.planning/phases/07-recents-routes-stops/07-REVIEW.md`). Non-blocking, doesn't violate any RECENT-01..06 requirement.
+- ⚠️ [Phase 6, v0.3] `FavoritesController.unfavorite` doesn't validate `entityId` the way `favorite` does, and `favorite`'s `entityId` is trim-validated but the untrimmed value is what's persisted/looked up — both whitespace-padded-id edge cases (WR-01/WR-03, `.planning/milestones/v0.3-phases/06-favorites-routes-stops/06-REVIEW.md`). Non-blocking, doesn't violate any FAV-01..05/DEVICE-01 requirement.
+- ⚠️ [Phase 7, v0.3] `RecentsController.resolveDeviceId` unsafely casts the device-id header to `string` with no in-controller guard; its `NotFoundError`→404 branch is unreachable; device-id header parsing is duplicated across 4 files; the recents cap (`5`) is a magic number in a SQL string; `resolveEntity` is duplicated verbatim between `RecentsService`/`FavoritesService` (WR-02/WR-03/IN-01/IN-02/IN-03, `.planning/milestones/v0.3-phases/07-recents-routes-stops/07-REVIEW.md`). Non-blocking, doesn't violate any RECENT-01..06 requirement.
+- ⚠️ [Phase 8, v0.4 — STILL OPEN after Phase 9] The confirmed live DASH alert payload (G-05-5) includes `deletedAt`/`deletedBy` fields that `ServiceAlertService`/`ServiceAlertRepository` currently ignore entirely. If the DASH admin tool soft-deletes alerts instead of removing them from the feed, a deleted-but-still-time-active alert could still surface via `getActiveAlerts()` — and Phase 9 now exposes that data publicly on route/stop responses without addressing it. Was flagged as "consider before Phase 9 exposes alerts publicly" but not picked up during Phase 9 planning/execution. Worth a follow-up before/early in the next milestone.
+- ⚠️ [Phase 9] `RouteWithAlerts` (`BusRoute & { alerts }`) is built via object spread over a `BusRoute` class instance, losing its prototype methods even though the static type doesn't reflect that (WR-01, `09-REVIEW.md`). No live call site hits it today.
+- ⚠️ [Phase 9] `ServiceAlertRepository.isAlertActive`'s date-boundary checks fail open on a malformed `activePeriod` date string rather than excluding/logging it (WR-02, `09-REVIEW.md`).
 
 ### Quick Tasks Completed
 
@@ -117,8 +131,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-01
-Stopped at: Phase 07 complete, all v0.3 phases complete — ready to close milestone
+Last session: 2026-09-08
+Stopped at: Phase 09 complete, v0.4 milestone complete (merged with v0.3, shipped 2026-09-01 via PR #8)
 Resume file: None
 
 ## Operator Next Steps

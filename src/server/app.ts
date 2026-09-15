@@ -1,6 +1,8 @@
 import express from "express";
-import { BusDataRepository, FavoritesRecentsRepository } from "./api/repositories";
+import { BusDataRepository, FavoritesRecentsRepository, ServiceAlertRepository } from "./api/repositories";
 import router from "./api/routes";
+import { createServiceAlertPollService } from "./api/services/ServiceAlertPollService";
+import { createServiceAlertService } from "./api/services/ServiceAlertService";
 import { environment, logger } from "./config";
 
 const app = express();
@@ -19,6 +21,15 @@ app.use("/api/v1", router);
 // Initialize repository data before accepting requests
 const repository = BusDataRepository.getInstance();
 const favoritesRecentsRepository = FavoritesRecentsRepository.getInstance();
+
+// Service alerts poll is boot-triggered and fully independent of BusDataRepository's
+// startup-blocking init chain below (D-06/D-07) — it never awaits or gates app.listen().
+const serviceAlertPollService = createServiceAlertPollService(
+    createServiceAlertService(),
+    ServiceAlertRepository.getInstance(),
+);
+serviceAlertPollService.start();
+
 Promise.all([repository.initialize(), favoritesRecentsRepository.initialize()])
     .then(() => {
         const server = app.listen(port, () => {

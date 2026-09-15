@@ -110,6 +110,41 @@
 
 ---
 
+## Milestone: v0.4 — Service Alerts
+
+**Shipped:** 2026-09-08
+**Phases:** 2 | **Plans:** 8 (Phase 8: 6, including 5 gap-closure rounds; Phase 9: 2)
+
+### What Was Built
+- GTFS-RT service alert ingestion pipeline (`ServiceAlertService`/`ServiceAlertRepository`/`ServiceAlertPollService`), fetching from DASH/Swiftly's `gtfs-rt-alerts/v2?format=json` on a dedicated 5-minute poll independent of the 30s prediction poll, filtered to only currently-active alerts in-memory
+- Active alerts embedded directly into `GET /api/v1/routes/all`, `/routes/:shortName`, `/routes/:shortName/stops`, and `/stops/nearby` responses via a trimmed `ServiceAlertSummary` type — no new endpoint, no SSE changes
+- ALRT-09 (alerts on predictions responses) deliberately descoped to v2 mid-phase — redundant once a route/stop's own response already carries its alerts
+
+### What Worked
+- Treating the live-API integration as a genuine unknown rather than trusting the vendor's auto-generated API-reference example — the doc example's `{entities:[...]}` envelope with GTFS-RT-protobuf field casing turned out to be Stoplight/OpenAPI placeholder boilerplate, not a real captured payload
+- A blocking human-in-the-loop diagnostic checkpoint (temporary shape-logging code, gated on a live boot) was the thing that actually resolved the real top-level shape (a bare array, flat camelCase fields, ISO-8601 dates) after 4 rounds of plausible-but-wrong guesses failed
+- Each gap-closure round added TDD regression tests locking in the specific defect fixed, so none of the 4 prior wrong guesses could silently regress once the real shape was found
+
+### What Was Inefficient
+- Phase 8 took 6 plan rounds (1 initial + 5 gap closures) to reach a working live integration — every round after 08-01 was reacting to a live-boot failure the automated test suite couldn't catch, because all 19+ unit tests mocked `axios.get` directly and never exercised axios's real `transformResponse`/http-adapter pipeline
+- The root cause (endpoint defaults to protobuf binary, requires `?format=json`) wasn't found until round 4 (08-05) — rounds 2-3 fixed real but secondary bugs (wrong URL path, string-body JSON.parse fallback, `entity`→`entities` rename) that were each necessary but not sufficient, extending the diagnostic tail
+- Three debug-session files (service-alerts-404, service-alerts-body-shape, service-alerts-malformed-body) were left without a `resolved` status after their fixes shipped, and a lint gap in `biome.json` (missing `.planning`/`.gsd` in `files.ignore`) sat as "acknowledged tech debt" for two phases — both were quick, safe fixes but only got closed out at milestone-close audit time rather than when the underlying fix actually landed
+
+### Patterns Established
+- When a live third-party API's shape is unconfirmed and prior "confirmed" evidence turns out to be doc-generator boilerplate, add a temporary, explicitly-removed diagnostic log behind a blocking human checkpoint rather than guessing again from the same unreliable source
+- A debug-session file's `status:` frontmatter should be flipped to `resolved` in the same commit/plan that ships its fix — don't leave it for a later audit to catch
+
+### Key Lessons
+1. Mocking the HTTP client directly in unit tests gives zero coverage of the client library's own response-transform pipeline (e.g. axios's default JSON parsing); a genuinely unknown live-response shape needs a live capture, not more unit tests against hand-picked fixtures
+2. An API reference/doc-generator example (Stoplight, OpenAPI, etc.) with all-placeholder values (`"string"`, `0`, one enum sample) is a documentation-tooling artifact, not evidence of the real payload shape — treat it as unconfirmed until checked against a live response
+3. Close debug-session and deferred-item statuses at the moment the fix ships, not at milestone close — batching that cleanup into the audit gate works, but it means real tech debt looks larger than it is until someone finally reconciles it
+
+### Cost Observations
+- Sessions: not tracked separately this milestone
+- Notable: the 6-round gap-closure sequence in Phase 8 (vs. Phase 9's clean 2-plan execution) was driven entirely by an unverifiable-until-live third-party API shape, not by planning or execution quality — a live smoke-test step earlier in Phase 8 (before committing to a specific response-shape model) would likely have collapsed 3-4 of those rounds into one
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -119,6 +154,7 @@
 | v0.1 | 1 | 2 | First milestone — established Biome-only tooling baseline |
 | v0.2 | 1 | 2 | First feature milestone — stop discovery + live SSE predictions; first milestone with a multi-iteration code-review fix cycle |
 | v0.3 | not tracked | 3 | First milestone with persistence (SQLite); first milestone where code review caught a pre-ship BLOCKER (write/read key mismatch) that unit tests missed entirely |
+| v0.4 | not tracked | 2 | First milestone with a multi-round (6x) gap-closure cycle driven by an unverified live third-party API shape |
 
 ### Cumulative Quality
 
@@ -127,9 +163,12 @@
 | v0.1 | 141 | (80% threshold enforced, not separately measured this milestone) | 0 (Prettier removed, no new deps added) |
 | v0.2 | 217 | ~97% on new code (phase-level); 80% threshold enforced repo-wide | 0 (no new dependencies — SSE built on existing Express/`res.write`) |
 | v0.3 | 313 | 80% threshold enforced repo-wide | 1 (`better-sqlite3`, vetted via a dedicated package-legitimacy checkpoint) |
+| v0.4 | 283 | 98% on new code; 80% threshold enforced repo-wide | 0 (no new dependencies — alerts built on existing axios/repository pattern) |
 
 ### Top Lessons (Verified Across Milestones)
 
 1. Keep local `main` pushed to `origin` when the runtime's worktree isolation bases off the remote branch — otherwise isolated dispatch fails closed on every attempt
 2. Worktree isolation protects against *concurrent* edits, not against pre-existing dirty state on the branch it forks from — always check `git status` before merging an isolated agent's branch back
 3. Unit tests run against mocks in isolation cannot catch a write-path/read-path key mismatch (e.g. short name vs. internal id) — only an end-to-end data-flow trace or a real round-trip integration test will, and this bit v0.3's Recents feature as a pre-ship BLOCKER (CR-01)
+4. Unit tests that mock a third-party HTTP client directly give zero coverage of that client's own response-transform behavior — an unconfirmed live API response shape needs a real capture, not more hand-picked fixtures
+5. Treat an API reference/doc-generator example with all-placeholder values as unconfirmed evidence, not ground truth, until checked against a live response

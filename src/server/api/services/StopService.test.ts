@@ -22,6 +22,11 @@ const makeMockRepo = () => ({
     getAllStops: vi.fn(),
 });
 
+const makeMockAlertRepo = () => ({
+    getActiveAlertsForRoute: vi.fn().mockReturnValue([]),
+    getActiveAlertsForStop: vi.fn().mockReturnValue([]),
+});
+
 // DC (~38.9), origin, for nearby-search fixtures.
 const ORIGIN = { lat: 38.9, lng: -77.0 };
 
@@ -40,15 +45,41 @@ describe("StopService", () => {
                 new RouteDirection({ id: "d2", title: "Southbound", stops: [southStop], headSigns: [] }),
             ]);
             mockRepo.getRouteByShortName.mockReturnValue(route);
-            const { getStopsForRoute } = createStopService(mockRepo as never);
+            const { getStopsForRoute } = createStopService(mockRepo as never, makeMockAlertRepo() as never);
 
             // Act
             const result = getStopsForRoute("1A");
 
             // Assert
             expect(result).toEqual([
-                { directionId: "d1", title: "Northbound", stops: [northStop] },
-                { directionId: "d2", title: "Southbound", stops: [southStop] },
+                {
+                    directionId: "d1",
+                    title: "Northbound",
+                    stops: [
+                        {
+                            id: northStop.id,
+                            name: northStop.name,
+                            code: northStop.code,
+                            lat: northStop.lat,
+                            lon: northStop.lon,
+                            alerts: [],
+                        },
+                    ],
+                },
+                {
+                    directionId: "d2",
+                    title: "Southbound",
+                    stops: [
+                        {
+                            id: southStop.id,
+                            name: southStop.name,
+                            code: southStop.code,
+                            lat: southStop.lat,
+                            lon: southStop.lon,
+                            alerts: [],
+                        },
+                    ],
+                },
             ]);
             expect(mockRepo.getRouteByShortName).toHaveBeenCalledWith("1A");
         });
@@ -57,7 +88,7 @@ describe("StopService", () => {
             // Arrange
             const mockRepo = makeMockRepo();
             mockRepo.getRouteByShortName.mockReturnValue(undefined);
-            const { getStopsForRoute } = createStopService(mockRepo as never);
+            const { getStopsForRoute } = createStopService(mockRepo as never, makeMockAlertRepo() as never);
 
             // Act & Assert
             expect(() => getStopsForRoute("UNKNOWN")).toThrowError(NotFoundError);
@@ -67,7 +98,7 @@ describe("StopService", () => {
             // Arrange
             const mockRepo = makeMockRepo();
             mockRepo.getRouteByShortName.mockReturnValue(undefined);
-            const { getStopsForRoute } = createStopService(mockRepo as never);
+            const { getStopsForRoute } = createStopService(mockRepo as never, makeMockAlertRepo() as never);
 
             // Act & Assert
             expect(() => getStopsForRoute("UNKNOWN")).toThrowError("Route not found: UNKNOWN");
@@ -80,7 +111,7 @@ describe("StopService", () => {
                 new RouteDirection({ id: "d1", title: "Northbound", stops: [], headSigns: [] }),
             ]);
             mockRepo.getRouteByShortName.mockReturnValue(route);
-            const { getStopsForRoute } = createStopService(mockRepo as never);
+            const { getStopsForRoute } = createStopService(mockRepo as never, makeMockAlertRepo() as never);
 
             // Act
             const result = getStopsForRoute("1A");
@@ -98,14 +129,22 @@ describe("StopService", () => {
                 new RouteDirection({ id: "d2", title: "Outbound", stops: [sharedStop], headSigns: [] }),
             ]);
             mockRepo.getRouteByShortName.mockReturnValue(route);
-            const { getStopsForRoute } = createStopService(mockRepo as never);
+            const { getStopsForRoute } = createStopService(mockRepo as never, makeMockAlertRepo() as never);
 
             // Act
             const result = getStopsForRoute("1A");
 
             // Assert
-            expect(result[0]?.stops).toContainEqual(sharedStop);
-            expect(result[1]?.stops).toContainEqual(sharedStop);
+            const expectedSharedStop = {
+                id: sharedStop.id,
+                name: sharedStop.name,
+                code: sharedStop.code,
+                lat: sharedStop.lat,
+                lon: sharedStop.lon,
+                alerts: [],
+            };
+            expect(result[0]?.stops).toContainEqual(expectedSharedStop);
+            expect(result[1]?.stops).toContainEqual(expectedSharedStop);
         });
 
         it("preserves the direction's real stop sequence order, not re-sorted", () => {
@@ -118,13 +157,21 @@ describe("StopService", () => {
                 new RouteDirection({ id: "d1", title: "Northbound", stops: [stopC, stopA, stopB], headSigns: [] }),
             ]);
             mockRepo.getRouteByShortName.mockReturnValue(route);
-            const { getStopsForRoute } = createStopService(mockRepo as never);
+            const { getStopsForRoute } = createStopService(mockRepo as never, makeMockAlertRepo() as never);
 
             // Act
             const result = getStopsForRoute("1A");
 
             // Assert
-            expect(result[0]?.stops).toEqual([stopC, stopA, stopB]);
+            const toExpectedStop = (stop: BusStop) => ({
+                id: stop.id,
+                name: stop.name,
+                code: stop.code,
+                lat: stop.lat,
+                lon: stop.lon,
+                alerts: [],
+            });
+            expect(result[0]?.stops).toEqual([stopC, stopA, stopB].map(toExpectedStop));
         });
 
         it("returns an empty array when the route has zero directions", () => {
@@ -132,13 +179,90 @@ describe("StopService", () => {
             const mockRepo = makeMockRepo();
             const route = makeRoute("1A", []);
             mockRepo.getRouteByShortName.mockReturnValue(route);
-            const { getStopsForRoute } = createStopService(mockRepo as never);
+            const { getStopsForRoute } = createStopService(mockRepo as never, makeMockAlertRepo() as never);
 
             // Act
             const result = getStopsForRoute("1A");
 
             // Assert
             expect(result).toEqual([]);
+        });
+
+        it("embeds the mapped alert summaries verbatim as each stop's alerts field", () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            const mockAlertRepo = makeMockAlertRepo();
+            const stop = makeStop("stop-n1");
+            const alert = {
+                id: "alert-1",
+                cause: "MAINTENANCE",
+                effect: "DETOUR",
+                headerText: "Header",
+                descriptionText: "Description",
+                informedRouteIds: [],
+                informedStopIds: ["stop-n1"],
+                activePeriod: { start: null, end: null },
+            };
+            const route = makeRoute("1A", [
+                new RouteDirection({ id: "d1", title: "Northbound", stops: [stop], headSigns: [] }),
+            ]);
+            mockRepo.getRouteByShortName.mockReturnValue(route);
+            mockAlertRepo.getActiveAlertsForStop.mockReturnValue([alert]);
+            const { getStopsForRoute } = createStopService(mockRepo as never, mockAlertRepo as never);
+
+            // Act
+            const result = getStopsForRoute("1A");
+
+            // Assert
+            expect(result[0]?.stops[0]?.alerts).toEqual([
+                {
+                    id: "alert-1",
+                    cause: "MAINTENANCE",
+                    effect: "DETOUR",
+                    headerText: "Header",
+                    descriptionText: "Description",
+                    activePeriod: { start: null, end: null },
+                },
+            ]);
+            expect(mockAlertRepo.getActiveAlertsForStop).toHaveBeenCalledWith("stop-n1");
+        });
+
+        it("returns alerts: [] for a stop with no matching active alerts", () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            const mockAlertRepo = makeMockAlertRepo();
+            const stop = makeStop("stop-n1");
+            const route = makeRoute("1A", [
+                new RouteDirection({ id: "d1", title: "Northbound", stops: [stop], headSigns: [] }),
+            ]);
+            mockRepo.getRouteByShortName.mockReturnValue(route);
+            const { getStopsForRoute } = createStopService(mockRepo as never, mockAlertRepo as never);
+
+            // Act
+            const result = getStopsForRoute("1A");
+
+            // Assert
+            expect(result[0]?.stops[0]?.alerts).toEqual([]);
+        });
+
+        it("calls getActiveAlertsForStop once per stop occurrence — twice for a stop shared across 2 directions", () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            const mockAlertRepo = makeMockAlertRepo();
+            const sharedStop = makeStop("shared-1");
+            const route = makeRoute("1A", [
+                new RouteDirection({ id: "d1", title: "Inbound", stops: [sharedStop], headSigns: [] }),
+                new RouteDirection({ id: "d2", title: "Outbound", stops: [sharedStop], headSigns: [] }),
+            ]);
+            mockRepo.getRouteByShortName.mockReturnValue(route);
+            const { getStopsForRoute } = createStopService(mockRepo as never, mockAlertRepo as never);
+
+            // Act
+            getStopsForRoute("1A");
+
+            // Assert
+            expect(mockAlertRepo.getActiveAlertsForStop).toHaveBeenCalledTimes(2);
+            expect(mockAlertRepo.getActiveAlertsForStop).toHaveBeenCalledWith("shared-1");
         });
     });
 
@@ -148,14 +272,22 @@ describe("StopService", () => {
             const mockRepo = makeMockRepo();
             const nearStop = makeStopAt("near", ORIGIN.lat, ORIGIN.lng);
             mockRepo.getAllStops.mockReturnValue([nearStop]);
-            const { getNearbyStops } = createStopService(mockRepo as never);
+            const { getNearbyStops } = createStopService(mockRepo as never, makeMockAlertRepo() as never);
 
             // Act
             const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng);
 
             // Assert
             expect(result).toEqual([
-                { id: "near", name: "Stop near", code: 101, lat: ORIGIN.lat, lon: ORIGIN.lng, distance: 0 },
+                {
+                    id: "near",
+                    name: "Stop near",
+                    code: 101,
+                    lat: ORIGIN.lat,
+                    lon: ORIGIN.lng,
+                    distance: 0,
+                    alerts: [],
+                },
             ]);
         });
 
@@ -166,7 +298,7 @@ describe("StopService", () => {
             const near = makeStopAt("near", ORIGIN.lat, ORIGIN.lng);
             const mid = makeStopAt("mid", ORIGIN.lat + 0.01, ORIGIN.lng);
             mockRepo.getAllStops.mockReturnValue([far, near, mid]);
-            const { getNearbyStops } = createStopService(mockRepo as never);
+            const { getNearbyStops } = createStopService(mockRepo as never, makeMockAlertRepo() as never);
 
             // Act
             const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng, { radius: 5 });
@@ -181,7 +313,7 @@ describe("StopService", () => {
             const near = makeStopAt("near", ORIGIN.lat, ORIGIN.lng);
             const far = makeStopAt("far", ORIGIN.lat + 0.5, ORIGIN.lng);
             mockRepo.getAllStops.mockReturnValue([near, far]);
-            const { getNearbyStops } = createStopService(mockRepo as never);
+            const { getNearbyStops } = createStopService(mockRepo as never, makeMockAlertRepo() as never);
 
             // Act
             const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng, { radius: 2 });
@@ -195,7 +327,7 @@ describe("StopService", () => {
             const mockRepo = makeMockRepo();
             const stops = Array.from({ length: 60 }, (_, i) => makeStopAt(`stop-${i}`, ORIGIN.lat, ORIGIN.lng));
             mockRepo.getAllStops.mockReturnValue(stops);
-            const { getNearbyStops } = createStopService(mockRepo as never);
+            const { getNearbyStops } = createStopService(mockRepo as never, makeMockAlertRepo() as never);
 
             // Act
             const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng, { count: 100 });
@@ -209,7 +341,7 @@ describe("StopService", () => {
             const mockRepo = makeMockRepo();
             const stops = Array.from({ length: 20 }, (_, i) => makeStopAt(`stop-${i}`, ORIGIN.lat, ORIGIN.lng));
             mockRepo.getAllStops.mockReturnValue(stops);
-            const { getNearbyStops } = createStopService(mockRepo as never);
+            const { getNearbyStops } = createStopService(mockRepo as never, makeMockAlertRepo() as never);
 
             // Act
             const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng, { count: 5 });
@@ -223,7 +355,7 @@ describe("StopService", () => {
             const mockRepo = makeMockRepo();
             const far = makeStopAt("far", ORIGIN.lat + 10, ORIGIN.lng);
             mockRepo.getAllStops.mockReturnValue([far]);
-            const { getNearbyStops } = createStopService(mockRepo as never);
+            const { getNearbyStops } = createStopService(mockRepo as never, makeMockAlertRepo() as never);
 
             // Act
             const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng);
@@ -236,7 +368,7 @@ describe("StopService", () => {
             // Arrange
             const mockRepo = makeMockRepo();
             mockRepo.getAllStops.mockReturnValue([]);
-            const { getNearbyStops } = createStopService(mockRepo as never);
+            const { getNearbyStops } = createStopService(mockRepo as never, makeMockAlertRepo() as never);
 
             // Act
             const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng);
@@ -250,7 +382,7 @@ describe("StopService", () => {
             const mockRepo = makeMockRepo();
             const stop = makeStopAt("stop-1", ORIGIN.lat + 0.01, ORIGIN.lng + 0.01);
             mockRepo.getAllStops.mockReturnValue([stop]);
-            const { getNearbyStops } = createStopService(mockRepo as never);
+            const { getNearbyStops } = createStopService(mockRepo as never, makeMockAlertRepo() as never);
             const expectedDistance = haversineDistanceMiles(
                 { lat: ORIGIN.lat, lon: ORIGIN.lng },
                 { lat: ORIGIN.lat + 0.01, lon: ORIGIN.lng + 0.01 },
@@ -268,7 +400,7 @@ describe("StopService", () => {
             const mockRepo = makeMockRepo();
             const stops = Array.from({ length: 60 }, (_, i) => makeStopAt(`stop-${i}`, ORIGIN.lat, ORIGIN.lng));
             mockRepo.getAllStops.mockReturnValue(stops);
-            const { getNearbyStops } = createStopService(mockRepo as never);
+            const { getNearbyStops } = createStopService(mockRepo as never, makeMockAlertRepo() as never);
 
             // Act
             const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng, { count: 50 });
@@ -282,7 +414,7 @@ describe("StopService", () => {
             const mockRepo = makeMockRepo();
             const stops = Array.from({ length: 60 }, (_, i) => makeStopAt(`stop-${i}`, ORIGIN.lat, ORIGIN.lng));
             mockRepo.getAllStops.mockReturnValue(stops);
-            const { getNearbyStops } = createStopService(mockRepo as never);
+            const { getNearbyStops } = createStopService(mockRepo as never, makeMockAlertRepo() as never);
 
             // Act
             const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng, { count: 1000 });
@@ -296,7 +428,7 @@ describe("StopService", () => {
             const mockRepo = makeMockRepo();
             const stops = Array.from({ length: 15 }, (_, i) => makeStopAt(`stop-${i}`, ORIGIN.lat, ORIGIN.lng));
             mockRepo.getAllStops.mockReturnValue(stops);
-            const { getNearbyStops } = createStopService(mockRepo as never);
+            const { getNearbyStops } = createStopService(mockRepo as never, makeMockAlertRepo() as never);
 
             // Act
             const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng);
@@ -312,7 +444,7 @@ describe("StopService", () => {
             const inside = makeStopAt("inside", ORIGIN.lat + 0.005, ORIGIN.lng);
             const outside = makeStopAt("outside", ORIGIN.lat + 0.01, ORIGIN.lng);
             mockRepo.getAllStops.mockReturnValue([inside, outside]);
-            const { getNearbyStops } = createStopService(mockRepo as never);
+            const { getNearbyStops } = createStopService(mockRepo as never, makeMockAlertRepo() as never);
 
             // Act
             const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng);
@@ -330,7 +462,7 @@ describe("StopService", () => {
                 makeStopAt("c", ORIGIN.lat, ORIGIN.lng),
             ];
             mockRepo.getAllStops.mockReturnValue(stops);
-            const { getNearbyStops } = createStopService(mockRepo as never);
+            const { getNearbyStops } = createStopService(mockRepo as never, makeMockAlertRepo() as never);
 
             // Act
             const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng, { radius: 5 });
@@ -340,6 +472,72 @@ describe("StopService", () => {
             for (const stop of result) {
                 expect(Number(stop.distance.toFixed(2))).toBe(stop.distance);
             }
+        });
+
+        it("embeds the mapped alert summaries verbatim as each stop's alerts field", () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            const mockAlertRepo = makeMockAlertRepo();
+            const stop = makeStopAt("near", ORIGIN.lat, ORIGIN.lng);
+            const alert = {
+                id: "alert-1",
+                cause: "MAINTENANCE",
+                effect: "DETOUR",
+                headerText: "Header",
+                descriptionText: "Description",
+                informedRouteIds: [],
+                informedStopIds: ["near"],
+                activePeriod: { start: null, end: null },
+            };
+            mockRepo.getAllStops.mockReturnValue([stop]);
+            mockAlertRepo.getActiveAlertsForStop.mockReturnValue([alert]);
+            const { getNearbyStops } = createStopService(mockRepo as never, mockAlertRepo as never);
+
+            // Act
+            const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng);
+
+            // Assert
+            expect(result[0]?.alerts).toEqual([
+                {
+                    id: "alert-1",
+                    cause: "MAINTENANCE",
+                    effect: "DETOUR",
+                    headerText: "Header",
+                    descriptionText: "Description",
+                    activePeriod: { start: null, end: null },
+                },
+            ]);
+            expect(mockAlertRepo.getActiveAlertsForStop).toHaveBeenCalledWith("near");
+        });
+
+        it("preserves distance-ascending sort order when alerts differ per stop", () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            const mockAlertRepo = makeMockAlertRepo();
+            const far = makeStopAt("far", ORIGIN.lat + 0.02, ORIGIN.lng);
+            const near = makeStopAt("near", ORIGIN.lat, ORIGIN.lng);
+            mockRepo.getAllStops.mockReturnValue([far, near]);
+            mockAlertRepo.getActiveAlertsForStop.mockImplementation((stopId: string) =>
+                stopId === "far"
+                    ? [
+                          {
+                              id: "alert-1",
+                              informedRouteIds: [],
+                              informedStopIds: ["far"],
+                              activePeriod: { start: null, end: null },
+                          },
+                      ]
+                    : [],
+            );
+            const { getNearbyStops } = createStopService(mockRepo as never, mockAlertRepo as never);
+
+            // Act
+            const result = getNearbyStops(ORIGIN.lat, ORIGIN.lng, { radius: 5 });
+
+            // Assert
+            expect(result.map((stop) => stop.id)).toEqual(["near", "far"]);
+            expect(result[0]?.alerts).toEqual([]);
+            expect(result[1]?.alerts).toHaveLength(1);
         });
     });
 });

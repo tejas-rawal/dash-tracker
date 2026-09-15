@@ -1,26 +1,38 @@
 import { NotFoundError } from "../errors";
 import type { BusRoute, BusStop } from "../models";
-import type { BusDataRepository } from "../repositories";
+import type { RouteWithAlerts } from "../models/ServiceAlertSummary";
+import type { BusDataRepository, ServiceAlertRepository } from "../repositories";
+import { mapToServiceAlertSummaries } from "./serviceAlertMapping";
 
 export interface BusRouteService {
-    getAgencyRoutes(): BusRoute[];
-    getAgencyRoute(shortName: string): BusRoute;
+    getAgencyRoutes(): RouteWithAlerts[];
+    getAgencyRoute(shortName: string): RouteWithAlerts;
     getAgencyStop(stopId: string): BusStop;
     getAgencyStops(): BusStop[];
     getRoutesForStop(stopId: string): BusRoute[];
 }
 
-export function createBusRouteService(repository: BusDataRepository): BusRouteService {
-    function getAgencyRoutes(): BusRoute[] {
-        return repository.getAllRoutes();
+export function createBusRouteService(
+    repository: BusDataRepository,
+    serviceAlertRepository: ServiceAlertRepository,
+): BusRouteService {
+    function attachAlerts(route: BusRoute): RouteWithAlerts {
+        const alerts = mapToServiceAlertSummaries(serviceAlertRepository.getActiveAlertsForRoute(route.id));
+        // RouteWithAlerts intersects the BusRoute class type for field-shape purposes only; the
+        // response is JSON-serialized so the class's prototype methods are never invoked on it.
+        return { ...route, alerts } as RouteWithAlerts;
     }
 
-    function getAgencyRoute(shortName: string): BusRoute {
+    function getAgencyRoutes(): RouteWithAlerts[] {
+        return repository.getAllRoutes().map(attachAlerts);
+    }
+
+    function getAgencyRoute(shortName: string): RouteWithAlerts {
         const route = repository.getRouteByShortName(shortName);
         if (!route) {
             throw new NotFoundError(`Route not found: ${shortName}`);
         }
-        return route;
+        return attachAlerts(route);
     }
 
     function getAgencyStop(stopId: string): BusStop {

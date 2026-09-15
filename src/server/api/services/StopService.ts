@@ -1,7 +1,10 @@
 import { NotFoundError } from "../errors";
 import type { NearbySearchOptions, NearbyStop, RouteDirectionStops } from "../models";
-import type { BusDataRepository } from "../repositories";
+import type { BusStop } from "../models/BusStop";
+import type { StopWithAlerts } from "../models/ServiceAlertSummary";
+import type { BusDataRepository, ServiceAlertRepository } from "../repositories";
 import { haversineDistanceMiles } from "./distance";
+import { mapToServiceAlertSummaries } from "./serviceAlertMapping";
 
 const DEFAULT_RADIUS_MILES = 0.5;
 const DEFAULT_COUNT = 10;
@@ -12,7 +15,15 @@ export interface StopService {
     getNearbyStops(lat: number, lng: number, options?: NearbySearchOptions): NearbyStop[];
 }
 
-export function createStopService(repository: BusDataRepository): StopService {
+export function createStopService(
+    repository: BusDataRepository,
+    serviceAlertRepository: ServiceAlertRepository,
+): StopService {
+    function attachStopAlerts(stop: BusStop): StopWithAlerts {
+        const alerts = mapToServiceAlertSummaries(serviceAlertRepository.getActiveAlertsForStop(stop.id));
+        return { id: stop.id, name: stop.name, code: stop.code, lat: stop.lat, lon: stop.lon, alerts };
+    }
+
     function getStopsForRoute(shortName: string): RouteDirectionStops[] {
         const route = repository.getRouteByShortName(shortName);
         if (!route) {
@@ -22,7 +33,7 @@ export function createStopService(repository: BusDataRepository): StopService {
         return route.directions.map((direction) => ({
             directionId: direction.id,
             title: direction.title,
-            stops: direction.stops,
+            stops: direction.stops.map(attachStopAlerts),
         }));
     }
 
@@ -41,6 +52,7 @@ export function createStopService(repository: BusDataRepository): StopService {
                     lat: location.lat,
                     lon: location.lon,
                     distance: haversineDistanceMiles({ lat, lon: lng }, location),
+                    alerts: mapToServiceAlertSummaries(serviceAlertRepository.getActiveAlertsForStop(stop.id)),
                 };
             })
             .filter((stop) => stop.distance <= radius)

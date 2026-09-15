@@ -39,6 +39,18 @@ const makeRoute = (shortName = "1A") =>
         directions: [new RouteDirection({ id: "d1", title: "Northbound", stops: [makeStop()], headSigns: [] })],
     });
 
+describe("DI wiring", () => {
+    it("invokes createBusRouteService with 2 arguments (route + service-alert repositories)", () => {
+        // Assert
+        expect(vi.mocked(createBusRouteService).mock.calls[0]).toHaveLength(2);
+    });
+
+    it("invokes createStopService with 2 arguments (route + service-alert repositories)", () => {
+        // Assert
+        expect(vi.mocked(createStopService).mock.calls[0]).toHaveLength(2);
+    });
+});
+
 describe("GET /api/v1/routes/all", () => {
     it("responds with 200 and an array of route objects", async () => {
         // Arrange
