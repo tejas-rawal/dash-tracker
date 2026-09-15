@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-09-08)
 Phase: Milestone v0.4 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-09-08 — Milestone v0.4 completed and archived; merged with v0.3 (shipped 2026-09-01 via PR #8)
+Last activity: 2026-09-15 - Completed quick task 260915-fc8: Ensure predictions endpoint uses Swiftly real-time predictions API; add vehicle positions endpoint using Swiftly real-time vehicles API
 
 ## Performance Metrics
 
@@ -112,6 +112,7 @@ None yet.
 - ⚠️ [Phase 8, v0.4 — STILL OPEN after Phase 9] The confirmed live DASH alert payload (G-05-5) includes `deletedAt`/`deletedBy` fields that `ServiceAlertService`/`ServiceAlertRepository` currently ignore entirely. If the DASH admin tool soft-deletes alerts instead of removing them from the feed, a deleted-but-still-time-active alert could still surface via `getActiveAlerts()` — and Phase 9 now exposes that data publicly on route/stop responses without addressing it. Was flagged as "consider before Phase 9 exposes alerts publicly" but not picked up during Phase 9 planning/execution. Worth a follow-up before/early in the next milestone.
 - ⚠️ [Phase 9] `RouteWithAlerts` (`BusRoute & { alerts }`) is built via object spread over a `BusRoute` class instance, losing its prototype methods even though the static type doesn't reflect that (WR-01, `09-REVIEW.md`). No live call site hits it today.
 - ⚠️ [Phase 9] `ServiceAlertRepository.isAlertActive`'s date-boundary checks fail open on a malformed `activePeriod` date string rather than excluding/logging it (WR-02, `09-REVIEW.md`).
+- ⚠️ [Quick 260915-fc8] `DashVehicle`'s field names in `src/server/api/models/Vehicle.ts` are a best-effort inference, not confirmed against Swiftly's real-time vehicles docs (Stoplight page is JS-rendered, couldn't be fetched) or a live payload (no `DASH_API_KEY` available in this environment). Same risk class as the Phase 8 alerts payload — isolated behind the Dash*/response-type split so only `DashVehicle` + its mapping function need to change if live field names differ. Verify against a real DASH API response before relying on `GET /api/v1/vehicles` in production.
 
 ### Quick Tasks Completed
 
@@ -119,6 +120,7 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 260827-j3c | Discard current changes to CLAUDE.md, add Engineering Principles section, remove Core Value/Constraints sections from CLAUDE.md and AGENTS.md | 2026-08-27 | fd24325 | [260827-j3c-discard-current-changes-to-claude-md-add](./quick/260827-j3c-discard-current-changes-to-claude-md-add/) |
 | 260827-jaa | Consolidate root CLAUDE.md and .claude/CLAUDE.md into a single canonical .claude/CLAUDE.md; delete root CLAUDE.md | 2026-08-27 | 09f054c | [260827-jaa-consolidate-root-claude-md-and-claude-cl](./quick/260827-jaa-consolidate-root-claude-md-and-claude-cl/) |
+| 260915-fc8 | Ensure predictions endpoint uses Swiftly real-time predictions API; add vehicle positions endpoint using Swiftly real-time vehicles API | 2026-09-15 | 04a2b66 | [260915-fc8-ensure-predictions-endpoint-uses-swiftly](./quick/260915-fc8-ensure-predictions-endpoint-uses-swiftly/) |
 
 ## Deferred Items
 
