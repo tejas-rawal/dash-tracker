@@ -66,7 +66,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. Recents (Routes & Stops) | 1/1 | Complete | 2026-09-01 |
 | 8. Service Alerts Ingestion | 6/6 | Complete | 2026-09-04 |
 | 9. Alerts Surfaced on Routes, Stops & Predictions | 2/2 | Complete | 2026-09-08 |
-| 10. Solidify vehicle position work | 0/1 | Planned | - |
+| 10. Solidify vehicle position work | 1/1 | In Progress|  |
 
 ---
 
@@ -75,7 +75,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 **Goal:** Take the `GET /api/v1/vehicles` vertical slice from quick-task to production-solid: verified DASH field mapping, repository-backed route-filter validation, and safe handling of malformed per-vehicle data.
 **Requirements**: TBD (no REQUIREMENTS.md for this phase — see 10-CONTEXT.md decisions D-01 through D-11)
 **Depends on:** Phase 9
-**Plans:** 1 plan
+**Plans:** 1/1 plans executed
 
 **Context — what's already done (quick task 260915-fc8, branch `feat/gtfs-realtime-endpoints`, commits `4a5c1f5`/`04a2b66`/`73b20b6`):**
 
@@ -92,7 +92,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 Plans:
 
-- [ ] 10-01-PLAN.md — Correct DashVehicle/VehiclePosition field mapping (loc-nesting, tripId removal, vehicleType), add BusDataRepository-backed route validation, and filter malformed coordinates
+- [x] 10-01-PLAN.md — Correct DashVehicle/VehiclePosition field mapping (loc-nesting, tripId removal, vehicleType), add BusDataRepository-backed route validation, and filter malformed coordinates
 
 ---
 
