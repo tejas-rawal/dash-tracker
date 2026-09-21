@@ -254,6 +254,44 @@ describe("VehicleService", () => {
             expect(mockLoggerWarn).toHaveBeenCalledWith(expect.stringContaining("1550"));
         });
 
+        it("drops a vehicle with a missing lat and logs a warning naming its id", async () => {
+            // Arrange
+            mockLoggerWarn.mockClear();
+            const dashVehicle = makeDashVehicle({ id: "1550" });
+            // @ts-expect-error - simulating a malformed upstream payload missing lat
+            dashVehicle.loc.lat = undefined;
+            mockAxiosGet.mockResolvedValue({ data: makeDashVehiclesApiResponse([dashVehicle]) });
+            const mockRepo = makeMockRepo();
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
+
+            // Act
+            const result = await getVehiclePositions();
+
+            // Assert
+            expect(result.data.vehicles).toEqual([]);
+            expect(mockLoggerWarn).toHaveBeenCalledTimes(1);
+            expect(mockLoggerWarn).toHaveBeenCalledWith(expect.stringContaining("1550"));
+        });
+
+        it("drops a vehicle with a null lon and logs a warning naming its id", async () => {
+            // Arrange
+            mockLoggerWarn.mockClear();
+            const dashVehicle = makeDashVehicle({ id: "1550" });
+            // @ts-expect-error - simulating a malformed upstream payload with a null lon
+            dashVehicle.loc.lon = null;
+            mockAxiosGet.mockResolvedValue({ data: makeDashVehiclesApiResponse([dashVehicle]) });
+            const mockRepo = makeMockRepo();
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
+
+            // Act
+            const result = await getVehiclePositions();
+
+            // Assert
+            expect(result.data.vehicles).toEqual([]);
+            expect(mockLoggerWarn).toHaveBeenCalledTimes(1);
+            expect(mockLoggerWarn).toHaveBeenCalledWith(expect.stringContaining("1550"));
+        });
+
         it("drops only the malformed vehicle among several, preserving order of the rest", async () => {
             // Arrange
             mockLoggerWarn.mockClear();
