@@ -161,6 +161,7 @@ describe("VehicleService", () => {
     describe("route validation", () => {
         it("rejects with NotFoundError when the route short name is unknown", async () => {
             // Arrange
+            mockAxiosGet.mockClear();
             const mockRepo = makeMockRepo();
             mockRepo.getRouteByShortName.mockReturnValue(undefined);
             const { getVehiclePositions } = createVehicleService(mockRepo as never);

@@ -1,5 +1,5 @@
 import { axios, environment, logger } from "../../config";
-import { UpstreamApiError } from "../errors";
+import { NotFoundError, UpstreamApiError } from "../errors";
 import type {
     DashVehicle,
     DashVehiclesApiResponse,
@@ -7,12 +7,13 @@ import type {
     VehiclePosition,
     VehiclePositionsResponse,
 } from "../models/Vehicle";
+import type { BusDataRepository } from "../repositories";
 
 export interface VehicleService {
     getVehiclePositions(options?: VehicleOptions): Promise<VehiclePositionsResponse>;
 }
 
-export function createVehicleService(): VehicleService {
+export function createVehicleService(repository: BusDataRepository): VehicleService {
     function buildDashApiUrl(options: VehicleOptions): string {
         const { agency } = environment.dashApi;
         const params = new URLSearchParams();
@@ -37,18 +38,25 @@ export function createVehicleService(): VehicleService {
             id: vehicle.id,
             routeId: vehicle.routeId,
             routeShortName: vehicle.routeShortName,
-            tripId: vehicle.tripId,
             directionId: vehicle.directionId,
             headsign: vehicle.headsign,
-            lat: vehicle.lat,
-            lon: vehicle.lon,
-            heading: vehicle.heading,
-            speed: vehicle.speed,
-            lastUpdated: vehicle.lastUpdated,
+            lat: vehicle.loc.lat,
+            lon: vehicle.loc.lon,
+            heading: vehicle.loc.heading,
+            speed: vehicle.loc.speed,
+            vehicleType: vehicle.vehicleType,
+            lastUpdated: new Date(vehicle.loc.time * 1000).toISOString(),
         }));
     }
 
     async function getVehiclePositions(options: VehicleOptions = {}): Promise<VehiclePositionsResponse> {
+        if (options.route !== undefined) {
+            const route = repository.getRouteByShortName(options.route);
+            if (!route) {
+                throw new NotFoundError(`Route not found: ${options.route}`);
+            }
+        }
+
         const dashResponse = await fetchFromDashApi(options);
 
         if (!dashResponse.success) {
