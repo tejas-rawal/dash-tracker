@@ -33,13 +33,17 @@ export function createVehicleService(repository: BusDataRepository): VehicleServ
         return response.data as DashVehiclesApiResponse;
     }
 
+    function isValidCoordinate(value: unknown): value is number {
+        return typeof value === "number" && Number.isFinite(value);
+    }
+
     function mapToVehiclePositions(vehicles: DashVehicle[]): VehiclePosition[] {
         return vehicles
             .filter((vehicle) => {
-                const valid = !Number.isNaN(vehicle.loc.lat) && !Number.isNaN(vehicle.loc.lon);
+                const valid = isValidCoordinate(vehicle.loc?.lat) && isValidCoordinate(vehicle.loc?.lon);
                 if (!valid) {
                     logger.warn(
-                        `Dropping vehicle ${vehicle.id} with invalid coordinates: lat=${vehicle.loc.lat}, lon=${vehicle.loc.lon}`,
+                        `Dropping vehicle ${vehicle.id} with invalid coordinates: lat=${vehicle.loc?.lat}, lon=${vehicle.loc?.lon}`,
                     );
                 }
                 return valid;
