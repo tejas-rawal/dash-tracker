@@ -214,6 +214,10 @@ None — no external service configuration required. (A human with real DASH API
 - `verbose=true` fields (D-11) remain deliberately deferred to a future phase, as does GTFS-RT protobuf (D-01), SSE/streaming (D-02), multi-route filtering (D-03), staleness thresholds (D-06), and Zod validation (D-07) — none of these were touched, matching the plan's no-op decisions
 - No blockers for phase completion; this was the only plan in Phase 10 Wave 1
 
+## Self-Check: PASSED
+
+All key files confirmed present on disk (`Vehicle.ts`, `VehicleService.ts`, `vehicleRoutes.ts`, `VehicleService.test.ts`, `VehicleController.test.ts`, this SUMMARY.md). All 5 commits confirmed present in `git log` (`2f9c735`, `b393957`, `634e337`, `0b4353b`, `8b4e913`).
+
 ---
 *Phase: 10-solidify-vehicle-position-work*
 *Completed: 2026-09-21*
