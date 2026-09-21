@@ -34,19 +34,29 @@ export function createVehicleService(repository: BusDataRepository): VehicleServ
     }
 
     function mapToVehiclePositions(vehicles: DashVehicle[]): VehiclePosition[] {
-        return vehicles.map((vehicle) => ({
-            id: vehicle.id,
-            routeId: vehicle.routeId,
-            routeShortName: vehicle.routeShortName,
-            directionId: vehicle.directionId,
-            headsign: vehicle.headsign,
-            lat: vehicle.loc.lat,
-            lon: vehicle.loc.lon,
-            heading: vehicle.loc.heading,
-            speed: vehicle.loc.speed,
-            vehicleType: vehicle.vehicleType,
-            lastUpdated: new Date(vehicle.loc.time * 1000).toISOString(),
-        }));
+        return vehicles
+            .filter((vehicle) => {
+                const valid = !Number.isNaN(vehicle.loc.lat) && !Number.isNaN(vehicle.loc.lon);
+                if (!valid) {
+                    logger.warn(
+                        `Dropping vehicle ${vehicle.id} with invalid coordinates: lat=${vehicle.loc.lat}, lon=${vehicle.loc.lon}`,
+                    );
+                }
+                return valid;
+            })
+            .map((vehicle) => ({
+                id: vehicle.id,
+                routeId: vehicle.routeId,
+                routeShortName: vehicle.routeShortName,
+                directionId: vehicle.directionId,
+                headsign: vehicle.headsign,
+                lat: vehicle.loc.lat,
+                lon: vehicle.loc.lon,
+                heading: vehicle.loc.heading,
+                speed: vehicle.loc.speed,
+                vehicleType: vehicle.vehicleType,
+                lastUpdated: new Date(vehicle.loc.time * 1000).toISOString(),
+            }));
     }
 
     async function getVehiclePositions(options: VehicleOptions = {}): Promise<VehiclePositionsResponse> {
