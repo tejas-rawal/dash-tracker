@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { describe, expect, it, vi } from "vitest";
-import { UpstreamApiError } from "../errors";
+import { NotFoundError, UpstreamApiError } from "../errors";
 import type { VehiclePositionsResponse } from "../models/Vehicle";
 import { createVehicleController } from "./VehicleController";
 
@@ -109,6 +109,25 @@ describe("VehicleController", () => {
             expect(res.json).toHaveBeenCalledWith({
                 error: "Bad Gateway",
                 details: "DASH API returned success: false for vehicle positions",
+            });
+        });
+
+        it("responds with 404 and a Not Found body when the service throws NotFoundError", async () => {
+            // Arrange
+            const mockService = makeMockService();
+            mockService.getVehiclePositions.mockRejectedValue(new NotFoundError("Route not found: UNKNOWN"));
+            const { getVehiclePositions } = createVehicleController(mockService);
+            const req = makeMockReq({});
+            const res = makeMockRes();
+
+            // Act
+            await getVehiclePositions(req, res, vi.fn());
+
+            // Assert
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith({
+                error: "Not Found",
+                details: "Route not found: UNKNOWN",
             });
         });
 
