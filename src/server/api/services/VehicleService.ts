@@ -40,11 +40,12 @@ export function createVehicleService(repository: BusDataRepository): VehicleServ
     function mapToVehiclePositions(vehicles: DashVehicle[]): VehiclePosition[] {
         return vehicles
             .filter((vehicle) => {
-                const valid = isValidCoordinate(vehicle.loc?.lat) && isValidCoordinate(vehicle.loc?.lon);
+                const valid =
+                    isValidCoordinate(vehicle.loc?.lat) &&
+                    isValidCoordinate(vehicle.loc?.lon) &&
+                    isValidCoordinate(vehicle.loc?.time);
                 if (!valid) {
-                    logger.warn(
-                        `Dropping vehicle ${vehicle.id} with invalid coordinates: lat=${vehicle.loc?.lat}, lon=${vehicle.loc?.lon}`,
-                    );
+                    logger.warn(`Dropping vehicle ${vehicle.id} with invalid loc data`);
                 }
                 return valid;
             })
