@@ -11,10 +11,11 @@ vi.mock("../../config", () => ({
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
-import { axios, environment } from "../../config";
+import { axios, environment, logger } from "../../config";
 import { createVehicleService } from "./VehicleService";
 
 const mockAxiosGet = vi.mocked(axios.get);
+const mockLoggerWarn = vi.mocked(logger.warn);
 
 const makeMockRepo = () => ({
     getRouteByShortName: vi.fn(),
@@ -192,6 +193,90 @@ describe("VehicleService", () => {
 
             // Assert
             expect(mockRepo.getRouteByShortName).not.toHaveBeenCalled();
+        });
+    });
+
+    describe("coordinate filtering", () => {
+        it("passes through a vehicle with valid coordinates unchanged", async () => {
+            // Arrange
+            mockLoggerWarn.mockClear();
+            const dashVehicle = makeDashVehicle({ id: "1550" });
+            mockAxiosGet.mockResolvedValue({ data: makeDashVehiclesApiResponse([dashVehicle]) });
+            const mockRepo = makeMockRepo();
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
+
+            // Act
+            const result = await getVehiclePositions();
+
+            // Assert
+            expect(result.data.vehicles).toHaveLength(1);
+            expect(result.data.vehicles[0]).toMatchObject({ id: "1550", lat: 37.72179, lon: -122.44705 });
+            expect(mockLoggerWarn).not.toHaveBeenCalled();
+        });
+
+        it("drops a vehicle with NaN lat and logs a warning naming its id", async () => {
+            // Arrange
+            mockLoggerWarn.mockClear();
+            const dashVehicle = makeDashVehicle({
+                id: "1550",
+                loc: { heading: 113.8, lat: Number.NaN, lon: -122.44705, speed: 0, time: 1534287835 },
+            });
+            mockAxiosGet.mockResolvedValue({ data: makeDashVehiclesApiResponse([dashVehicle]) });
+            const mockRepo = makeMockRepo();
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
+
+            // Act
+            const result = await getVehiclePositions();
+
+            // Assert
+            expect(result.data.vehicles).toEqual([]);
+            expect(mockLoggerWarn).toHaveBeenCalledTimes(1);
+            expect(mockLoggerWarn).toHaveBeenCalledWith(expect.stringContaining("1550"));
+        });
+
+        it("drops a vehicle with NaN lon and logs a warning naming its id", async () => {
+            // Arrange
+            mockLoggerWarn.mockClear();
+            const dashVehicle = makeDashVehicle({
+                id: "1550",
+                loc: { heading: 113.8, lat: 37.72179, lon: Number.NaN, speed: 0, time: 1534287835 },
+            });
+            mockAxiosGet.mockResolvedValue({ data: makeDashVehiclesApiResponse([dashVehicle]) });
+            const mockRepo = makeMockRepo();
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
+
+            // Act
+            const result = await getVehiclePositions();
+
+            // Assert
+            expect(result.data.vehicles).toEqual([]);
+            expect(mockLoggerWarn).toHaveBeenCalledTimes(1);
+            expect(mockLoggerWarn).toHaveBeenCalledWith(expect.stringContaining("1550"));
+        });
+
+        it("drops only the malformed vehicle among several, preserving order of the rest", async () => {
+            // Arrange
+            mockLoggerWarn.mockClear();
+            const validFirst = makeDashVehicle({ id: "1550" });
+            const invalidMiddle = makeDashVehicle({
+                id: "1551",
+                loc: { heading: 113.8, lat: Number.NaN, lon: -122.44705, speed: 0, time: 1534287835 },
+            });
+            const validLast = makeDashVehicle({ id: "1552" });
+            mockAxiosGet.mockResolvedValue({
+                data: makeDashVehiclesApiResponse([validFirst, invalidMiddle, validLast]),
+            });
+            const mockRepo = makeMockRepo();
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
+
+            // Act
+            const result = await getVehiclePositions();
+
+            // Assert
+            expect(result.data.vehicles).toHaveLength(2);
+            expect(result.data.vehicles.map((v) => v.id)).toEqual(["1550", "1552"]);
+            expect(mockLoggerWarn).toHaveBeenCalledTimes(1);
+            expect(mockLoggerWarn).toHaveBeenCalledWith(expect.stringContaining("1551"));
         });
     });
 });
