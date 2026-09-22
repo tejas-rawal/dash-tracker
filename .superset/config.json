@@ -1,0 +1,7 @@
+{
+    "setup": [
+        "bun install",
+        "[ -f .env ] || /Users/trawal/.superset/dash-tracker-setup.sh"
+    ],
+    "run": ["bun run dev-server"]
+}
