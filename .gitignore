@@ -136,3 +136,7 @@ data/
 ### GSD tool-internal state (generated, session-local) ###
 .gsd/
 .planning/state.json
+
+### Bun ###
+# Legacy binary lockfile bun 1.0.31 writes alongside the tracked text bun.lock
+bun.lockb

@@ -1,37 +1,37 @@
 ---
-gsd_state_version: 1.0
+gsd_state_version: "1.0"
 milestone: v0.4
-milestone_name: Service Alerts
-status: Awaiting next milestone
-stopped_at: Phase 09 complete — all phases complete (merged with v0.3, shipped independently on main via PR #8)
-last_updated: "2026-09-08T14:50:07.227Z"
-last_activity: 2026-09-08
-last_activity_desc: Milestone v0.4 completed and archived; merged with v0.3 (shipped 2026-09-01 via PR #8), v0.4 phases renumbered 5-6 -> 8-9
-state_head: e78211f2d82be1717b72920f01500f605b1ddc58
+current_phase: 10
+current_phase_name: Solidify vehicle position work
+status: "Phase 10 shipped — PR #14"
+stopped_at: Phase 10 complete — all phases complete
+last_updated: "2026-09-22T15:27:15.773Z"
+last_activity: 2026-09-22
+state_head: 40c00d2ed5d1a4703f092feaabe517d16d286b76
 progress:
   total_phases: 2
   completed_phases: 2
   total_plans: 8
   completed_plans: 8
   percent: 100
-current_phase: 09
+milestone_name: Service Alerts
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-08)
+See: .planning/PROJECT.md (updated 2026-09-22)
 
 **Core value:** Riders can always see accurate, near-real-time arrival predictions for their stop.
-**Current focus:** v0.4 milestone complete — awaiting next milestone
+**Current focus:** All phases complete — awaiting next milestone
 
 ## Current Position
 
-Phase: Milestone v0.4 complete
+Phase: 10 (Solidify vehicle position work) — COMPLETE
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-09-15 - Completed quick task 260915-fc8: Ensure predictions endpoint uses Swiftly real-time predictions API; add vehicle positions endpoint using Swiftly real-time vehicles API
+Status: Phase 10 shipped — PR #14
+Last activity: 2026-09-22
 
 ## Performance Metrics
 
@@ -59,6 +59,7 @@ Last activity: 2026-09-15 - Completed quick task 260915-fc8: Ensure predictions 
 | 07 | 1 | - | - |
 | 08 | 6 | - | - |
 | 09 | 2 | - | - |
+| 10 | 1 | - | - |
 
 **Recent Trend:**
 
@@ -96,6 +97,8 @@ Recent decisions affecting current work:
 - [Phase 8] Live alert payload is a flat, custom Swiftly/Alexandria JSON format (bare top-level array, camelCase, ISO-8601 dates) — not the nested GTFS-RT-protobuf-derived `{entities:[...]}` shape early rounds assumed from an auto-generated doc example
 - [Phase 9] Match alerts to routes/stops via internal `BusRoute.id`/`BusStop.id` (DASH's own ID space), not `shortName`/`code`
 - [Phase 9] Agency-wide alerts (no informed route/stop) are dropped from responses in v0.4; ALRT-09 (predictions embedding) deferred to v2
+- [Phase 10] `VehicleService` now validates `route` filters via `repository.getRouteByShortName` before any upstream DASH fetch, matching `BusRouteService`'s existing 404 pattern (D-04)
+- [Phase 10] Coordinate/timestamp safety filter uses `typeof value === "number" && Number.isFinite(value)`, not literal `NaN` checks — code review (CR-01/CR-02) found the NaN-only check missed missing/undefined/null lat/lon and let a malformed `loc.time` crash the whole request instead of dropping just the bad vehicle
 
 ### Pending Todos
 
@@ -112,7 +115,7 @@ None yet.
 - ⚠️ [Phase 8, v0.4 — STILL OPEN after Phase 9] The confirmed live DASH alert payload (G-05-5) includes `deletedAt`/`deletedBy` fields that `ServiceAlertService`/`ServiceAlertRepository` currently ignore entirely. If the DASH admin tool soft-deletes alerts instead of removing them from the feed, a deleted-but-still-time-active alert could still surface via `getActiveAlerts()` — and Phase 9 now exposes that data publicly on route/stop responses without addressing it. Was flagged as "consider before Phase 9 exposes alerts publicly" but not picked up during Phase 9 planning/execution. Worth a follow-up before/early in the next milestone.
 - ⚠️ [Phase 9] `RouteWithAlerts` (`BusRoute & { alerts }`) is built via object spread over a `BusRoute` class instance, losing its prototype methods even though the static type doesn't reflect that (WR-01, `09-REVIEW.md`). No live call site hits it today.
 - ⚠️ [Phase 9] `ServiceAlertRepository.isAlertActive`'s date-boundary checks fail open on a malformed `activePeriod` date string rather than excluding/logging it (WR-02, `09-REVIEW.md`).
-- ⚠️ [Quick 260915-fc8] `DashVehicle`'s field names in `src/server/api/models/Vehicle.ts` are a best-effort inference, not confirmed against Swiftly's real-time vehicles docs (Stoplight page is JS-rendered, couldn't be fetched) or a live payload (no `DASH_API_KEY` available in this environment). Same risk class as the Phase 8 alerts payload — isolated behind the Dash*/response-type split so only `DashVehicle` + its mapping function need to change if live field names differ. Verify against a real DASH API response before relying on `GET /api/v1/vehicles` in production.
+- ⚠️ [Phase 10] CR-02's fix (dropping vehicles with malformed `loc.time` instead of crashing the request) has no committed regression test — production code is correct and independently spot-checked by both the code fixer and the phase verifier, but a future refactor could silently reintroduce the crash with nothing to catch it. Flagged as an info-level gap in `10-VERIFICATION.md`; recommend adding the 3 spot-check cases to the committed `VehicleService.test.ts` suite.
 
 ### Quick Tasks Completed
 
@@ -133,8 +136,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-08
-Stopped at: Phase 09 complete, v0.4 milestone complete (merged with v0.3, shipped 2026-09-01 via PR #8)
+Last session: 2026-09-22
+Stopped at: Phase 10 complete, ready to plan next milestone
 Resume file: None
 
 ## Operator Next Steps

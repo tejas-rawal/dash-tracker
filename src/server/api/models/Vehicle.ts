@@ -2,14 +2,16 @@ export interface DashVehicle {
     id: string;
     routeId: string;
     routeShortName: string;
-    tripId: string;
     directionId: string;
     headsign: string;
-    lat: number;
-    lon: number;
-    heading: number;
-    speed: number;
-    lastUpdated: number;
+    loc: {
+        lat: number;
+        lon: number;
+        heading: number;
+        speed: number;
+        time: number;
+    };
+    vehicleType: string;
 }
 
 export interface DashVehiclesApiResponse {
@@ -25,14 +27,14 @@ export interface VehiclePosition {
     id: string;
     routeId: string;
     routeShortName: string;
-    tripId: string;
     directionId: string;
     headsign: string;
     lat: number;
     lon: number;
     heading: number;
     speed: number;
-    lastUpdated: number;
+    vehicleType: string;
+    lastUpdated: string;
 }
 
 export interface VehiclePositionsResponse {

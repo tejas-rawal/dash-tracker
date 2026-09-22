@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { UpstreamApiError } from "../errors";
+import { NotFoundError, UpstreamApiError } from "../errors";
 import type { DashVehicle, DashVehiclesApiResponse } from "../models/Vehicle";
 
 vi.mock("../../config", () => ({
@@ -11,23 +11,24 @@ vi.mock("../../config", () => ({
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
-import { axios, environment } from "../../config";
+import { axios, environment, logger } from "../../config";
 import { createVehicleService } from "./VehicleService";
 
 const mockAxiosGet = vi.mocked(axios.get);
+const mockLoggerWarn = vi.mocked(logger.warn);
+
+const makeMockRepo = () => ({
+    getRouteByShortName: vi.fn(),
+});
 
 const makeDashVehicle = (overrides: Partial<DashVehicle> = {}): DashVehicle => ({
-    id: "vehicle-1",
-    routeId: "route-1",
-    routeShortName: "1A",
-    tripId: "trip-1",
-    directionId: "d1",
-    headsign: "Downtown",
-    lat: 38.8,
-    lon: -77.1,
-    heading: 90,
-    speed: 12.5,
-    lastUpdated: 1700000300,
+    id: "1550",
+    routeId: "13223",
+    routeShortName: "KJ",
+    directionId: "0",
+    headsign: "West Portal Ave/Sloat/Portola",
+    loc: { heading: 113.8, lat: 37.72179, lon: -122.44705, speed: 0, time: 1534287835 },
+    vehicleType: "0",
     ...overrides,
 });
 
@@ -45,7 +46,8 @@ describe("VehicleService", () => {
         it("calls the DASH API with the agency key in the URL", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue({ data: makeDashVehiclesApiResponse() });
-            const { getVehiclePositions } = createVehicleService();
+            const mockRepo = makeMockRepo();
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
 
             // Act
             await getVehiclePositions();
@@ -57,7 +59,8 @@ describe("VehicleService", () => {
         it("omits the route param from the URL when not provided", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue({ data: makeDashVehiclesApiResponse() });
-            const { getVehiclePositions } = createVehicleService();
+            const mockRepo = makeMockRepo();
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
 
             // Act
             await getVehiclePositions();
@@ -69,20 +72,27 @@ describe("VehicleService", () => {
         it("forwards the route param when provided", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue({ data: makeDashVehiclesApiResponse() });
-            const { getVehiclePositions } = createVehicleService();
+            const mockRepo = makeMockRepo();
+            mockRepo.getRouteByShortName.mockReturnValue({ id: "13223", shortName: "KJ" } as never);
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
 
             // Act
             await getVehiclePositions({ route: "1A" });
 
             // Assert
             expect(mockAxiosGet).toHaveBeenCalledWith(expect.stringContaining("route=1A"));
+            expect(mockRepo.getRouteByShortName).toHaveBeenCalledWith("1A");
         });
 
         it("maps DashVehicle[] to VehiclePosition[]", async () => {
             // Arrange
-            const dashVehicle = makeDashVehicle({ id: "vehicle-7", lat: 38.9, heading: 180 });
+            const dashVehicle = makeDashVehicle({
+                id: "vehicle-7",
+                loc: { heading: 180, lat: 38.9, lon: -122.44705, speed: 0, time: 1534287835 },
+            });
             mockAxiosGet.mockResolvedValue({ data: makeDashVehiclesApiResponse([dashVehicle]) });
-            const { getVehiclePositions } = createVehicleService();
+            const mockRepo = makeMockRepo();
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
 
             // Act
             const result = await getVehiclePositions();
@@ -92,14 +102,20 @@ describe("VehicleService", () => {
             expect(result.data.vehicles[0]).toMatchObject({
                 id: "vehicle-7",
                 lat: 38.9,
+                lon: -122.44705,
                 heading: 180,
+                speed: 0,
+                vehicleType: "0",
+                lastUpdated: new Date(1534287835 * 1000).toISOString(),
             });
+            expect(result.data.vehicles[0]).not.toHaveProperty("tripId");
         });
 
         it("returns an empty vehicles array when the DASH API returns none", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue({ data: makeDashVehiclesApiResponse([]) });
-            const { getVehiclePositions } = createVehicleService();
+            const mockRepo = makeMockRepo();
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
 
             // Act
             const result = await getVehiclePositions();
@@ -111,7 +127,8 @@ describe("VehicleService", () => {
         it("includes a generatedAt ISO 8601 timestamp in the response", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue({ data: makeDashVehiclesApiResponse() });
-            const { getVehiclePositions } = createVehicleService();
+            const mockRepo = makeMockRepo();
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
 
             // Act
             const result = await getVehiclePositions();
@@ -124,7 +141,8 @@ describe("VehicleService", () => {
             // Arrange
             const failResponse: DashVehiclesApiResponse = { ...makeDashVehiclesApiResponse(), success: false };
             mockAxiosGet.mockResolvedValue({ data: failResponse });
-            const { getVehiclePositions } = createVehicleService();
+            const mockRepo = makeMockRepo();
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
 
             // Act & Assert
             await expect(getVehiclePositions()).rejects.toThrow(UpstreamApiError);
@@ -133,10 +151,170 @@ describe("VehicleService", () => {
         it("propagates a thrown error when the axios call rejects", async () => {
             // Arrange
             mockAxiosGet.mockRejectedValue(new Error("network error"));
-            const { getVehiclePositions } = createVehicleService();
+            const mockRepo = makeMockRepo();
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
 
             // Act & Assert
             await expect(getVehiclePositions()).rejects.toThrow("network error");
+        });
+    });
+
+    describe("route validation", () => {
+        it("rejects with NotFoundError when the route short name is unknown", async () => {
+            // Arrange
+            mockAxiosGet.mockClear();
+            const mockRepo = makeMockRepo();
+            mockRepo.getRouteByShortName.mockReturnValue(undefined);
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
+
+            // Act & Assert
+            await expect(getVehiclePositions({ route: "UNKNOWN" })).rejects.toThrow(NotFoundError);
+            expect(mockAxiosGet).not.toHaveBeenCalled();
+        });
+
+        it("rejects with the exact 'Route not found' message for the unknown route", async () => {
+            // Arrange
+            const mockRepo = makeMockRepo();
+            mockRepo.getRouteByShortName.mockReturnValue(undefined);
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
+
+            // Act & Assert
+            await expect(getVehiclePositions({ route: "UNKNOWN" })).rejects.toThrow("Route not found: UNKNOWN");
+        });
+
+        it("does not call repository.getRouteByShortName when no route filter is provided", async () => {
+            // Arrange
+            mockAxiosGet.mockResolvedValue({ data: makeDashVehiclesApiResponse() });
+            const mockRepo = makeMockRepo();
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
+
+            // Act
+            await getVehiclePositions();
+
+            // Assert
+            expect(mockRepo.getRouteByShortName).not.toHaveBeenCalled();
+        });
+    });
+
+    describe("coordinate filtering", () => {
+        it("passes through a vehicle with valid coordinates unchanged", async () => {
+            // Arrange
+            mockLoggerWarn.mockClear();
+            const dashVehicle = makeDashVehicle({ id: "1550" });
+            mockAxiosGet.mockResolvedValue({ data: makeDashVehiclesApiResponse([dashVehicle]) });
+            const mockRepo = makeMockRepo();
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
+
+            // Act
+            const result = await getVehiclePositions();
+
+            // Assert
+            expect(result.data.vehicles).toHaveLength(1);
+            expect(result.data.vehicles[0]).toMatchObject({ id: "1550", lat: 37.72179, lon: -122.44705 });
+            expect(mockLoggerWarn).not.toHaveBeenCalled();
+        });
+
+        it("drops a vehicle with NaN lat and logs a warning naming its id", async () => {
+            // Arrange
+            mockLoggerWarn.mockClear();
+            const dashVehicle = makeDashVehicle({
+                id: "1550",
+                loc: { heading: 113.8, lat: Number.NaN, lon: -122.44705, speed: 0, time: 1534287835 },
+            });
+            mockAxiosGet.mockResolvedValue({ data: makeDashVehiclesApiResponse([dashVehicle]) });
+            const mockRepo = makeMockRepo();
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
+
+            // Act
+            const result = await getVehiclePositions();
+
+            // Assert
+            expect(result.data.vehicles).toEqual([]);
+            expect(mockLoggerWarn).toHaveBeenCalledTimes(1);
+            expect(mockLoggerWarn).toHaveBeenCalledWith(expect.stringContaining("1550"));
+        });
+
+        it("drops a vehicle with NaN lon and logs a warning naming its id", async () => {
+            // Arrange
+            mockLoggerWarn.mockClear();
+            const dashVehicle = makeDashVehicle({
+                id: "1550",
+                loc: { heading: 113.8, lat: 37.72179, lon: Number.NaN, speed: 0, time: 1534287835 },
+            });
+            mockAxiosGet.mockResolvedValue({ data: makeDashVehiclesApiResponse([dashVehicle]) });
+            const mockRepo = makeMockRepo();
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
+
+            // Act
+            const result = await getVehiclePositions();
+
+            // Assert
+            expect(result.data.vehicles).toEqual([]);
+            expect(mockLoggerWarn).toHaveBeenCalledTimes(1);
+            expect(mockLoggerWarn).toHaveBeenCalledWith(expect.stringContaining("1550"));
+        });
+
+        it("drops a vehicle with a missing lat and logs a warning naming its id", async () => {
+            // Arrange
+            mockLoggerWarn.mockClear();
+            const dashVehicle = makeDashVehicle({ id: "1550" });
+            // @ts-expect-error - simulating a malformed upstream payload missing lat
+            dashVehicle.loc.lat = undefined;
+            mockAxiosGet.mockResolvedValue({ data: makeDashVehiclesApiResponse([dashVehicle]) });
+            const mockRepo = makeMockRepo();
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
+
+            // Act
+            const result = await getVehiclePositions();
+
+            // Assert
+            expect(result.data.vehicles).toEqual([]);
+            expect(mockLoggerWarn).toHaveBeenCalledTimes(1);
+            expect(mockLoggerWarn).toHaveBeenCalledWith(expect.stringContaining("1550"));
+        });
+
+        it("drops a vehicle with a null lon and logs a warning naming its id", async () => {
+            // Arrange
+            mockLoggerWarn.mockClear();
+            const dashVehicle = makeDashVehicle({ id: "1550" });
+            // @ts-expect-error - simulating a malformed upstream payload with a null lon
+            dashVehicle.loc.lon = null;
+            mockAxiosGet.mockResolvedValue({ data: makeDashVehiclesApiResponse([dashVehicle]) });
+            const mockRepo = makeMockRepo();
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
+
+            // Act
+            const result = await getVehiclePositions();
+
+            // Assert
+            expect(result.data.vehicles).toEqual([]);
+            expect(mockLoggerWarn).toHaveBeenCalledTimes(1);
+            expect(mockLoggerWarn).toHaveBeenCalledWith(expect.stringContaining("1550"));
+        });
+
+        it("drops only the malformed vehicle among several, preserving order of the rest", async () => {
+            // Arrange
+            mockLoggerWarn.mockClear();
+            const validFirst = makeDashVehicle({ id: "1550" });
+            const invalidMiddle = makeDashVehicle({
+                id: "1551",
+                loc: { heading: 113.8, lat: Number.NaN, lon: -122.44705, speed: 0, time: 1534287835 },
+            });
+            const validLast = makeDashVehicle({ id: "1552" });
+            mockAxiosGet.mockResolvedValue({
+                data: makeDashVehiclesApiResponse([validFirst, invalidMiddle, validLast]),
+            });
+            const mockRepo = makeMockRepo();
+            const { getVehiclePositions } = createVehicleService(mockRepo as never);
+
+            // Act
+            const result = await getVehiclePositions();
+
+            // Assert
+            expect(result.data.vehicles).toHaveLength(2);
+            expect(result.data.vehicles.map((v) => v.id)).toEqual(["1550", "1552"]);
+            expect(mockLoggerWarn).toHaveBeenCalledTimes(1);
+            expect(mockLoggerWarn).toHaveBeenCalledWith(expect.stringContaining("1551"));
         });
     });
 });
