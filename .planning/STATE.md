@@ -1,20 +1,16 @@
 ---
 gsd_state_version: "1.0"
-milestone: v0.4
-current_phase: 10
-current_phase_name: Solidify vehicle position work
-status: "Phase 10 shipped — PR #14"
-stopped_at: Phase 10 complete — all phases complete
-last_updated: "2026-09-22T15:27:15.773Z"
+milestone: v0.5
+milestone_name: Nearby Stop Predictions
+status: planning
+last_updated: "2026-09-22T19:47:16.430Z"
 last_activity: 2026-09-22
-state_head: 40c00d2ed5d1a4703f092feaabe517d16d286b76
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 8
-  completed_plans: 8
-  percent: 100
-milestone_name: Service Alerts
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -28,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-09-22)
 
 ## Current Position
 
-Phase: 10 (Solidify vehicle position work) — COMPLETE
+Phase: Not started (defining requirements)
 Plan: —
-Status: Phase 10 shipped — PR #14
-Last activity: 2026-09-22
+Status: Defining requirements
+Last activity: 2026-09-22 — Milestone v0.5 started
 
 ## Performance Metrics
 

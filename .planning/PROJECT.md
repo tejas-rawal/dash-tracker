@@ -14,9 +14,16 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 
 **Since v0.4:** Phase 10 (Solidify vehicle position work, completed 2026-09-22) hardened the `GET /api/v1/vehicles` endpoint that had landed as a quick task (260915-fc8) without discussion/research/plan-checking — corrected `DashVehicle`/`VehiclePosition` to match DASH's real nested `loc` payload (verified against a live SFMTA response), added repository-backed 404 route validation, and fixed two code-review-caught bugs in the malformed-coordinate safety filter. Not part of a new milestone — a standalone backlog item promoted from the v0.4 blockers list.
 
-## Next Milestone Goals
+## Current Milestone: v0.5 Nearby Stop Predictions
 
-*(TBD — run `/gsd-new-milestone` to define the next milestone. Backlog candidates: ADHR-01 schedule adherence (SEED-002); ALRT-09/10/11 deferred alerts work; any v2 requirements deferred from v0.3 (see PERS-01..05 in `.planning/milestones/v0.3-REQUIREMENTS.md`); the Expo/React Native frontend.)*
+**Goal:** A rider can send their location and get live arrival predictions for every stop around them in one call, backed by DASH/Swiftly's `predictions-near-location` real-time endpoint.
+
+**Target features:**
+- New `GET /api/v1/predictions/nearby?lat&lng&radius&number` — one live, uncached upstream call to `real-time/{agency}/predictions-near-location` per request
+- Each nearby stop carries id/name/code, distance from the rider (miles), route/destination predictions, and embedded active service alerts
+- Top-level `generatedAt` freshness timestamp, matching the existing REST/SSE prediction responses
+- Input validation (400), upstream failure → 502, following routes → controller → service → repository with factory DI
+- Existing `GET /api/v1/stops/nearby` (local haversine, no upstream call) stays unchanged
 
 <details>
 <summary>v0.4 Service Alerts — original milestone goal (for reference)</summary>
@@ -70,7 +77,10 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 
 ### Active
 
-*(none — fresh requirements defined at next milestone kickoff via `/gsd-new-milestone`)*
+- [ ] Rider can get live predictions for all stops near a lat/lng via `GET /api/v1/predictions/nearby`, backed by Swiftly `predictions-near-location`
+- [ ] Each nearby stop includes distance (miles), predictions grouped by route/destination, and active service alerts
+- [ ] Response carries a `generatedAt` freshness timestamp
+- [ ] Invalid input returns 400; upstream failure returns 502
 
 ### Out of Scope
 
@@ -80,6 +90,9 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 - Replacing Vitest — it's a test runner only, unrelated to lint/format consolidation
 - Schedule adherence (SEED-002, on-time performance vs. schedule) — companion idea to service alerts but deliberately deferred to its own future milestone
 - A standalone alerts-browsing endpoint (e.g. `GET /api/v1/alerts`) — alerts are embedded into existing route/stop responses only for v0.4
+- Live SSE stream for nearby-location predictions — location isn't a stable subscription key like stopId; REST-only for v0.5
+- Route filter on nearby predictions — not needed for the initial "what's arriving around me" use case; deferred
+- Logging nearby-prediction lookups as device recents — recents stay tied to explicit stop/route lookups
 - Pushing alert updates over the SSE prediction stream — SSE carries prediction updates only; alerts stay REST-only for now
 - Embedding active alerts on `GET /api/v1/predictions` (REST) responses (ALRT-09) — deferred to v2; a stop/route's own response already carries its active alerts via Phase 9's embedding, so a duplicate flag/array on the predictions response was judged redundant — Phase 9 D-05
 
@@ -143,9 +156,6 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 
 This document evolves at phase transitions and milestone boundaries.
 
----
-*Last updated: 2026-09-22 after Phase 10*
-
 **After each phase transition** (via `/gsd-transition`):
 1. Requirements invalidated? → Move to Out of Scope with reason
 2. Requirements validated? → Move to Validated with phase reference
@@ -160,4 +170,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-08 after v0.4 milestone*
+*Last updated: 2026-09-22 after starting milestone v0.5 Nearby Stop Predictions*
