@@ -21,17 +21,17 @@ milestone_name: Service Alerts
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-08)
+See: .planning/PROJECT.md (updated 2026-09-22)
 
 **Core value:** Riders can always see accurate, near-real-time arrival predictions for their stop.
-**Current focus:** Phase 10 — Solidify vehicle position work
+**Current focus:** All phases complete — awaiting next milestone
 
 ## Current Position
 
-Phase: 10
-Plan: Not started
+Phase: 10 (Solidify vehicle position work) — COMPLETE
+Plan: —
 Status: All phases complete
-Last activity: 2026-09-22 — Phase 10 complete
+Last activity: 2026-09-22 — Phase 10 complete, UAT passed, security verified (0 open threats)
 
 ## Performance Metrics
 
@@ -97,6 +97,8 @@ Recent decisions affecting current work:
 - [Phase 8] Live alert payload is a flat, custom Swiftly/Alexandria JSON format (bare top-level array, camelCase, ISO-8601 dates) — not the nested GTFS-RT-protobuf-derived `{entities:[...]}` shape early rounds assumed from an auto-generated doc example
 - [Phase 9] Match alerts to routes/stops via internal `BusRoute.id`/`BusStop.id` (DASH's own ID space), not `shortName`/`code`
 - [Phase 9] Agency-wide alerts (no informed route/stop) are dropped from responses in v0.4; ALRT-09 (predictions embedding) deferred to v2
+- [Phase 10] `VehicleService` now validates `route` filters via `repository.getRouteByShortName` before any upstream DASH fetch, matching `BusRouteService`'s existing 404 pattern (D-04)
+- [Phase 10] Coordinate/timestamp safety filter uses `typeof value === "number" && Number.isFinite(value)`, not literal `NaN` checks — code review (CR-01/CR-02) found the NaN-only check missed missing/undefined/null lat/lon and let a malformed `loc.time` crash the whole request instead of dropping just the bad vehicle
 
 ### Pending Todos
 
@@ -113,7 +115,7 @@ None yet.
 - ⚠️ [Phase 8, v0.4 — STILL OPEN after Phase 9] The confirmed live DASH alert payload (G-05-5) includes `deletedAt`/`deletedBy` fields that `ServiceAlertService`/`ServiceAlertRepository` currently ignore entirely. If the DASH admin tool soft-deletes alerts instead of removing them from the feed, a deleted-but-still-time-active alert could still surface via `getActiveAlerts()` — and Phase 9 now exposes that data publicly on route/stop responses without addressing it. Was flagged as "consider before Phase 9 exposes alerts publicly" but not picked up during Phase 9 planning/execution. Worth a follow-up before/early in the next milestone.
 - ⚠️ [Phase 9] `RouteWithAlerts` (`BusRoute & { alerts }`) is built via object spread over a `BusRoute` class instance, losing its prototype methods even though the static type doesn't reflect that (WR-01, `09-REVIEW.md`). No live call site hits it today.
 - ⚠️ [Phase 9] `ServiceAlertRepository.isAlertActive`'s date-boundary checks fail open on a malformed `activePeriod` date string rather than excluding/logging it (WR-02, `09-REVIEW.md`).
-- ⚠️ [Quick 260915-fc8] `DashVehicle`'s field names in `src/server/api/models/Vehicle.ts` are a best-effort inference, not confirmed against Swiftly's real-time vehicles docs (Stoplight page is JS-rendered, couldn't be fetched) or a live payload (no `DASH_API_KEY` available in this environment). Same risk class as the Phase 8 alerts payload — isolated behind the Dash*/response-type split so only `DashVehicle` + its mapping function need to change if live field names differ. Verify against a real DASH API response before relying on `GET /api/v1/vehicles` in production.
+- ⚠️ [Phase 10] CR-02's fix (dropping vehicles with malformed `loc.time` instead of crashing the request) has no committed regression test — production code is correct and independently spot-checked by both the code fixer and the phase verifier, but a future refactor could silently reintroduce the crash with nothing to catch it. Flagged as an info-level gap in `10-VERIFICATION.md`; recommend adding the 3 spot-check cases to the committed `VehicleService.test.ts` suite.
 
 ### Quick Tasks Completed
 
@@ -134,9 +136,9 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-21T20:10:40.552Z
-Stopped at: Phase 10 complete — all phases complete
-Resume file: .planning/phases/10-solidify-vehicle-position-work/10-CONTEXT.md
+Last session: 2026-09-22
+Stopped at: Phase 10 complete, ready to plan next milestone
+Resume file: None
 
 ## Operator Next Steps
 

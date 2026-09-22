@@ -12,6 +12,8 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 
 **Shipped:** v0.4 Service Alerts (2026-09-08) — riders now see active service alerts (detours, disruptions, stop closures) embedded directly in route (`/routes/all`, `/routes/:shortName`) and stop (`/routes/:shortName/stops`, `/stops/nearby`) responses, refreshed on a dedicated 5-minute background poll independent of the 30s prediction poll. Four milestones shipped to date (v0.1 tooling cleanup, v0.2 stop discovery + live SSE predictions, v0.3 favorites/recents, v0.4 service alerts).
 
+**Since v0.4:** Phase 10 (Solidify vehicle position work, completed 2026-09-22) hardened the `GET /api/v1/vehicles` endpoint that had landed as a quick task (260915-fc8) without discussion/research/plan-checking — corrected `DashVehicle`/`VehiclePosition` to match DASH's real nested `loc` payload (verified against a live SFMTA response), added repository-backed 404 route validation, and fixed two code-review-caught bugs in the malformed-coordinate safety filter. Not part of a new milestone — a standalone backlog item promoted from the v0.4 blockers list.
+
 ## Next Milestone Goals
 
 *(TBD — run `/gsd-new-milestone` to define the next milestone. Backlog candidates: ADHR-01 schedule adherence (SEED-002); ALRT-09/10/11 deferred alerts work; any v2 requirements deferred from v0.3 (see PERS-01..05 in `.planning/milestones/v0.3-REQUIREMENTS.md`); the Expo/React Native frontend.)*
@@ -134,10 +136,15 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 | Match alerts to routes/stops via internal `BusRoute.id`/`BusStop.id` (DASH's own ID space), not `shortName`/`code` | Same ID space GTFS-RT `informedEntities.routeId`/`.stopId` already populate on ingestion (Phase 8) — no re-derivation needed | ✓ Shipped Phase 9 |
 | Drop agency-wide alerts (no informed route/stop at all) from route/stop responses in v0.4 | Scoping to explicitly-informed entities keeps the matching logic simple; a later phase can add agency-wide surfacing without touching it | ✓ Shipped Phase 9 |
 | Defer ALRT-09 (alerts on predictions responses) to v2 | A stop/route's own response already carries its active alerts via Phase 9's embedding — a duplicate flag/array on the predictions response was judged redundant | ✓ Deferred — moved out of v0.4 scope |
+| `VehicleService` gains repository-backed `getRouteByShortName` route validation before any DASH fetch, matching `BusRouteService`'s existing 404 pattern | Quick task 260915-fc8 had forwarded an unvalidated client-supplied route string straight to the DASH API; validating first closes that and gives correct 404s | ✓ Shipped Phase 10 |
+| Coordinate/timestamp safety filter in `mapToVehiclePositions` uses `typeof value === "number" && Number.isFinite(value)`, not `!Number.isNaN(...)` | Code review (CR-01/CR-02) found the NaN-only check missed missing/undefined/null lat/lon and let a malformed `loc.time` crash the entire request instead of just dropping the one bad vehicle | ✓ Shipped Phase 10 |
 
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
+
+---
+*Last updated: 2026-09-22 after Phase 10*
 
 **After each phase transition** (via `/gsd-transition`):
 1. Requirements invalidated? → Move to Out of Scope with reason
