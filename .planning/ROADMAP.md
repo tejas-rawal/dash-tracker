@@ -103,7 +103,16 @@ Plans:
 
 Existing `GET /api/v1/stops/nearby` (local haversine, no upstream call) and `GET /api/v1/predictions` responses are unchanged; no SSE stream and no recents logging for nearby lookups.
 
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 11-01-PLAN.md — Core nearby endpoint: types, shared prediction mapping, NearbyPredictionService (one live predictions-near-location call, stopId grouping, nearest-first sort, alerts), lat/lng-validated controller, /nearby route, 502/malformed-entry handling (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 11-02-PLAN.md — Rider-tuned search: radius (≤1 mi → meters) and number (1..10) over HTTP, plus the full NEAR-08 400 validation matrix (wave 2, depends on 11-01)
 
 ## Progress
 
@@ -122,7 +131,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 8. Service Alerts Ingestion | 6/6 | Complete | 2026-09-04 |
 | 9. Alerts Surfaced on Routes, Stops & Predictions | 2/2 | Complete | 2026-09-08 |
 | 10. Solidify vehicle position work | 1/1 | Complete | 2026-09-22 |
-| 11. Nearby Stop Predictions | 0/TBD | Not started | - |
+| 11. Nearby Stop Predictions | 0/2 | Planned | - |
 
 ---
 
