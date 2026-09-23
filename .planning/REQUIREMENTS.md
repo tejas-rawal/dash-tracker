@@ -44,12 +44,21 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| NEAR-01 | Phase 11 | Pending |
+| NEAR-02 | Phase 11 | Pending |
+| NEAR-03 | Phase 11 | Pending |
+| NEAR-04 | Phase 11 | Pending |
+| NEAR-05 | Phase 11 | Pending |
+| NEAR-06 | Phase 11 | Pending |
+| NEAR-07 | Phase 11 | Pending |
+| NEAR-08 | Phase 11 | Pending |
+| NEAR-09 | Phase 11 | Pending |
 
 **Coverage:**
 - v0.5 requirements: 9 total
-- Mapped to phases: 0
-- Unmapped: 9 ⚠️
+- Mapped to phases: 9
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-09-22*
-*Last updated: 2026-09-22 after initial definition*
+*Last updated: 2026-09-23 after v0.5 roadmap creation*

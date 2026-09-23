@@ -6,6 +6,7 @@
 - ✅ **v0.2 Real-Time Arrival Predictions** — Phases 3-4 (shipped 2026-08-27)
 - ✅ **v0.3 Favorited & Recent Routes** — Phases 5-7 (shipped 2026-09-01)
 - ✅ **v0.4 Service Alerts** — Phases 8-9 (shipped 2026-09-08)
+- 🚧 **v0.5 Nearby Stop Predictions** — Phase 11 (in progress)
 
 ## Phases
 
@@ -14,6 +15,7 @@
 - Integer phases (1, 2, 3): Planned milestone work
 - Phase numbering is continuous across milestones (never restarts at 1)
 - v0.3 (phases 5-7) and v0.4 (phases 8-9) were developed independently on separate branches before both landing on `main`; v0.4's phases were renumbered from their original 5-6 to 8-9 when the branches were merged, to keep numbering continuous
+- Phase 10 was a standalone post-v0.4 phase (promoted backlog item, not part of a milestone); v0.5 continues at Phase 11
 
 <details>
 <summary>✅ v0.1 Tooling Cleanup (Phases 1-2) — SHIPPED 2026-08-26</summary>
@@ -50,25 +52,17 @@ See `.planning/milestones/v0.4-ROADMAP.md` for full phase details.
 
 </details>
 
-## Progress
+**Standalone (post-v0.4):**
 
-**Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
+- [x] **Phase 10: Solidify vehicle position work** (1/1 plans) — completed 2026-09-22
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Consolidate Lint & Format Tooling | 1/1 | Complete | 2026-08-26 |
-| 2. Full-Repo Reformat | 1/1 | Complete | 2026-08-26 |
-| 3. Stop Discovery | 2/2 | Complete | 2026-08-26 |
-| 4. Live Predictions via SSE | 1/1 | Complete | 2026-08-27 |
-| 5. SQLite Persistence Foundation | 2/2 | Complete | 2026-08-31 |
-| 6. Favorites (Routes & Stops) | 1/1 | Complete | 2026-08-31 |
-| 7. Recents (Routes & Stops) | 1/1 | Complete | 2026-09-01 |
-| 8. Service Alerts Ingestion | 6/6 | Complete | 2026-09-04 |
-| 9. Alerts Surfaced on Routes, Stops & Predictions | 2/2 | Complete | 2026-09-08 |
-| 10. Solidify vehicle position work | 1/1 | Complete    | 2026-09-22 |
+### 🚧 v0.5 Nearby Stop Predictions (In Progress)
 
----
+**Milestone Goal:** A rider can send their location and get live arrival predictions for every stop around them in one call, backed by DASH/Swiftly's `predictions-near-location` real-time endpoint.
+
+- [ ] **Phase 11: Nearby Stop Predictions** - Rider sends a lat/lng and gets live, nearest-first predictions for every surrounding stop (with distance and active alerts) from one uncached upstream call, with 400/502 error handling
+
+## Phase Details
 
 ### Phase 10: Solidify vehicle position work
 
@@ -93,6 +87,42 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 Plans:
 
 - [x] 10-01-PLAN.md — Correct DashVehicle/VehiclePosition field mapping (loc-nesting, tripId removal, vehicleType), add BusDataRepository-backed route validation, and filter malformed coordinates
+
+### Phase 11: Nearby Stop Predictions
+
+**Goal**: A rider can send their location to `GET /api/v1/predictions/nearby` and get live arrival predictions for every stop around them — nearest-first, with distance and active service alerts — from a single live call to DASH/Swiftly `real-time/{agency}/predictions-near-location`.
+**Depends on**: Nothing new (builds on the existing `PredictionService` response shapes, `ServiceAlertRepository` stop-alert lookup from Phase 9, and the `UpstreamApiError` → 502 mapping; independent of Phase 10)
+**Requirements**: NEAR-01, NEAR-02, NEAR-03, NEAR-04, NEAR-05, NEAR-06, NEAR-07, NEAR-08, NEAR-09
+**Success Criteria** (what must be TRUE):
+
+  1. The real `predictions-near-location` payload shape (envelope, per-stop fields, distance units, stop ID space) is confirmed against a live DASH/Swiftly response before the `Dash*` nearby types and mapping are locked, and the committed test fixtures mirror that live shape — including confirming the returned stop IDs match the `BusStop.id` space used for alert matching (Phase 8 lesson: never lock DTOs from doc examples alone).
+  2. `GET /api/v1/predictions/nearby?lat=..&lng=..` returns a top-level `generatedAt` ISO timestamp plus a nearest-first list of stops, each carrying id, name, code, `distance` in miles, predictions grouped route → destination in the existing `RoutePrediction`/`Destination` shapes, and its active `ServiceAlertSummary[]` alerts (empty array when none) — served from exactly one uncached upstream call per request.
+  3. An optional `radius` (miles, default 0.5, capped) is sent upstream as Swiftly's `meters` parameter, and an optional `number` is forwarded to limit predictions per destination; omitting both still yields a valid response using the defaults.
+  4. Missing, empty-string, or non-numeric `lat`/`lng`, out-of-range coordinates, or an invalid `radius`/`number` return 400 without making any upstream call.
+  5. An upstream `success: false`, network error, or malformed body returns 502; a single malformed stop entry in an otherwise valid upstream response is dropped and the remaining stops are still returned.
+
+Existing `GET /api/v1/stops/nearby` (local haversine, no upstream call) and `GET /api/v1/predictions` responses are unchanged; no SSE stream and no recents logging for nearby lookups.
+
+**Plans**: TBD
+
+## Progress
+
+**Execution Order:**
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 1. Consolidate Lint & Format Tooling | 1/1 | Complete | 2026-08-26 |
+| 2. Full-Repo Reformat | 1/1 | Complete | 2026-08-26 |
+| 3. Stop Discovery | 2/2 | Complete | 2026-08-26 |
+| 4. Live Predictions via SSE | 1/1 | Complete | 2026-08-27 |
+| 5. SQLite Persistence Foundation | 2/2 | Complete | 2026-08-31 |
+| 6. Favorites (Routes & Stops) | 1/1 | Complete | 2026-08-31 |
+| 7. Recents (Routes & Stops) | 1/1 | Complete | 2026-09-01 |
+| 8. Service Alerts Ingestion | 6/6 | Complete | 2026-09-04 |
+| 9. Alerts Surfaced on Routes, Stops & Predictions | 2/2 | Complete | 2026-09-08 |
+| 10. Solidify vehicle position work | 1/1 | Complete | 2026-09-22 |
+| 11. Nearby Stop Predictions | 0/TBD | Not started | - |
 
 ---
 
