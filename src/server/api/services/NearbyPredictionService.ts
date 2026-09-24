@@ -17,8 +17,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null;
 }
 
-// A destination whose predictions is not an array would throw inside the shared mapping and
-// turn the whole request into a 500, so it invalidates the entry here instead.
+// The shared mapping dereferences every prediction element, so a non-array predictions or a
+// non-object element would throw there and turn the whole request into a 500. Such an entry is
+// invalidated here instead, so only it is dropped.
 function isValidNearbyEntry(entry: unknown): entry is DashNearbyPredictionData {
     if (!isRecord(entry)) {
         return false;
@@ -31,7 +32,12 @@ function isValidNearbyEntry(entry: unknown): entry is DashNearbyPredictionData {
         Number.isFinite(distanceToStop) &&
         distanceToStop >= 0 &&
         Array.isArray(destinations) &&
-        destinations.every((destination) => isRecord(destination) && Array.isArray(destination.predictions))
+        destinations.every(
+            (destination) =>
+                isRecord(destination) &&
+                Array.isArray(destination.predictions) &&
+                destination.predictions.every(isRecord),
+        )
     );
 }
 
