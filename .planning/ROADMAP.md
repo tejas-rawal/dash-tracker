@@ -103,7 +103,7 @@ Plans:
 
 Existing `GET /api/v1/stops/nearby` (local haversine, no upstream call) and `GET /api/v1/predictions` responses are unchanged; no SSE stream and no recents logging for nearby lookups.
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans executed
 
 Plans:
 **Wave 1**
@@ -116,7 +116,7 @@ Plans:
 
 **Wave 3** *(gap closure, blocked on Wave 2 completion)*
 
-- [ ] 11-03-PLAN.md — Gap closure (CR-01): validate every prediction element in the nearby entry guard, so a malformed element drops its entry with one warn instead of returning 500 or serving a fabricated prediction (NEAR-09, SC5)
+- [x] 11-03-PLAN.md — Gap closure (CR-01): validate every prediction element in the nearby entry guard, so a malformed element drops its entry with one warn instead of returning 500 or serving a fabricated prediction (NEAR-09, SC5)
 
 ## Progress
 
@@ -135,7 +135,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 8. Service Alerts Ingestion | 6/6 | Complete | 2026-09-04 |
 | 9. Alerts Surfaced on Routes, Stops & Predictions | 2/2 | Complete | 2026-09-08 |
 | 10. Solidify vehicle position work | 1/1 | Complete | 2026-09-22 |
-| 11. Nearby Stop Predictions | 2/2 | In Progress|  |
+| 11. Nearby Stop Predictions | 3/3 | In Progress|  |
 
 ---
 

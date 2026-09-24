@@ -3,19 +3,19 @@ gsd_state_version: "1.0"
 milestone: v0.5
 milestone_name: Nearby Stop Predictions
 current_phase: 11
-current_phase_name: nearby-stop-predictions
+current_phase_name: Nearby Stop Predictions
 status: executing
-stopped_at: Completed 11-02-PLAN.md
-last_updated: "2026-09-24T15:32:20.446Z"
+stopped_at: Completed 11-03-PLAN.md
+last_updated: "2026-09-24T16:25:54.100Z"
 last_activity: 2026-09-24
-last_activity_desc: Phase 11 execution started
-state_head: 81038c9ce29ea942097022396ed688951815ef25
+last_activity_desc: Completed 11-03 gap-closure plan
+state_head: 61da3b2fe91fa93132dd2d768428e505d8fbf122
 progress:
   total_phases: 2
   completed_phases: 10
   total_plans: 3
-  completed_plans: 2
-  percent: 67
+  completed_plans: 3
+  percent: 100
 ---
 
 # Project State
@@ -29,12 +29,12 @@ See: .planning/PROJECT.md (updated 2026-09-22)
 
 ## Current Position
 
-Phase: 11 (nearby-stop-predictions) — READY TO EXECUTE
-Plan: 2 of 2
-Status: Ready to execute
-Last activity: 2026-09-24 — Phase 11 execution started
+Phase: 11 (Nearby Stop Predictions) — EXECUTING
+Plan: 3 of 3
+Status: All plans complete — gap-closure 11-03 done, awaiting re-verification
+Last activity: 2026-09-24 — Completed 11-03 (nearby prediction element validation, closes SC5 / NEAR-09 gaps)
 
-Progress: [███████░░░] 67%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -75,6 +75,7 @@ Progress: [███████░░░] 67%
 | Phase 06 P01 | 8min | 3 tasks | 12 files |
 | Phase 11 P01 | 5min | 2 tasks | 9 files |
 | Phase 11 P02 | 4min | 2 tasks | 3 files |
+| Phase 11 P03 | 5min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -105,6 +106,8 @@ Recent decisions affecting current work:
 - [Phase 11]: [Phase 11-01] Nearby upstream errors wrap as UpstreamApiError from error.message only (never the axios error object, which carries DASH_API_KEY); rider lat/lng are never logged
 - [Phase 11]: [Phase 11-02] Nearby radius/number caps (MAX_RADIUS_MILES = 1, MAX_PREDICTIONS_PER_DESTINATION = 10) are controller constants; out-of-range values return 400 and are never clamped
 - [Phase 11]: [Phase 11-02] An empty radius= or number= on /predictions/nearby is provided-but-invalid (400), not a fallback to the default
+- [Phase 11]: [Phase 11-03] Nearby prediction elements are validated in isValidNearbyEntry (finite min/sec/time, string tripId/vehicleId, no coercion); one malformed element drops its whole entry with the existing single warn. Hand-rolled guard kept per D-18 (no Zod)
+- [Phase 11]: [Phase 11-03] WR-02 (500 path echoes raw error.message) deferred to a follow-up quick task extracting one shared controller error-response helper for Prediction/Vehicle/NearbyPrediction controllers (WR-02 + IN-04); T-11-16 accepted low
 
 ### Pending Todos
 
@@ -145,8 +148,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-24T15:08:00.149Z
-Stopped at: Completed 11-02-PLAN.md
+Last session: 2026-09-24T16:25:54.077Z
+Stopped at: Completed 11-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

@@ -20,7 +20,7 @@ Requirements for milestone v0.5 Nearby Stop Predictions. Each maps to roadmap ph
 ### Validation & Errors
 
 - [ ] **NEAR-08**: Missing/non-numeric `lat`/`lng`, out-of-range coordinates, or an invalid `radius`/`number` returns 400
-- [ ] **NEAR-09**: Upstream `success: false`, network error, or malformed body returns 502 via `UpstreamApiError`; individual malformed stop entries are dropped rather than failing the whole request
+- [x] **NEAR-09**: Upstream `success: false`, network error, or malformed body returns 502 via `UpstreamApiError`; individual malformed stop entries are dropped rather than failing the whole request
 
 ## Future Requirements
 
@@ -52,7 +52,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NEAR-06 | Phase 11 | Gaps Found |
 | NEAR-07 | Phase 11 | Gaps Found |
 | NEAR-08 | Phase 11 | Gaps Found |
-| NEAR-09 | Phase 11 | Gaps Found |
+| NEAR-09 | Phase 11 | Complete |
 
 **Coverage:**
 
