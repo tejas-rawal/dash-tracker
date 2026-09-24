@@ -563,4 +563,43 @@ describe("GET /api/v1/predictions/nearby", () => {
         expect(response.status).toBe(502);
         expect(response.body.error).toBe("Bad Gateway");
     });
+    it("responds with 502 when the upstream request fails at the network level", async () => {
+        // Arrange
+        getSpy.mockRejectedValue(new Error("connect ECONNREFUSED"));
+
+        // Act
+        const response = await request(app).get(nearbyUrl);
+
+        // Assert
+        expect(response.status).toBe(502);
+        expect(response.body.error).toBe("Bad Gateway");
+        expect(response.body.details).toContain("DASH API request failed for nearby predictions");
+    });
+
+    it("responds with 502 when the upstream body has no predictionsData array", async () => {
+        // Arrange
+        getSpy.mockResolvedValue({
+            data: { success: true, route: "r", data: { agencyKey: "alexandria-dash" } },
+        });
+
+        // Act
+        const response = await request(app).get(nearbyUrl);
+
+        // Assert
+        expect(response.status).toBe(502);
+    });
+
+    it("drops a malformed upstream entry and still returns the valid stops", async () => {
+        // Arrange
+        const body = makeLiveNearbyPredictionsResponse();
+        body.data.predictionsData.push({ ...body.data.predictionsData[2], stopId: "999", distanceToStop: "12" });
+        getSpy.mockResolvedValue({ data: body });
+
+        // Act
+        const response = await request(app).get(nearbyUrl);
+
+        // Assert
+        expect(response.status).toBe(200);
+        expect((response.body.data.stops as NearbyStopBody[]).map((stop) => stop.id)).toEqual(["548", "561", "949"]);
+    });
 });
