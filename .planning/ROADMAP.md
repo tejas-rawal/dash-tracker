@@ -103,7 +103,7 @@ Plans:
 
 Existing `GET /api/v1/stops/nearby` (local haversine, no upstream call) and `GET /api/v1/predictions` responses are unchanged; no SSE stream and no recents logging for nearby lookups.
 
-**Plans:** 2/2 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 **Wave 1**
@@ -113,6 +113,10 @@ Plans:
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [x] 11-02-PLAN.md — Rider-tuned search: radius (≤1 mi → meters) and number (1..10) over HTTP, plus the full NEAR-08 400 validation matrix (wave 2, depends on 11-01)
+
+**Wave 3** *(gap closure, blocked on Wave 2 completion)*
+
+- [ ] 11-03-PLAN.md — Gap closure (CR-01): validate every prediction element in the nearby entry guard, so a malformed element drops its entry with one warn instead of returning 500 or serving a fabricated prediction (NEAR-09, SC5)
 
 ## Progress
 
