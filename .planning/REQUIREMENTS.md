@@ -10,8 +10,8 @@ Requirements for milestone v0.5 Nearby Stop Predictions. Each maps to roadmap ph
 ### Nearby Predictions
 
 - [x] **NEAR-01**: Rider can call `GET /api/v1/predictions/nearby?lat&lng` and receive live predictions for stops near that point, backed by a single call to DASH/Swiftly `real-time/{agency}/predictions-near-location`
-- [ ] **NEAR-02**: Rider can pass an optional `radius` in miles (default 0.5, capped); the service converts it to Swiftly's `meters` parameter
-- [ ] **NEAR-03**: Rider can pass an optional `number` to limit predictions per destination, forwarded to Swiftly
+- [x] **NEAR-02**: Rider can pass an optional `radius` in miles (default 0.5, capped); the service converts it to Swiftly's `meters` parameter
+- [x] **NEAR-03**: Rider can pass an optional `number` to limit predictions per destination, forwarded to Swiftly
 - [x] **NEAR-04**: Each stop in the response carries id, name, code, and `distance` from the rider in miles; stops are sorted nearest-first
 - [x] **NEAR-05**: Each stop's predictions are grouped by route → destination, reusing the existing `RoutePrediction`/`Destination` response shapes
 - [x] **NEAR-06**: Each stop embeds its active service alerts (`ServiceAlertSummary[]`), consistent with `/stops/nearby`
@@ -19,7 +19,7 @@ Requirements for milestone v0.5 Nearby Stop Predictions. Each maps to roadmap ph
 
 ### Validation & Errors
 
-- [ ] **NEAR-08**: Missing/non-numeric `lat`/`lng`, out-of-range coordinates, or an invalid `radius`/`number` returns 400
+- [x] **NEAR-08**: Missing/non-numeric `lat`/`lng`, out-of-range coordinates, or an invalid `radius`/`number` returns 400
 - [x] **NEAR-09**: Upstream `success: false`, network error, or malformed body returns 502 via `UpstreamApiError`; individual malformed stop entries are dropped rather than failing the whole request
 
 ## Future Requirements
@@ -45,13 +45,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | NEAR-01 | Phase 11 | Complete |
-| NEAR-02 | Phase 11 | Pending |
-| NEAR-03 | Phase 11 | Pending |
+| NEAR-02 | Phase 11 | Complete |
+| NEAR-03 | Phase 11 | Complete |
 | NEAR-04 | Phase 11 | Complete |
 | NEAR-05 | Phase 11 | Complete |
 | NEAR-06 | Phase 11 | Complete |
 | NEAR-07 | Phase 11 | Complete |
-| NEAR-08 | Phase 11 | Pending |
+| NEAR-08 | Phase 11 | Complete |
 | NEAR-09 | Phase 11 | Complete |
 
 **Coverage:**
