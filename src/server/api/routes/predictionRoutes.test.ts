@@ -1,9 +1,12 @@
 import http from "node:http";
 import type { AddressInfo } from "node:net";
 import request from "supertest";
-import { describe, expect, it, vi } from "vitest";
+import { type MockInstance, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { axios } from "../../config";
 import { NotFoundError, UpstreamApiError } from "../errors";
 import type { StopPredictionsResponse } from "../models/Prediction";
+import type { ServiceAlert } from "../models/ServiceAlert";
+import { ServiceAlertRepository } from "../repositories";
 
 vi.mock("../services/PredictionService", () => ({
     createPredictionService: vi.fn(() => ({
@@ -343,5 +346,221 @@ describe("GET /api/v1/predictions/stream", () => {
 
         // Assert: reconnect triggered a brand-new fetch (loop was torn down, not reused stale)
         expect(getMockService().getPredictionsForStop.mock.calls.length).toBe(callsAfterFirstConnect + 1);
+    });
+});
+
+// Verbatim live alexandria-dash sample (11-CONTEXT.md), including the upstream blockId field.
+const makeLiveNearbyPredictionsResponse = () => ({
+    success: true,
+    route: "/real-time/alexandria-dash/predictions-near-location GET",
+    data: {
+        agencyKey: "alexandria-dash",
+        predictionsData: [
+            {
+                routeShortName: "30",
+                routeName: "30 - DUKE",
+                routeId: "30",
+                stopId: "548",
+                stopName: "King St + N Washington St",
+                stopCode: 4000858,
+                destinations: [
+                    {
+                        directionId: "0",
+                        headsign: "Van Dorn Street Station",
+                        predictions: [
+                            {
+                                time: 1790192451,
+                                sec: 318,
+                                min: 5,
+                                blockId: "0061",
+                                tripId: "405020",
+                                vehicleId: "0212",
+                            },
+                        ],
+                    },
+                    {
+                        directionId: "0",
+                        headsign: "West Alexandria Transit Center (SHORT TRIP)",
+                        predictions: [
+                            {
+                                time: 1790192711,
+                                sec: 578,
+                                min: 9,
+                                blockId: "0078",
+                                tripId: "1219020",
+                                vehicleId: "0227",
+                            },
+                        ],
+                    },
+                ],
+                distanceToStop: 46.5,
+            },
+            {
+                routeShortName: "31",
+                routeName: "31 - KING",
+                routeId: "31",
+                stopId: "548",
+                stopName: "King St + N Washington St",
+                stopCode: 4000858,
+                destinations: [
+                    {
+                        directionId: "0",
+                        headsign: "NVCC Alexandria",
+                        predictions: [
+                            {
+                                time: 1790192575,
+                                sec: 442,
+                                min: 7,
+                                blockId: "0008",
+                                tripId: "488020",
+                                vehicleId: "0721",
+                            },
+                        ],
+                    },
+                ],
+                distanceToStop: 46.5,
+            },
+            {
+                routeShortName: "30",
+                routeName: "30 - DUKE",
+                routeId: "30",
+                stopId: "561",
+                stopName: "King St + S Washington St",
+                stopCode: 4000871,
+                destinations: [
+                    {
+                        directionId: "1",
+                        headsign: "Braddock Road Station",
+                        predictions: [
+                            {
+                                time: 1790192813,
+                                sec: 680,
+                                min: 11,
+                                blockId: "0013",
+                                tripId: "1418020",
+                                vehicleId: "0708",
+                            },
+                        ],
+                    },
+                ],
+                distanceToStop: 58,
+            },
+            {
+                routeShortName: "34",
+                routeName: "34 - OLD TOWN NORTH",
+                routeId: "34",
+                stopId: "949",
+                stopName: "City Hall / Market Sq",
+                stopCode: 4000820,
+                destinations: [{ directionId: "0", headsign: "Lee Center", predictions: [] }],
+                distanceToStop: 337.7,
+            },
+        ] as Record<string, unknown>[],
+    },
+});
+
+const makeActiveStopAlert = (id: string, stopId: string): ServiceAlert => ({
+    id,
+    headerText: "Stop relocated",
+    informedRouteIds: [],
+    informedStopIds: [stopId],
+    activePeriod: { start: null, end: null },
+});
+
+interface NearbyStopBody {
+    id: string;
+    distance: number;
+    routes: { routeShortName: string; destinations: { predictions: Record<string, unknown>[] }[] }[];
+    alerts: { id: string }[];
+}
+
+describe("GET /api/v1/predictions/nearby", () => {
+    const nearbyUrl = "/api/v1/predictions/nearby?lat=38.8048&lng=-77.0469";
+    let getSpy: MockInstance;
+
+    beforeEach(() => {
+        getSpy = vi.spyOn(axios, "get");
+    });
+
+    afterEach(() => {
+        getSpy.mockRestore();
+        ServiceAlertRepository.getInstance().applyAlerts([]);
+    });
+
+    it("returns nearest-first stops with miles distance, routes and alerts from one upstream call", async () => {
+        // Arrange
+        getSpy.mockResolvedValue({ data: makeLiveNearbyPredictionsResponse() });
+
+        // Act
+        const response = await request(app).get(nearbyUrl);
+
+        // Assert
+        expect(response.status).toBe(200);
+        expect(response.body.success).toBe(true);
+        expect(new Date(response.body.generatedAt).toISOString()).toBe(response.body.generatedAt);
+        expect(response.body.data.agencyKey).toBe("alexandria-dash");
+        const stops = response.body.data.stops as NearbyStopBody[];
+        expect(stops.map((stop) => stop.id)).toEqual(["548", "561", "949"]);
+        expect(stops[0].routes.map((route) => route.routeShortName)).toEqual(["30", "31"]);
+        expect(stops[0].distance).toBe(46.5 / 1609.344);
+        expect(stops[2].routes[0].destinations[0].predictions).toEqual([]);
+        for (const stop of stops) {
+            expect(Object.keys(stop).sort()).toEqual(["alerts", "code", "distance", "id", "name", "routes"]);
+            expect(stop.alerts).toEqual([]);
+            for (const route of stop.routes) {
+                for (const destination of route.destinations) {
+                    for (const prediction of destination.predictions) {
+                        expect(prediction).not.toHaveProperty("blockId");
+                    }
+                }
+            }
+        }
+        expect(getSpy).toHaveBeenCalledTimes(1);
+        const url = getSpy.mock.calls[0][0] as string;
+        expect(url).toContain("/real-time/test-agency/predictions-near-location?");
+        expect(url).toContain("lat=38.8048");
+        expect(url).toContain("lon=-77.0469");
+        expect(url).toContain("meters=805");
+        expect(url).not.toContain("number=");
+        expect(url).not.toContain("lng=");
+    });
+
+    it("embeds active alerts from the real ServiceAlertRepository singleton on the matching stop", async () => {
+        // Arrange
+        ServiceAlertRepository.getInstance().applyAlerts([makeActiveStopAlert("alert-548", "548")]);
+        getSpy.mockResolvedValue({ data: makeLiveNearbyPredictionsResponse() });
+
+        // Act
+        const response = await request(app).get(nearbyUrl);
+
+        // Assert
+        expect(response.status).toBe(200);
+        const stops = response.body.data.stops as NearbyStopBody[];
+        expect(stops[0].alerts).toHaveLength(1);
+        expect(stops[0].alerts[0].id).toBe("alert-548");
+        expect(stops[1].alerts).toEqual([]);
+        expect(stops[2].alerts).toEqual([]);
+    });
+
+    it("responds with 400 without calling upstream when lat is missing", async () => {
+        // Arrange & Act
+        const response = await request(app).get("/api/v1/predictions/nearby?lng=-77.0469");
+
+        // Assert
+        expect(response.status).toBe(400);
+        expect(response.body.error).toBe("Bad Request");
+        expect(getSpy).not.toHaveBeenCalled();
+    });
+
+    it("responds with 502 when upstream returns success: false", async () => {
+        // Arrange
+        getSpy.mockResolvedValue({ data: { ...makeLiveNearbyPredictionsResponse(), success: false } });
+
+        // Act
+        const response = await request(app).get(nearbyUrl);
+
+        // Assert
+        expect(response.status).toBe(502);
+        expect(response.body.error).toBe("Bad Gateway");
     });
 });
