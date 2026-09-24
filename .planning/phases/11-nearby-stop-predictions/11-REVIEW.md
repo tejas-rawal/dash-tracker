@@ -1,196 +1,183 @@
 ---
 phase: 11-nearby-stop-predictions
-reviewed: 2026-09-24T15:10:41Z
+reviewed: 2026-09-24T16:27:56Z
 depth: standard
-files_reviewed: 10
+files_reviewed: 3
 files_reviewed_list:
-  - src/server/api/controllers/NearbyPredictionController.test.ts
-  - src/server/api/controllers/NearbyPredictionController.ts
-  - src/server/api/models/Prediction.ts
   - src/server/api/routes/predictionRoutes.test.ts
-  - src/server/api/routes/predictionRoutes.ts
   - src/server/api/services/NearbyPredictionService.test.ts
   - src/server/api/services/NearbyPredictionService.ts
-  - src/server/api/services/PredictionService.ts
-  - src/server/api/services/predictionMapping.test.ts
-  - src/server/api/services/predictionMapping.ts
 findings:
-  critical: 1
+  critical: 0
   warning: 3
-  info: 5
-  total: 9
+  info: 4
+  total: 7
 status: issues_found
 ---
 
 # Phase 11: Code Review Report
 
-**Reviewed:** 2026-09-24T15:10:41Z
+**Reviewed:** 2026-09-24T16:27:56Z
 **Depth:** standard
-**Files Reviewed:** 10
+**Files Reviewed:** 3
 **Status:** issues_found
 
 ## Summary
 
-This phase adds `GET /api/v1/predictions/nearby`. The work spans a new controller, a new service, new
-`Dash*`/response model types, and a `predictionMapping` module pulled out of `PredictionService` so both
-services share it. Query parsing in the controller is careful: it rejects blanks, arrays, objects, NaN and
-Infinity, and applies range caps. The service keeps the API key and the rider's coordinates out of logs and
-error messages.
+This run covers gap-closure plan 11-03 (diff `8a12d29..HEAD`): per-element validation of nearby prediction
+elements in `NearbyPredictionService.ts`, plus new unit and route tests. It replaces the earlier 10-file
+report.
 
-The main defect is in the service's malformed-entry validator. The code says a bad upstream entry should
-be dropped rather than turn the request into a 500, but the validator stops one level too early. A single
-`null` (or non-object) element inside a `predictions` array still crashes the shared mapper. The whole
-request then fails with a 500, and the raw `TypeError` text goes back to the client. Other scalar fields
-the response contract relies on (`stopName`, `stopCode`, route fields, `agencyKey`) are cast instead of
-checked, so upstream drift silently removes keys from the public payload. The nearby call also has no
-upstream timeout.
+**Prior CR-01 is RESOLVED.** `isValidNearbyEntry` (lines 41-60) now requires every element of every
+`destination.predictions` array to pass `isValidPrediction` (lines 26-35). That check needs a non-null object
+with finite-number `min`/`sec`/`time` and string `tripId`/`vehicleId`. I traced the path through
+`predictionMapping.ts:5-29`. With the guard in place, no remaining input shape can throw inside
+`mapToDestinations`/`mapToRoutePrediction`/`groupByStop`, so the `null`/scalar element no longer causes a 500.
+The new rows in the `malformed entries` table and the route-level `it.each` cover that regression. Both
+in-scope test files pass (80 tests, no type errors).
+
+What is still open: the guard checks prediction elements but still does not check the other scalar fields the
+mapper copies. So the new comment's promise ("an incomplete element would be served to riders as an arrival
+with missing fields") is only half kept (WR-01, carried forward). The nearby call still has no upstream
+timeout (WR-02, carried forward). The whole-entry drop policy has a side effect the plan did not weigh: a
+stop's locally sourced service alerts can disappear (WR-03).
+
+Prior findings in files outside this run's scope were not re-reviewed: former WR-02 and IN-01 through IN-04,
+in `NearbyPredictionController.ts`, `Prediction.ts`, `PredictionService.ts` and `PredictionController.ts`.
+The diff touches no source file other than the three listed, so those items are unchanged and still open as
+written in the previous report.
 
 ## Narrative Findings (AI reviewer)
 
-## Critical Issues
+## Warnings
 
-### CR-01: Malformed prediction element still crashes the whole nearby request (validator does not reach `predictions[]` items)
+### WR-01: Guard still lets entries with missing route, stop or destination fields through, and `agencyKey` is still an unchecked cast (carried forward, prior WR-01)
 
-**File:** `src/server/api/services/NearbyPredictionService.ts:20-35` (crash site `src/server/api/services/predictionMapping.ts:9-15`)
-**Issue:** The comment on `isValidNearbyEntry` says it exists to stop malformed destinations from throwing
-inside the shared mapping and "turn[ing] the whole request into a 500". It only checks that
-`destination.predictions` is an array. It never checks the array's elements. `mapToDestinations` then runs
-`dest.predictions.map((pred) => ({ min: pred.min, ... }))`, so an upstream payload such as
-`predictions: [null]` or `predictions: ["x"]` gets through validation. It then throws
-`TypeError: Cannot read properties of null (reading 'min')` inside `groupByStop`. That error is not an
-`UpstreamApiError`, so the controller (`NearbyPredictionController.ts:90-91`) returns **500 Request Failed**
-with the raw TypeError message as `details`. One bad element from one route at one stop takes down the
-whole response for every nearby stop. That breaks the NEAR-08 "drop malformed entry, keep valid ones"
-behaviour the phase set out to guarantee. `NearbyPredictionService.test.ts:480-514` has no case for a
-non-object prediction element, so the gap is not tested.
-**Fix:** Check each prediction element as well (and ideally the fields the mapper copies):
+**File:** `src/server/api/services/NearbyPredictionService.ts:41-60`, `:127`
+**Issue:** The new comment (lines 37-40) says the guard stops "an incomplete element [being] served to riders
+as an arrival with missing fields". The shared mapper also copies these fields field by field:
+`directionId` and `headsign` per destination (`predictionMapping.ts:7-8`), and `routeId`, `routeName`,
+`routeShortName`, `stopName` and `stopCode` per entry (`predictionMapping.ts:21-26`, and
+`NearbyPredictionService.ts:148-149` for the stop's `name`/`code`). None of them is checked. Take an entry
+such as `{ ...valid, routeShortName: undefined }` or a destination `{ directionId: 0, predictions: [...] }`.
+It passes, gets served, and after `res.json` the key is removed or has the wrong type in the public payload.
+That breaks the `RoutePrediction`/`NearbyStopPredictions` contract and the phase's own "MUST NOT fabricate
+... no synthetic stop name" prohibition. The same applies to line 127: `data.agencyKey as string` sends
+`undefined` (key dropped) when upstream omits it. The type predicate `entry is DashNearbyPredictionData`
+still claims more than the check proves.
+**Fix:** Stay within D-18 (typeof checks, no Zod) and extend the guard the same way `isValidPrediction` was
+extended:
 ```ts
-function isValidPrediction(prediction: unknown): boolean {
+function isNonEmptyString(value: unknown): value is string {
+    return typeof value === "string" && value !== "";
+}
+
+function isValidDestination(destination: unknown): boolean {
     return (
-        isRecord(prediction) &&
-        typeof prediction.min === "number" &&
-        typeof prediction.sec === "number" &&
-        typeof prediction.time === "number" &&
-        typeof prediction.tripId === "string" &&
-        typeof prediction.vehicleId === "string"
+        isRecord(destination) &&
+        typeof destination.directionId === "string" &&
+        typeof destination.headsign === "string" &&
+        Array.isArray(destination.predictions) &&
+        destination.predictions.every(isValidPrediction)
     );
 }
 
 // in isValidNearbyEntry
-destinations.every(
-    (destination) =>
-        isRecord(destination) &&
-        Array.isArray(destination.predictions) &&
-        destination.predictions.every(isValidPrediction),
-)
-```
-Add test rows such as `{ label: "a null prediction element", entry: makeDashNearbyPredictionData({ destinations: [{ directionId: "0", headsign: "x", predictions: [null] }] }) }` to the `malformed entries` table.
-A cleaner long-term fix is a Zod schema for `DashNearbyPredictionData`, since Zod is already a
-dependency (CLAUDE.md: "Lean on the dependencies already in the project"). It would replace the
-hand-rolled partial guard, which is how this gap got in.
+isNonEmptyString(stopId) &&
+typeof entry.stopName === "string" &&
+isFiniteNumber(entry.stopCode) &&
+typeof entry.routeId === "string" &&
+typeof entry.routeName === "string" &&
+typeof entry.routeShortName === "string" &&
+isFiniteNumber(distanceToStop) && distanceToStop >= 0 &&
+Array.isArray(destinations) && destinations.every(isValidDestination)
 
-## Warnings
-
-### WR-01: Unchecked casts let upstream drift silently drop public response fields
-
-**File:** `src/server/api/services/NearbyPredictionService.ts:103`, `:22-35`, `:122-126`
-**Issue:** `parseDashResponse` returns `agencyKey: data.agencyKey as string` without checking it. If
-upstream omits or renames `agencyKey`, the value is `undefined`, and `res.json` removes the key from
-`data`. The response then no longer matches `NearbyPredictionsResponse`, with no warning. The same
-applies to fields `isValidNearbyEntry` never looks at: `stopName`, `stopCode`, `routeId`, `routeName`,
-`routeShortName`, `directionId`, `headsign`. These feed `NearbyStopPredictions.name` and `code` (lines
-124-125) and each `RoutePrediction`. A missing value becomes `undefined` and the key disappears from the
-JSON. The type guard `entry is DashNearbyPredictionData` claims more than the check proves.
-**Fix:** Either check these fields in the guard (or the Zod schema from CR-01) and drop or warn on
-failure, or throw `UpstreamApiError` when `typeof data.agencyKey !== "string"`:
-```ts
+// in parseDashResponse
 if (!isRecord(data) || typeof data.agencyKey !== "string" || !Array.isArray(data.predictionsData)) {
     throw new UpstreamApiError("DASH API returned a malformed nearby predictions response");
 }
 return { agencyKey: data.agencyKey, predictionsData: data.predictionsData };
 ```
+Add table rows for a missing `routeShortName`, a numeric `directionId`, a missing `stopName`, and a body
+without `agencyKey`.
 
-### WR-02: 500 responses echo raw internal error messages to clients
+### WR-02: Nearby upstream call still has no timeout (carried forward, prior WR-03)
 
-**File:** `src/server/api/controllers/NearbyPredictionController.ts:44-48`, `:90-91`
-**Issue:** `resolveErrorBody` puts `error.message` into `details` for every error, including unexpected
-ones that map to 500. The only way this service produces a non-`UpstreamApiError` is an internal bug such
-as the TypeError in CR-01. So in practice the 500 path sends internal messages straight to the client
-(for example `Cannot read properties of null (reading 'min')`). Upstream messages are wrapped on purpose
-(`NearbyPredictionService.ts:81-84`), but unknown errors are not handled with the same care. They are
-also not logged, so operators cannot see a 500 happen.
-**Fix:** Return a generic message for the unknown-error branch and log the detail on the server:
-```ts
-function resolveErrorBody(error: unknown): { error: string; details: string } {
-    if (error instanceof UpstreamApiError) {
-        return { error: "Bad Gateway", details: error.message };
-    }
-    return { error: "Request Failed", details: "Unexpected error while building nearby predictions" };
-}
-// in catch: if (!(error instanceof UpstreamApiError)) logger.error(`Nearby predictions failed: ${message}`);
-```
-(Update the `"x"` / `"Unknown error"` assertions in `NearbyPredictionController.test.ts:262-290` to match.)
-
-### WR-03: Nearby upstream call has no timeout, so a stalled DASH API hangs the request forever
-
-**File:** `src/server/api/services/NearbyPredictionService.ts:77-85` (client config `src/server/config/axios.ts:7`)
-**Issue:** `fetchFromDashApi` relies on the shared axios instance, and that instance is created with no
-`timeout` (the default of 0 means no timeout). The `UpstreamApiError` wrapping and the 502 mapping only
-run if axios rejects. If upstream accepts the connection and never answers, the nearby request stays open
-indefinitely instead of returning 502. This endpoint sits on the rider's critical path and is uncached,
-so a slow upstream leads to piled-up hung requests.
-**Fix:** Pass a per-request timeout (the smallest change within the phase's scope), or set a default on the
-instance in `config/axios.ts`:
+**File:** `src/server/api/services/NearbyPredictionService.ts:102` (client config `src/server/config/axios.ts:7`)
+**Issue:** `axios.get(url)` runs on the shared instance, which is created with no `timeout` (axios default is
+0, meaning no timeout). The `UpstreamApiError` wrapping at lines 104-109 only runs if axios rejects. If DASH
+accepts the connection and never answers, the rider's request hangs indefinitely instead of returning 502.
+The endpoint is uncached, so every request in flight during an upstream stall piles up.
+**Fix:**
 ```ts
 const response = await axios.get(url, { timeout: 10_000 });
 ```
-Add a test that a rejected `ECONNABORTED` error maps to `UpstreamApiError`.
+(or set `timeout` once in `axios.create` in `config/axios.ts`). Add a unit test that an `ECONNABORTED`
+rejection surfaces as `UpstreamApiError`.
+
+### WR-03: One bad prediction element can remove a whole stop and its service alerts from the response
+
+**File:** `src/server/api/services/NearbyPredictionService.ts:37-60`, `:130-160`
+**Issue:** The whole-entry drop is intentional (plan 11-03, lines 275 and 27). The plan argues only about
+arrivals, though. `groupByStop` creates a stop, and runs its
+`serviceAlertRepository.getActiveAlertsForStop` lookup (line 152), only from entries that survive
+`filterValidEntries`. If a stop has one upstream entry, or all of its entries hold a bad element, the stop
+is missing from `data.stops` entirely. Its active service alerts (such as "Stop relocated") go with it,
+even though they come from the local repository and have nothing to do with the malformed upstream data.
+One bad arrival in destination B also hides the valid arrivals in destination A of the same entry. The plan
+itself (line 351) records an unverified assumption: if a live prediction ever omits `vehicleId`, for
+example a schedule-based arrival with no vehicle assigned, its whole entry is dropped. The tightened check
+turns that assumption into routine silent removal of routes and stops, and the only signal is a generic
+per-request `warn`.
+**Fix:** Pick one and pin it with a test:
+- Keep the entry-level drop, but if the dropped entry's `stopId` and `distanceToStop` are valid, still emit
+  the stop with `routes: []` and its alerts, so riders keep safety-relevant stop information. Or
+- Record this as an explicit decision in CONTEXT (alerts can be lost when upstream is malformed), and confirm
+  against the Swiftly docs or live data that `vehicleId`/`tripId` are always present on nearby predictions,
+  including schedule-based ones, before relying on it.
 
 ## Info
 
-### IN-01: `parseStrictNumber` accepts hex/binary/octal and exponent literals despite its "strict" contract
+### IN-01: Duplicate finite-number check next to the new `isFiniteNumber` helper
 
-**File:** `src/server/api/controllers/NearbyPredictionController.ts:13-21`
-**Issue:** `Number()` accepts `"0x1A"` (26), `"0b1"` (1), `"0o7"` and `"1e-1"`, so `lat=0x1A` and
-`radius=0b1` are accepted. The range caps still apply, so this is not exploitable. But the function
-accepts more than its name and comment suggest.
-**Fix:** Pre-check against a decimal pattern, e.g. `/^\s*-?\d+(\.\d+)?\s*$/`, before calling `Number()`,
-or document the leniency.
+**File:** `src/server/api/services/NearbyPredictionService.ts:49-50`
+**Issue:** `isValidNearbyEntry` still writes out `typeof distanceToStop === "number" && Number.isFinite(distanceToStop)`,
+while `isFiniteNumber` (line 20), added in this change, does exactly that. Two copies of the same rule can
+drift apart.
+**Fix:** `isFiniteNumber(distanceToStop) && distanceToStop >= 0`.
 
-### IN-02: `DashNearbyApiResponse` is a dead exported type
+### IN-02: Drop warning does not say why the entry was rejected
 
-**File:** `src/server/api/models/Prediction.ts:85-92`
-**Issue:** Nothing references `DashNearbyApiResponse`. The service parses the body as `unknown` and narrows
-it by hand. The unused interface can drift away from the real parsing logic.
-**Fix:** Remove it, or use it as the target type of the (Zod) parser.
+**File:** `src/server/api/services/NearbyPredictionService.ts:62-68`, `:134`
+**Issue:** Entry-level failures (bad `stopId`, bad distance) and the new element-level failures (missing
+`vehicleId`, NaN `time`) all log the same line: `Dropping malformed nearby prediction entry (stop X, route Y)`.
+An operator who sees a burst of these after upstream drift, such as the `vehicleId` scenario in WR-03,
+cannot tell which field changed without reproducing the payload.
+**Fix:** Have the guard return a short reason string (for example `"prediction.vehicleId"`, `"distanceToStop"`)
+and add it to the warn. It must stay free of coordinates and the API key.
 
-### IN-03: `/predictions` still maps network failures to 500, not 502, and skips shape validation
+### IN-03: Test gaps in the malformed-entry table
 
-**File:** `src/server/api/services/PredictionService.ts:54-59`, `:83`
-**Issue:** This file was edited in this phase. The nearby service wraps axios failures as
-`UpstreamApiError` (502) and checks the body shape. `fetchFromDashApi` here still lets raw axios errors
-through (so the controller returns 500) and reads `dashResponse.data.predictionsData` unchecked. That goes
-against the documented `UpstreamApiError → 502` mapping, and the two sibling endpoints now behave
-differently for the same upstream failure. The behaviour predates this phase.
-**Fix:** Apply the same try/catch wrapping and body validation as `NearbyPredictionService.fetchFromDashApi`/`parseDashResponse`, as a follow-up.
+**File:** `src/server/api/services/NearbyPredictionService.test.ts:499-559`
+**Issue:** (a) No test covers a non-object destination element (`destinations: [null]` or `["x"]`). The
+`isRecord(destination)` branch at `NearbyPredictionService.ts:55` stops a mapper crash and is exactly the
+kind of guard CR-01 showed goes missing, yet nothing pins it. (b) "a prediction without sec" and "a
+prediction without vehicleId" (lines 526-541) set the key to `undefined` instead of omitting it. The check
+rejects both the same way today, but the labels describe a case the rows do not build. (c) Nothing pins
+`Infinity`, which is the case `isFiniteNumber` exists for over a plain `typeof` check.
+**Fix:** Add rows `makeDashNearbyPredictionData({ destinations: [null] })` and `{ min: Number.POSITIVE_INFINITY }`,
+and build the "without" rows by deleting the key (for example `const { sec: _omit, ...rest } = makeDashPrediction()`).
 
-### IN-04: Duplicated error-mapping helpers across prediction controllers
+### IN-04: `as never` on the alert-repository mock turns off DI contract type checking (carried forward, prior IN-05)
 
-**File:** `src/server/api/controllers/NearbyPredictionController.ts:40-48` vs `src/server/api/controllers/PredictionController.ts:23-44`
-**Issue:** `resolveErrorStatus`/`resolveErrorBody` are copied with slight differences (the nearby version
-drops `NotFoundError`). A fix to one, such as WR-02, will easily be missed in the other.
-**Fix:** Extract a shared `mapErrorToResponse` helper under `controllers/`.
-
-### IN-05: `as never` on the alert-repository mock turns off type checking of the DI contract
-
-**File:** `src/server/api/services/NearbyPredictionService.test.ts:135` (and every `createNearbyPredictionService(... as never)` call)
+**File:** `src/server/api/services/NearbyPredictionService.test.ts:151` (and every `createNearbyPredictionService(... as never)`, including the new test at line 610)
 **Issue:** Casting to `never` means that if `ServiceAlertRepository.getActiveAlertsForStop` changes its
-signature, the tests still compile under `--typecheck`, which reduces test reliability.
-**Fix:** Type the mock as `Pick<ServiceAlertRepository, "getActiveAlertsForStop">` and have the factory
-accept that narrower interface, or cast via `as unknown as ServiceAlertRepository`.
+signature, the tests still compile under `--typecheck`.
+**Fix:** Type the mock as `Pick<ServiceAlertRepository, "getActiveAlertsForStop">` and have the factory accept
+that narrower interface, or cast via `as unknown as ServiceAlertRepository`.
 
 ---
 
-_Reviewed: 2026-09-24T15:10:41Z_
+_Reviewed: 2026-09-24T16:27:56Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
