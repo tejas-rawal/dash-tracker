@@ -17,9 +17,27 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null;
 }
 
-// The shared mapping dereferences every prediction element, so a non-array predictions or a
-// non-object element would throw there and turn the whole request into a 500. Such an entry is
-// invalidated here instead, so only it is dropped.
+function isFiniteNumber(value: unknown): value is number {
+    return typeof value === "number" && Number.isFinite(value);
+}
+
+// Checks exactly the five fields the shared mapping copies. Values are never coerced, so a
+// wrong-typed field rejects the prediction rather than being served as a made-up arrival.
+function isValidPrediction(prediction: unknown): boolean {
+    return (
+        isRecord(prediction) &&
+        isFiniteNumber(prediction.min) &&
+        isFiniteNumber(prediction.sec) &&
+        isFiniteNumber(prediction.time) &&
+        typeof prediction.tripId === "string" &&
+        typeof prediction.vehicleId === "string"
+    );
+}
+
+// Guards two failure modes of the shared mapping, which copies every prediction element field by
+// field: a non-object element throws there and turns the whole request into a 500, and an
+// incomplete element would be served to riders as an arrival with missing fields. One bad element
+// invalidates its whole entry, so the entry is dropped rather than served with fewer arrivals.
 function isValidNearbyEntry(entry: unknown): entry is DashNearbyPredictionData {
     if (!isRecord(entry)) {
         return false;
@@ -36,7 +54,7 @@ function isValidNearbyEntry(entry: unknown): entry is DashNearbyPredictionData {
             (destination) =>
                 isRecord(destination) &&
                 Array.isArray(destination.predictions) &&
-                destination.predictions.every(isRecord),
+                destination.predictions.every(isValidPrediction),
         )
     );
 }
