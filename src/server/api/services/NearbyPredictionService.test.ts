@@ -105,6 +105,22 @@ const makeLiveSampleEntries = (): DashNearbyPredictionData[] => [
     }),
 ];
 
+// The first live prediction (11-CONTEXT.md D-01), blockId included (D-05).
+const makeDashPrediction = (overrides: Record<string, unknown> = {}): Record<string, unknown> => ({
+    time: 1790192451,
+    sec: 318,
+    min: 5,
+    blockId: "0061",
+    tripId: "405020",
+    vehicleId: "0212",
+    ...overrides,
+});
+
+const makeEntryWithPredictions = (predictions: unknown[]): DashNearbyPredictionData =>
+    makeDashNearbyPredictionData({
+        destinations: [{ directionId: "0", headsign: "Van Dorn Street Station", predictions }],
+    });
+
 const makeMockAlertRepo = () => ({
     getActiveAlertsForStop: vi.fn().mockReturnValue([]),
 });
@@ -500,6 +516,46 @@ describe("NearbyPredictionService", () => {
                 }),
             },
             { label: "a null entry", entry: null },
+            { label: "a null prediction element", entry: makeEntryWithPredictions([null]) },
+            { label: "a string prediction element", entry: makeEntryWithPredictions(["x"]) },
+            { label: "an empty-object prediction element", entry: makeEntryWithPredictions([{}]) },
+            {
+                label: "a prediction with a string min",
+                entry: makeEntryWithPredictions([makeDashPrediction({ min: "5" })]),
+            },
+            {
+                label: "a prediction without sec",
+                entry: makeEntryWithPredictions([makeDashPrediction({ sec: undefined })]),
+            },
+            {
+                label: "a prediction with a NaN time",
+                entry: makeEntryWithPredictions([makeDashPrediction({ time: Number.NaN })]),
+            },
+            {
+                label: "a prediction with a numeric tripId",
+                entry: makeEntryWithPredictions([makeDashPrediction({ tripId: 405020 })]),
+            },
+            {
+                label: "a prediction without vehicleId",
+                entry: makeEntryWithPredictions([makeDashPrediction({ vehicleId: undefined })]),
+            },
+            {
+                label: "a valid prediction followed by a null element",
+                entry: makeEntryWithPredictions([makeDashPrediction(), null]),
+            },
+            {
+                label: "an empty-object element in a second destination",
+                entry: makeDashNearbyPredictionData({
+                    destinations: [
+                        { directionId: "0", headsign: "Van Dorn Street Station", predictions: [makeDashPrediction()] },
+                        {
+                            directionId: "0",
+                            headsign: "West Alexandria Transit Center (SHORT TRIP)",
+                            predictions: [{}],
+                        },
+                    ],
+                }),
+            },
         ])("drops an entry with $label, warns once, and keeps valid entries", async ({ entry }) => {
             // Arrange
             resolveUpstream(makeDashNearbyApiResponse([entry, validEntry()]));
@@ -529,6 +585,59 @@ describe("NearbyPredictionService", () => {
 
             // Assert
             expect(result.data.stops).toEqual([]);
+            expect(mockLoggerWarn).toHaveBeenCalledTimes(3);
+        });
+
+        it("never serves a prediction missing min, sec, time, tripId or vehicleId when prediction elements are malformed", async () => {
+            // Arrange
+            const makeStop561Entry = (routeShortName: string, predictions: unknown[]): DashNearbyPredictionData =>
+                makeDashNearbyPredictionData({
+                    routeShortName,
+                    stopId: "561",
+                    stopName: "King St + S Washington St",
+                    stopCode: 4000871,
+                    distanceToStop: 58,
+                    destinations: [{ directionId: "1", headsign: "Braddock Road Station", predictions }],
+                });
+            resolveUpstream(
+                makeDashNearbyApiResponse([
+                    ...makeLiveSampleEntries(),
+                    makeStop561Entry("31", [{}]),
+                    makeStop561Entry("35", ["x"]),
+                    makeStop561Entry("36", [makeDashPrediction({ vehicleId: undefined })]),
+                ]),
+            );
+            const { getNearbyPredictions } = createNearbyPredictionService(makeMockAlertRepo() as never);
+
+            // Act
+            const result = await getNearbyPredictions(LAT, LNG);
+
+            // Assert
+            const { stops } = result.data;
+            expect(stops.map((stop) => stop.id)).toEqual(["548", "561", "949"]);
+            expect(stops.find((stop) => stop.id === "561")?.routes.map((route) => route.routeShortName)).toEqual([
+                "30",
+            ]);
+            for (const stop of stops) {
+                for (const route of stop.routes) {
+                    for (const destination of route.destinations) {
+                        for (const prediction of destination.predictions) {
+                            expect(typeof prediction.min).toBe("number");
+                            expect(typeof prediction.sec).toBe("number");
+                            expect(typeof prediction.time).toBe("number");
+                            expect(typeof prediction.tripId).toBe("string");
+                            expect(typeof prediction.vehicleId).toBe("string");
+                            expect(Object.keys(prediction).sort()).toEqual([
+                                "min",
+                                "sec",
+                                "time",
+                                "tripId",
+                                "vehicleId",
+                            ]);
+                        }
+                    }
+                }
+            }
             expect(mockLoggerWarn).toHaveBeenCalledTimes(3);
         });
     });
