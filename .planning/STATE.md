@@ -4,18 +4,18 @@ milestone: v0.5
 milestone_name: Nearby Stop Predictions
 current_phase: 11
 current_phase_name: Nearby Stop Predictions
-status: executing
-stopped_at: Completed 11-01-PLAN.md
-last_updated: "2026-09-24T15:01:13.002Z"
+status: verifying
+stopped_at: Completed 11-02-PLAN.md
+last_updated: "2026-09-24T15:08:00.174Z"
 last_activity: 2026-09-24
 last_activity_desc: Phase 11 execution started
-state_head: cc7d1246e394049f985d2d3f8524968d50e79678
+state_head: 9b7ed824d760fe4c7a8d40d70f08dc93b8f0e793
 progress:
   total_phases: 2
   completed_phases: 10
   total_plans: 2
-  completed_plans: 1
-  percent: 50
+  completed_plans: 2
+  percent: 100
 ---
 
 # Project State
@@ -31,10 +31,10 @@ See: .planning/PROJECT.md (updated 2026-09-22)
 
 Phase: 11 (Nearby Stop Predictions) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-24 — Phase 11 execution started
 
-Progress: [█████░░░░░] 50%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -74,6 +74,7 @@ Progress: [█████░░░░░] 50%
 | Phase 05 P02 | 45min | 3 tasks | 12 files |
 | Phase 06 P01 | 8min | 3 tasks | 12 files |
 | Phase 11 P01 | 5min | 2 tasks | 9 files |
+| Phase 11 P02 | 4min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -102,6 +103,8 @@ Recent decisions affecting current work:
 - [Phase 10] Coordinate/timestamp safety filter uses `typeof value === "number" && Number.isFinite(value)`, not literal `NaN` checks — code review (CR-01/CR-02) found the NaN-only check missed missing/undefined/null lat/lon and let a malformed `loc.time` crash the whole request instead of dropping just the bad vehicle
 - [Phase 11]: [Phase 11-01] Nearby radius converts to upstream meters with Math.ceil(radius * 1609.344) (0.5 mi -> 805), never 0 and never narrower than requested
 - [Phase 11]: [Phase 11-01] Nearby upstream errors wrap as UpstreamApiError from error.message only (never the axios error object, which carries DASH_API_KEY); rider lat/lng are never logged
+- [Phase 11]: [Phase 11-02] Nearby radius/number caps (MAX_RADIUS_MILES = 1, MAX_PREDICTIONS_PER_DESTINATION = 10) are controller constants; out-of-range values return 400 and are never clamped
+- [Phase 11]: [Phase 11-02] An empty radius= or number= on /predictions/nearby is provided-but-invalid (400), not a fallback to the default
 
 ### Pending Todos
 
@@ -142,8 +145,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-24T15:01:12.983Z
-Stopped at: Completed 11-01-PLAN.md
+Last session: 2026-09-24T15:08:00.149Z
+Stopped at: Completed 11-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
