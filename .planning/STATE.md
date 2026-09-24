@@ -5,17 +5,17 @@ milestone_name: Nearby Stop Predictions
 current_phase: 11
 current_phase_name: Nearby Stop Predictions
 status: executing
-stopped_at: Phase 11 context gathered
-last_updated: "2026-09-23T21:27:22.746Z"
-last_activity: 2026-09-23
-last_activity_desc: v0.5 roadmap created (Phase 11, NEAR-01..09 mapped)
-state_head: b33dc28db65cfcc90db4064af72b037ab75b1944
+stopped_at: Completed 11-01-PLAN.md
+last_updated: "2026-09-24T15:01:13.002Z"
+last_activity: 2026-09-24
+last_activity_desc: Phase 11 execution started
+state_head: cc7d1246e394049f985d2d3f8524968d50e79678
 progress:
   total_phases: 2
   completed_phases: 10
   total_plans: 2
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 50
 ---
 
 # Project State
@@ -25,16 +25,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-22)
 
 **Core value:** Riders can always see accurate, near-real-time arrival predictions for their stop.
-**Current focus:** Phase 11 — Nearby Stop Predictions (v0.5)
+**Current focus:** Phase 11 — Nearby Stop Predictions
 
 ## Current Position
 
-Phase: 11 (Nearby Stop Predictions) — READY TO EXECUTE
-Plan: — (not yet planned)
+Phase: 11 (Nearby Stop Predictions) — EXECUTING
+Plan: 2 of 2
 Status: Ready to execute
-Last activity: 2026-09-23 — v0.5 roadmap created (Phase 11, NEAR-01..09 mapped)
+Last activity: 2026-09-24 — Phase 11 execution started
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
@@ -73,6 +73,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 04 P01 | 8min | 3 tasks | 11 files |
 | Phase 05 P02 | 45min | 3 tasks | 12 files |
 | Phase 06 P01 | 8min | 3 tasks | 12 files |
+| Phase 11 P01 | 5min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -99,6 +100,8 @@ Recent decisions affecting current work:
 - [Phase 9] Agency-wide alerts (no informed route/stop) are dropped from responses in v0.4; ALRT-09 (predictions embedding) deferred to v2
 - [Phase 10] `VehicleService` now validates `route` filters via `repository.getRouteByShortName` before any upstream DASH fetch, matching `BusRouteService`'s existing 404 pattern (D-04)
 - [Phase 10] Coordinate/timestamp safety filter uses `typeof value === "number" && Number.isFinite(value)`, not literal `NaN` checks — code review (CR-01/CR-02) found the NaN-only check missed missing/undefined/null lat/lon and let a malformed `loc.time` crash the whole request instead of dropping just the bad vehicle
+- [Phase 11]: [Phase 11-01] Nearby radius converts to upstream meters with Math.ceil(radius * 1609.344) (0.5 mi -> 805), never 0 and never narrower than requested
+- [Phase 11]: [Phase 11-01] Nearby upstream errors wrap as UpstreamApiError from error.message only (never the axios error object, which carries DASH_API_KEY); rider lat/lng are never logged
 
 ### Pending Todos
 
@@ -139,9 +142,9 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-23T20:43:57.184Z
-Stopped at: Phase 11 context gathered
-Resume file: .planning/phases/11-nearby-stop-predictions/11-CONTEXT.md
+Last session: 2026-09-24T15:01:12.983Z
+Stopped at: Completed 11-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
