@@ -1,7 +1,6 @@
 import { axios, environment, logger } from "../../config";
 import { UpstreamApiError } from "../errors";
 import type {
-    DashNearbyApiResponse,
     DashNearbyPredictionData,
     NearbyPredictionOptions,
     NearbyPredictionsResponse,
@@ -13,6 +12,36 @@ import { mapToServiceAlertSummaries } from "./serviceAlertMapping";
 
 const DEFAULT_RADIUS_MILES = 0.5;
 const METERS_PER_MILE = 1609.344;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null;
+}
+
+// A destination whose predictions is not an array would throw inside the shared mapping and
+// turn the whole request into a 500, so it invalidates the entry here instead.
+function isValidNearbyEntry(entry: unknown): entry is DashNearbyPredictionData {
+    if (!isRecord(entry)) {
+        return false;
+    }
+    const { stopId, distanceToStop, destinations } = entry;
+    return (
+        typeof stopId === "string" &&
+        stopId !== "" &&
+        typeof distanceToStop === "number" &&
+        Number.isFinite(distanceToStop) &&
+        distanceToStop >= 0 &&
+        Array.isArray(destinations) &&
+        destinations.every((destination) => isRecord(destination) && Array.isArray(destination.predictions))
+    );
+}
+
+function describeEntry(entry: unknown): string {
+    const field = (key: string): string => {
+        const value = isRecord(entry) ? entry[key] : undefined;
+        return typeof value === "string" && value !== "" ? value : "unknown";
+    };
+    return `stop ${field("stopId")}, route ${field("routeShortName")}`;
+}
 
 export interface NearbyPredictionService {
     getNearbyPredictions(
@@ -40,17 +69,48 @@ export function createNearbyPredictionService(serviceAlertRepository: ServiceAle
         return `/real-time/${agency}/predictions-near-location?${params.toString()}`;
     }
 
-    async function fetchFromDashApi(
-        lat: number,
-        lng: number,
-        options: NearbyPredictionOptions,
-    ): Promise<DashNearbyApiResponse> {
+    async function fetchFromDashApi(lat: number, lng: number, options: NearbyPredictionOptions): Promise<unknown> {
         const meters = toMeters(options.radius ?? DEFAULT_RADIUS_MILES);
         const url = buildDashApiUrl(lat, lng, meters, options.number);
         // The rider's coordinates are deliberately kept out of the log line.
         logger.info(`Fetching nearby predictions from DASH API: predictions-near-location (meters=${meters})`);
-        const response = await axios.get(url);
-        return response.data as DashNearbyApiResponse;
+        try {
+            const response = await axios.get(url);
+            return response.data;
+        } catch (error: unknown) {
+            // Only the message may leave this block: axios errors carry config.headers.Authorization,
+            // which is DASH_API_KEY, so the error object is never logged or rethrown.
+            const message = error instanceof Error ? error.message : "Unknown error";
+            throw new UpstreamApiError(`DASH API request failed for nearby predictions: ${message}`);
+        }
+    }
+
+    function parseDashResponse(body: unknown): { agencyKey: string; predictionsData: unknown[] } {
+        if (!isRecord(body)) {
+            throw new UpstreamApiError(
+                "DASH API returned a malformed nearby predictions response (body is not an object)",
+            );
+        }
+        if (body.success !== true) {
+            throw new UpstreamApiError("DASH API returned success: false for nearby predictions");
+        }
+        const { data } = body;
+        if (!isRecord(data) || !Array.isArray(data.predictionsData)) {
+            throw new UpstreamApiError(
+                "DASH API returned a malformed nearby predictions response (predictionsData is not an array)",
+            );
+        }
+        return { agencyKey: data.agencyKey as string, predictionsData: data.predictionsData };
+    }
+
+    function filterValidEntries(entries: unknown[]): DashNearbyPredictionData[] {
+        return entries.filter((entry): entry is DashNearbyPredictionData => {
+            const valid = isValidNearbyEntry(entry);
+            if (!valid) {
+                logger.warn(`Dropping malformed nearby prediction entry (${describeEntry(entry)})`);
+            }
+            return valid;
+        });
     }
 
     function groupByStop(entries: DashNearbyPredictionData[]): NearbyStopPredictions[] {
@@ -80,18 +140,14 @@ export function createNearbyPredictionService(serviceAlertRepository: ServiceAle
         lng: number,
         options: NearbyPredictionOptions = {},
     ): Promise<NearbyPredictionsResponse> {
-        const dashResponse = await fetchFromDashApi(lat, lng, options);
-
-        if (dashResponse.success !== true) {
-            throw new UpstreamApiError("DASH API returned success: false for nearby predictions");
-        }
+        const { agencyKey, predictionsData } = parseDashResponse(await fetchFromDashApi(lat, lng, options));
 
         return {
             success: true,
             generatedAt: new Date().toISOString(),
             data: {
-                agencyKey: dashResponse.data.agencyKey,
-                stops: groupByStop(dashResponse.data.predictionsData),
+                agencyKey,
+                stops: groupByStop(filterValidEntries(predictionsData)),
             },
         };
     }
