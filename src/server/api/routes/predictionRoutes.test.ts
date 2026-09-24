@@ -602,4 +602,73 @@ describe("GET /api/v1/predictions/nearby", () => {
         expect(response.status).toBe(200);
         expect((response.body.data.stops as NearbyStopBody[]).map((stop) => stop.id)).toEqual(["548", "561", "949"]);
     });
+
+    it("forwards radius=0.25 as meters=403 and number=3 upstream", async () => {
+        // Arrange
+        getSpy.mockResolvedValue({ data: makeLiveNearbyPredictionsResponse() });
+
+        // Act
+        const response = await request(app).get(`${nearbyUrl}&radius=0.25&number=3`);
+
+        // Assert
+        expect(response.status).toBe(200);
+        expect(getSpy).toHaveBeenCalledTimes(1);
+        const url = getSpy.mock.calls[0][0] as string;
+        expect(url).toContain("meters=403");
+        expect(url).toContain("number=3");
+    });
+
+    it("accepts the radius=1 and number=10 caps and forwards meters=1610 and number=10", async () => {
+        // Arrange
+        getSpy.mockResolvedValue({ data: makeLiveNearbyPredictionsResponse() });
+
+        // Act
+        const response = await request(app).get(`${nearbyUrl}&radius=1&number=10`);
+
+        // Assert
+        expect(response.status).toBe(200);
+        const url = getSpy.mock.calls[0][0] as string;
+        expect(url).toContain("meters=1610");
+        expect(url).toContain("number=10");
+    });
+
+    it("responds with 400 without calling upstream when radius is above 1 mile", async () => {
+        // Arrange & Act
+        const response = await request(app).get(`${nearbyUrl}&radius=1.5`);
+
+        // Assert
+        expect(response.status).toBe(400);
+        expect(response.body).toEqual({
+            error: "Bad Request",
+            details: "radius parameter must be a positive number no greater than 1 (miles)",
+        });
+        expect(getSpy).not.toHaveBeenCalled();
+    });
+
+    it("responds with 400 without calling upstream when number is above 10", async () => {
+        // Arrange & Act
+        const response = await request(app).get(`${nearbyUrl}&number=11`);
+
+        // Assert
+        expect(response.status).toBe(400);
+        expect(response.body).toEqual({
+            error: "Bad Request",
+            details: "number parameter must be an integer from 1 to 10",
+        });
+        expect(getSpy).not.toHaveBeenCalled();
+    });
+
+    it("forwards number=5.0 upstream as the integer number=5", async () => {
+        // Arrange
+        getSpy.mockResolvedValue({ data: makeLiveNearbyPredictionsResponse() });
+
+        // Act
+        const response = await request(app).get(`${nearbyUrl}&number=5.0`);
+
+        // Assert
+        expect(response.status).toBe(200);
+        const url = getSpy.mock.calls[0][0] as string;
+        expect(url).toContain("number=5");
+        expect(url).not.toContain("number=5.0");
+    });
 });
