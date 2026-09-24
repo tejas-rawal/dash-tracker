@@ -1,19 +1,18 @@
 ---
 gsd_state_version: "1.0"
 milestone: v0.5
-milestone_name: Nearby Stop Predictions
-status: Awaiting next milestone
+status: "v0.5 shipped — PR #15"
 stopped_at: v0.5 milestone archived and tagged
-last_updated: "2026-09-24T16:49:33.505Z"
+last_updated: "2026-09-24T18:09:18.728Z"
 last_activity: 2026-09-24
-last_activity_desc: Milestone v0.5 completed and archived
-state_head: 8076c99f8e50a71d031beed4916e2146170d9446
+state_head: 6d9791adbfac1e24a713d99fc346533b85bc05d4
 progress:
   total_phases: 2
   completed_phases: 11
   total_plans: 3
   completed_plans: 3
   percent: 100
+milestone_name: Nearby Stop Predictions
 current_phase: 11
 ---
 
@@ -30,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-09-24)
 
 Phase: Milestone v0.5 complete
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-09-24 — Milestone v0.5 completed and archived
+Status: v0.5 shipped — PR #15
+Last activity: 2026-09-24
 
 ## Performance Metrics
 
