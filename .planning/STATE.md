@@ -3,16 +3,15 @@ gsd_state_version: "1.0"
 milestone: v0.5
 milestone_name: Nearby Stop Predictions
 current_phase: 11
-current_phase_name: Nearby Stop Predictions
-status: executing
-stopped_at: Completed 11-03-PLAN.md
-last_updated: "2026-09-24T16:25:54.100Z"
+status: completed
+stopped_at: Phase 11 complete — all phases complete
+last_updated: "2026-09-24T16:39:11.092Z"
 last_activity: 2026-09-24
-last_activity_desc: Completed 11-03 gap-closure plan
-state_head: 61da3b2fe91fa93132dd2d768428e505d8fbf122
+last_activity_desc: Phase 11 complete
+state_head: 364995c93c68bd8892503f63de2d69fc31b07026
 progress:
   total_phases: 2
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 3
   completed_plans: 3
   percent: 100
@@ -22,17 +21,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-22)
+See: .planning/PROJECT.md (updated 2026-09-24)
 
 **Core value:** Riders can always see accurate, near-real-time arrival predictions for their stop.
-**Current focus:** Phase 11 — Nearby Stop Predictions
+**Current focus:** v0.5 milestone complete — ready for /gsd-complete-milestone
 
 ## Current Position
 
-Phase: 11 (Nearby Stop Predictions) — EXECUTING
-Plan: 3 of 3
-Status: All plans complete — gap-closure 11-03 done, awaiting re-verification
-Last activity: 2026-09-24 — Completed 11-03 (nearby prediction element validation, closes SC5 / NEAR-09 gaps)
+Phase: 11
+Plan: Not started
+Status: All phases complete
+Last activity: 2026-09-24 — Phase 11 complete
 
 Progress: [██████████] 100%
 
@@ -58,7 +57,8 @@ Progress: [██████████] 100%
 | 8 (v0.4) | 6 | - | - |
 | 9 (v0.4) | 2 | - | - |
 | 10 (standalone) | 1 | - | - |
-| 11 (v0.5) | TBD | - | - |
+| 11 (v0.5) | 3 | 14min | 5min |
+| 11 | 3 | - | - |
 
 **Recent Trend:**
 
@@ -115,7 +115,7 @@ None yet.
 
 ### Blockers/Concerns
 
-- ⚠️ [v0.5, Phase 11] `predictions-near-location` payload shape is unverified — confirm against a live DASH/Swiftly response (requires `DASH_API_KEY`) before locking `Dash*` nearby types, including whether returned stop IDs are in the `BusStop.id` space needed for alert embedding (NEAR-06). Same risk class as Phase 8 alerts and Phase 10 vehicles.
+- ⚠️ [Phase 11] `NearbyPredictionController` 500 path echoes `error.message` (WR-02/IN-04, accepted as T-11-16) — shared controller error-response helper across Prediction/Vehicle/Nearby controllers recommended as a follow-up quick task. Shared axios client still has no timeout (T-11-06, pre-existing).
 - ⚠️ [Phase 1, v0.1] `lint:fix` uses Biome's deprecated `--apply-unsafe` flag (should become `--write --unsafe` per Biome 1.9.4); non-blocking, not yet addressed.
 - ⚠️ [Phase 3] Code review (archived: `.planning/milestones/v0.2-phases/03-stop-discovery/03-REVIEW.md`) flagged 2 non-blocking edge cases: empty-string `lat`/`lng` query params coerce to `0` instead of 400ing in `StopController`; `StopService.getNearbyStops` doesn't lower-bound `count` if called directly (not reachable via the controller today). Neither blocks Phase 3 completion. Relevant to Phase 11: the new nearby-predictions validation must not copy this empty-string coercion bug (NEAR-08).
 - ⚠️ [Phase 4, v0.2] Residual WR-05 from the 3-iteration code-review fix cycle (archived: `.planning/milestones/v0.2-phases/04-live-predictions-via-sse/04-REVIEW.md`): `PredictionStreamController`'s initial SSE write is guarded only against synchronous throws — a mid-write client-socket error surfaces asynchronously via an `'error'` event with no handler anywhere in `src/server`. Non-blocking, doesn't violate any LIVE-01..05 requirement.
@@ -148,10 +148,10 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-24T16:25:54.077Z
-Stopped at: Completed 11-03-PLAN.md
+Last session: 2026-09-24
+Stopped at: Phase 11 complete (UAT 3/3 passed, 16/16 threats closed) — v0.5 milestone ready to close
 Resume file: None
 
 ## Operator Next Steps
 
-- Plan Phase 11 with /gsd-plan-phase 11 (or /gsd-discuss-phase 11 first)
+- Close the milestone with /gsd-complete-milestone v0.5

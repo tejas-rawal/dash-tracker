@@ -12,6 +12,8 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 
 **Shipped:** v0.4 Service Alerts (2026-09-08) — riders now see active service alerts (detours, disruptions, stop closures) embedded directly in route (`/routes/all`, `/routes/:shortName`) and stop (`/routes/:shortName/stops`, `/stops/nearby`) responses, refreshed on a dedicated 5-minute background poll independent of the 30s prediction poll. Four milestones shipped to date (v0.1 tooling cleanup, v0.2 stop discovery + live SSE predictions, v0.3 favorites/recents, v0.4 service alerts).
 
+**v0.5 Phase 11 complete (2026-09-24):** `GET /api/v1/predictions/nearby` shipped — one live upstream `predictions-near-location` call per request, stops nearest-first with distance (miles), route/destination predictions and embedded active alerts. Strict query parsing (blank/array/object/out-of-range → 400, radius ≤ 1mi, number ≤ 10), malformed upstream bodies → 502, malformed entries/elements dropped with one warn. Live UAT passed against the real DASH API (stop-ID space matches `BusStop.id`; stop-scoped alert embedded on live data; client abort mid-flight is clean). 0 open security threats (16/16 closed, see `11-SECURITY.md`).
+
 **Since v0.4:** Phase 10 (Solidify vehicle position work, completed 2026-09-22) hardened the `GET /api/v1/vehicles` endpoint that had landed as a quick task (260915-fc8) without discussion/research/plan-checking — corrected `DashVehicle`/`VehiclePosition` to match DASH's real nested `loc` payload (verified against a live SFMTA response), added repository-backed 404 route validation, and fixed two code-review-caught bugs in the malformed-coordinate safety filter. Not part of a new milestone — a standalone backlog item promoted from the v0.4 blockers list.
 
 ## Current Milestone: v0.5 Nearby Stop Predictions
@@ -74,13 +76,14 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 - ✓ New `ServiceAlert` model representing a single alert (affected routes/stops, description, active window) — v0.4 Phase 8
 - ✓ Embed active alerts on `GET /api/v1/routes/all` and `/routes/:shortName` responses — v0.4 Phase 9
 - ✓ Embed active alerts on `GET /api/v1/routes/:shortName/stops` and `/stops/nearby` responses — v0.4 Phase 9
+- ✓ Rider can get live predictions for all stops near a lat/lng via `GET /api/v1/predictions/nearby`, backed by Swiftly `predictions-near-location` — v0.5 Phase 11
+- ✓ Each nearby stop includes distance (miles), predictions grouped by route/destination, and active service alerts — v0.5 Phase 11
+- ✓ Response carries a `generatedAt` freshness timestamp — v0.5 Phase 11
+- ✓ Invalid input returns 400; upstream failure returns 502 — v0.5 Phase 11
 
 ### Active
 
-- [ ] Rider can get live predictions for all stops near a lat/lng via `GET /api/v1/predictions/nearby`, backed by Swiftly `predictions-near-location`
-- [ ] Each nearby stop includes distance (miles), predictions grouped by route/destination, and active service alerts
-- [ ] Response carries a `generatedAt` freshness timestamp
-- [ ] Invalid input returns 400; upstream failure returns 502
+(none — v0.5 requirements all validated; next milestone not yet defined)
 
 ### Out of Scope
 
@@ -151,6 +154,9 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 | Defer ALRT-09 (alerts on predictions responses) to v2 | A stop/route's own response already carries its active alerts via Phase 9's embedding — a duplicate flag/array on the predictions response was judged redundant | ✓ Deferred — moved out of v0.4 scope |
 | `VehicleService` gains repository-backed `getRouteByShortName` route validation before any DASH fetch, matching `BusRouteService`'s existing 404 pattern | Quick task 260915-fc8 had forwarded an unvalidated client-supplied route string straight to the DASH API; validating first closes that and gives correct 404s | ✓ Shipped Phase 10 |
 | Coordinate/timestamp safety filter in `mapToVehiclePositions` uses `typeof value === "number" && Number.isFinite(value)`, not `!Number.isNaN(...)` | Code review (CR-01/CR-02) found the NaN-only check missed missing/undefined/null lat/lon and let a malformed `loc.time` crash the entire request instead of just dropping the one bad vehicle | ✓ Shipped Phase 10 |
+| Nearby predictions query params are parsed strictly and never clamped — blank, array/object, non-finite or out-of-range values return 400 (radius ≤ 1mi, number ≤ 10) | `Number("")` is 0 and qs can deliver arrays/objects, so lenient coercion could silently query (0,0) or bypass caps; caps bound per-request upstream quota | ✓ Shipped Phase 11 |
+| Upstream nearby entries are validated down to each prediction element (finite `min`/`sec`/`time`, string `tripId`/`vehicleId`); one bad element drops only its whole entry with a single warn | Upstream JSON is not schema-validated (D-18); a bad element must neither fail every stop (CR-01) nor be served to riders as a fabricated arrival | ✓ Shipped Phase 11 (11-03 gap closure) |
+| Upstream errors are wrapped as `UpstreamApiError` from `error.message` only, never the axios error object | The axios error's `config.headers.Authorization` carries `DASH_API_KEY` | ✓ Shipped Phase 11 (T-11-01) |
 
 ## Evolution
 
@@ -170,4 +176,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-22 after starting milestone v0.5 Nearby Stop Predictions*
+*Last updated: 2026-09-24 after Phase 11*

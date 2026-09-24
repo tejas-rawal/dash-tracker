@@ -1,9 +1,10 @@
 ---
 phase: 11-nearby-stop-predictions
 verified: 2026-09-24T16:31:07Z
-status: human_needed
+status: passed
 score: 5/7 must-haves verified
 covered_files:
+
   - .planning/REQUIREMENTS.md
   - .planning/phases/11-nearby-stop-predictions/11-01-PLAN.md
   - .planning/phases/11-nearby-stop-predictions/11-01-SUMMARY.md
@@ -21,6 +22,7 @@ covered_files:
   - src/server/api/services/PredictionService.ts
   - src/server/api/services/predictionMapping.test.ts
   - src/server/api/services/predictionMapping.ts
+
 covered_digest: "v1:sha256:bc7e413e3b5d6b955fa372db043a9dfe0d2e1a3af0f8ea51d7eb36d2019359ba"
 behavior_unverified: 0
 overrides_applied: 0
@@ -33,6 +35,7 @@ re_verification:
   gaps_remaining: []
   regressions: []
 advisory:
+
   - finding: "WR-03 (review): the whole-entry drop policy removes a stop, and its locally sourced service alerts, when every one of its upstream entries holds a malformed element. The tightened element check also drops an entry if a live prediction ever omits vehicleId, for example a schedule-based arrival."
     category: other
     reason: "This matches the SC5 wording (the malformed entry is dropped, the remaining stops are returned) and the declared DashPrediction contract (vehicleId: string). It becomes a real problem only if live Swiftly data omits vehicleId or tripId. Resolve it by watching for 'Dropping malformed nearby prediction entry' warns during the live smoke test (human item 1), or by recording an explicit CONTEXT decision on alert loss."
@@ -42,6 +45,7 @@ advisory:
     reason: "The verifier reproduced it: HTTP 200, stop 561 served with no name key. Nothing is fabricated, because the key is absent rather than invented, so the fabrication prohibition holds. The locked D-18 scope of 'malformed' is stopId, distanceToStop, destinations and predictions. This is contract drift under upstream drift, not a goal failure. Resolve it with typeof checks on those fields (D-18-compatible)."
     evidence_status: "reproduced; judged outside the SC5/D-18 malformed scope"
 human_verification:
+
   - test: "Live smoke test with a real DASH_API_KEY: bun run dev-server, then curl -s 'http://localhost:${PORT:-3000}/api/v1/predictions/nearby?lat=38.8048&lng=-77.0469&radius=0.25&number=3'. Watch the server log while it runs."
     expected: "200. Stops come back nearest-first with stop 548 (King St + N Washington St) at or near the top, every distance under 0.25, routes grouped per stop, and an alerts array on every stop. No 'Dropping malformed nearby prediction entry' warn appears for normal live data (a warn would mean live predictions omit a field the 11-03 guard now requires, such as vehicleId). '?lat=&lng=-77.0469' returns 400, and radius=5 returns 400."
     why_human: "Needs live DASH/Swiftly credentials and data. Every automated test stubs axios.get with the captured fixture."
@@ -197,16 +201,19 @@ Bookkeeping note for the orchestrator: REQUIREMENTS.md still shows NEAR-01..08 a
 These are the same three items as before. Item 1 now also asks the tester to watch for drop warns.
 
 #### 1. Live smoke test
+
 **Test:** Run `bun run dev-server` with a real `DASH_API_KEY`, then `curl -s "http://localhost:${PORT:-3000}/api/v1/predictions/nearby?lat=38.8048&lng=-77.0469&radius=0.25&number=3"`, and watch the server log.
 **Expected:** 200, nearest-first, stop 548 at or near the top, distances under 0.25, and an alerts array on every stop. No "Dropping malformed nearby prediction entry" warn for normal live data. `lat=` returns 400, and `radius=5` returns 400.
 **Why human:** Needs live credentials. Every automated test stubs axios. Only live data can show whether real predictions always carry `tripId`/`vehicleId`.
 
 #### 2. Stop-ID-space cross-check (remainder of SC1)
+
 **Test:** Confirm the nearby stop ids appear as `BusStop.id` in `/api/v1/routes/*` stops. While a stop-scoped alert is active, confirm it shows on the matching nearby stop.
 **Expected:** The string IDs match, and alerts embed on live data.
 **Why human:** D-04 is an inference and has not been observed on live data.
 
 #### 3. Client disconnect mid-flight (backstop)
+
 **Test:** Abort a nearby request while the upstream call is pending.
 **Expected:** No unhandled rejection, no retry, no state left behind.
 **Why human:** Backstop truth with no automated abort test.
@@ -214,6 +221,7 @@ These are the same three items as before. Item 1 now also asks the tester to wat
 ### Gaps Summary
 
 There are no gaps. Plan 11-03 closed the single root cause behind both prior gaps (CR-01). `isValidNearbyEntry` now validates every prediction element against exactly the fields the shared mapper copies, and the whole entry is dropped with one warn if any element fails:
+
 - SC5 / NEAR-09 now holds. A malformed element no longer turns the request into a 500. The entry is dropped, and the remaining stops return 200.
 - The test-tier fabrication prohibition now has wired, passing enforcement. No incomplete or empty prediction is served.
 

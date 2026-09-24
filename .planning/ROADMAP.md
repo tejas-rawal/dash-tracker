@@ -60,7 +60,7 @@ See `.planning/milestones/v0.4-ROADMAP.md` for full phase details.
 
 **Milestone Goal:** A rider can send their location and get live arrival predictions for every stop around them in one call, backed by DASH/Swiftly's `predictions-near-location` real-time endpoint.
 
-- [ ] **Phase 11: Nearby Stop Predictions** - Rider sends a lat/lng and gets live, nearest-first predictions for every surrounding stop (with distance and active alerts) from one uncached upstream call, with 400/502 error handling
+- [x] **Phase 11: Nearby Stop Predictions** - Rider sends a lat/lng and gets live, nearest-first predictions for every surrounding stop (with distance and active alerts) from one uncached upstream call, with 400/502 error handling (completed 2026-09-24)
 
 ## Phase Details
 
@@ -103,7 +103,7 @@ Plans:
 
 Existing `GET /api/v1/stops/nearby` (local haversine, no upstream call) and `GET /api/v1/predictions` responses are unchanged; no SSE stream and no recents logging for nearby lookups.
 
-**Plans:** 3/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 **Wave 1**
@@ -135,7 +135,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 8. Service Alerts Ingestion | 6/6 | Complete | 2026-09-04 |
 | 9. Alerts Surfaced on Routes, Stops & Predictions | 2/2 | Complete | 2026-09-08 |
 | 10. Solidify vehicle position work | 1/1 | Complete | 2026-09-22 |
-| 11. Nearby Stop Predictions | 3/3 | In Progress|  |
+| 11. Nearby Stop Predictions | 3/3 | Complete    | 2026-09-24 |
 
 ---
 
