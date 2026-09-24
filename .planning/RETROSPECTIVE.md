@@ -145,6 +145,40 @@
 
 ---
 
+## Milestone: v0.5 — Nearby Stop Predictions
+
+**Shipped:** 2026-09-24
+**Phases:** 1 | **Plans:** 3
+
+### What Was Built
+- `GET /api/v1/predictions/nearby?lat&lng&radius&number` makes one uncached DASH `predictions-near-location` call and returns stops nearest-first with distance (miles), route → destination predictions and embedded active alerts, plus a top-level `generatedAt`
+- A shared `predictionMapping` module, now reused by both `PredictionService` and `NearbyPredictionService`
+- Strict query validation (400, never clamped), 502 on upstream failure without leaking the API key, and per-element validation that drops a malformed upstream entry with one warn
+
+### What Worked
+- The Phase 8 lesson carried over: the live `predictions-near-location` payload was captured in CONTEXT (D-01/D-02) before any `Dash*` types were locked, so the upstream shape needed no gap-closure rounds this time (v0.4 needed 6)
+- Verification reproduced bugs through the real route (supertest, only axios stubbed) and found CR-01 (a null prediction element returned 500 for every stop), which unit-level guards had missed
+- Live UAT closed the items automation couldn't reach: the stop-ID space match, alert embedding on live data, and a clean client abort
+
+### What Was Inefficient
+- Requirements were marked Complete after plan 11-02, then reverted when verification found gaps (`4bc81cd`), which added churn
+- REQUIREMENTS.md changed after verification, so the verification was flagged stale and the milestone had to close with an override
+
+### Patterns Established
+- Hand-rolled entry guards validate down to every field the mapper dereferences, and a failing entry is dropped whole rather than coerced
+- Query params are "provided-but-invalid → 400": a blank value is never treated as absent
+
+### Key Lessons
+- A guard that only checks container shapes (arrays present) isn't enough. Validate each element the mapper reads, or one bad element takes down the whole response
+- Only mark requirements Complete after phase verification passes, not after each plan's summary
+
+### Cost Observations
+- Model mix: not tracked
+- Sessions: not tracked
+- Notable: 3 plans averaged ~5 min of execution each. Most of the milestone's wall time went to review, verification and UAT, not implementation
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -155,6 +189,7 @@
 | v0.2 | 1 | 2 | First feature milestone — stop discovery + live SSE predictions; first milestone with a multi-iteration code-review fix cycle |
 | v0.3 | not tracked | 3 | First milestone with persistence (SQLite); first milestone where code review caught a pre-ship BLOCKER (write/read key mismatch) that unit tests missed entirely |
 | v0.4 | not tracked | 2 | First milestone with a multi-round (6x) gap-closure cycle driven by an unverified live third-party API shape |
+| v0.5 | not tracked | 1 | Live payload captured before DTO lock-in, so no shape rework; one gap-closure plan driven by route-level adversarial verification |
 
 ### Cumulative Quality
 
@@ -164,6 +199,7 @@
 | v0.2 | 217 | ~97% on new code (phase-level); 80% threshold enforced repo-wide | 0 (no new dependencies — SSE built on existing Express/`res.write`) |
 | v0.3 | 313 | 80% threshold enforced repo-wide | 1 (`better-sqlite3`, vetted via a dedicated package-legitimacy checkpoint) |
 | v0.4 | 283 | 98% on new code; 80% threshold enforced repo-wide | 0 (no new dependencies — alerts built on existing axios/repository pattern) |
+| v0.5 | 520 | 98.3% statements / 93.7% branches repo-wide | 0 (no new dependencies — hand-rolled guard, no Zod, per D-18) |
 
 ### Top Lessons (Verified Across Milestones)
 
@@ -172,3 +208,4 @@
 3. Unit tests run against mocks in isolation cannot catch a write-path/read-path key mismatch (e.g. short name vs. internal id) — only an end-to-end data-flow trace or a real round-trip integration test will, and this bit v0.3's Recents feature as a pre-ship BLOCKER (CR-01)
 4. Unit tests that mock a third-party HTTP client directly give zero coverage of that client's own response-transform behavior — an unconfirmed live API response shape needs a real capture, not more hand-picked fixtures
 5. Treat an API reference/doc-generator example with all-placeholder values as unconfirmed evidence, not ground truth, until checked against a live response
+6. Validate upstream data down to every element the mapper dereferences. A container-level guard lets one malformed element fail the whole response (v0.5 CR-01)

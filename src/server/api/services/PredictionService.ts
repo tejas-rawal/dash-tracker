@@ -1,16 +1,9 @@
 import { axios, environment, logger } from "../../config";
 import { NotFoundError, UpstreamApiError } from "../errors";
 import type { BusStop } from "../models";
-import type {
-    DashApiResponse,
-    DashDestination,
-    DashPredictionData,
-    Destination,
-    PredictionOptions,
-    RoutePrediction,
-    StopPredictionsResponse,
-} from "../models/Prediction";
+import type { DashApiResponse, PredictionOptions, StopPredictionsResponse } from "../models/Prediction";
 import type { BusDataRepository, FavoritesRecentsRepository } from "../repositories";
+import { mapToRoutePredictions } from "./predictionMapping";
 
 export interface PredictionService {
     getPredictionsForStop(stopId: string, options?: PredictionOptions): Promise<StopPredictionsResponse>;
@@ -63,32 +56,6 @@ export function createPredictionService(
         logger.info(`Fetching predictions from DASH API: ${url}`);
         const response = await axios.get(url);
         return response.data as DashApiResponse;
-    }
-
-    function mapToDestinations(destinations: DashDestination[]): Destination[] {
-        return destinations.map((dest) => ({
-            directionId: dest.directionId,
-            headsign: dest.headsign,
-            predictions: dest.predictions.map((pred) => ({
-                min: pred.min,
-                sec: pred.sec,
-                time: pred.time,
-                tripId: pred.tripId,
-                vehicleId: pred.vehicleId,
-            })),
-        }));
-    }
-
-    function mapToRoutePredictions(predictionsData: DashPredictionData[]): RoutePrediction[] {
-        return predictionsData.map((item) => ({
-            routeId: item.routeId,
-            routeName: item.routeName,
-            routeShortName: item.routeShortName,
-            stopId: item.stopId,
-            stopName: item.stopName,
-            stopCode: item.stopCode,
-            destinations: mapToDestinations(item.destinations),
-        }));
     }
 
     async function getPredictionsForStop(

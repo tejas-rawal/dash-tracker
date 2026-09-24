@@ -1,3 +1,5 @@
+import type { ServiceAlertSummary } from "./ServiceAlertSummary";
+
 export interface Prediction {
     min: number;
     sec: number;
@@ -72,5 +74,42 @@ export interface DashApiResponse {
     data: {
         agencyKey: string;
         predictionsData: DashPredictionData[];
+    };
+}
+
+// Live alexandria-dash payload confirmed 2026-09-23: flat, one entry per (route, stop) pair.
+export interface DashNearbyPredictionData extends DashPredictionData {
+    distanceToStop: number; // meters
+}
+
+export interface DashNearbyApiResponse {
+    success: boolean;
+    route: string;
+    data: {
+        agencyKey: string;
+        predictionsData: DashNearbyPredictionData[];
+    };
+}
+
+export interface NearbyPredictionOptions {
+    radius?: number; // miles
+    number?: number;
+}
+
+export interface NearbyStopPredictions {
+    id: string;
+    name: string;
+    code: number;
+    distance: number; // miles
+    routes: RoutePrediction[];
+    alerts: ServiceAlertSummary[];
+}
+
+export interface NearbyPredictionsResponse {
+    success: boolean;
+    generatedAt: string;
+    data: {
+        agencyKey: string;
+        stops: NearbyStopPredictions[];
     };
 }

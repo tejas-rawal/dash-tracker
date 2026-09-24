@@ -1,45 +1,44 @@
 ---
 gsd_state_version: "1.0"
-milestone: v0.4
-current_phase: 10
-current_phase_name: Solidify vehicle position work
-status: "Phase 10 shipped — PR #14"
-stopped_at: Phase 10 complete — all phases complete
-last_updated: "2026-09-22T15:27:15.773Z"
-last_activity: 2026-09-22
-state_head: 40c00d2ed5d1a4703f092feaabe517d16d286b76
+milestone: v0.5
+status: "v0.5 shipped — PR #15"
+stopped_at: v0.5 milestone archived and tagged
+last_updated: "2026-09-24T18:09:18.728Z"
+last_activity: 2026-09-24
+state_head: 6d9791adbfac1e24a713d99fc346533b85bc05d4
 progress:
   total_phases: 2
-  completed_phases: 2
-  total_plans: 8
-  completed_plans: 8
+  completed_phases: 11
+  total_plans: 3
+  completed_plans: 3
   percent: 100
-milestone_name: Service Alerts
+milestone_name: Nearby Stop Predictions
+current_phase: 11
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-22)
+See: .planning/PROJECT.md (updated 2026-09-24)
 
 **Core value:** Riders can always see accurate, near-real-time arrival predictions for their stop.
-**Current focus:** All phases complete — awaiting next milestone
+**Current focus:** Planning next milestone (v0.5 shipped 2026-09-24)
 
 ## Current Position
 
-Phase: 10 (Solidify vehicle position work) — COMPLETE
+Phase: Milestone v0.5 complete
 Plan: —
-Status: Phase 10 shipped — PR #14
-Last activity: 2026-09-22
+Status: v0.5 shipped — PR #15
+Last activity: 2026-09-24
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed (v0.3): 0
-- Average duration: - min
-- Total execution time: 0 hours
+- Total plans completed (v0.5): 3
+- Average duration: 5 min
+- Total execution time: ~14 min
 
 **By Phase:**
 
@@ -49,17 +48,13 @@ Last activity: 2026-09-22
 | 2 (v0.1) | 1 | - | - |
 | 3 (v0.2) | 2 | - | - |
 | 4 (v0.2) | 1 | 8min | 8min |
-| 5 (v0.3) | TBD | - | - |
-| 6 (v0.3) | TBD | - | - |
-| 7 (v0.3) | TBD | - | - |
-| 8 (v0.4) | TBD | - | - |
-| 9 (v0.4) | TBD | - | - |
-| 05 | 2 | - | - |
-| 06 | 1 | - | - |
-| 07 | 1 | - | - |
-| 08 | 6 | - | - |
-| 09 | 2 | - | - |
-| 10 | 1 | - | - |
+| 5 (v0.3) | 2 | - | - |
+| 6 (v0.3) | 1 | - | - |
+| 7 (v0.3) | 1 | - | - |
+| 8 (v0.4) | 6 | - | - |
+| 9 (v0.4) | 2 | - | - |
+| 10 (standalone) | 1 | - | - |
+| 11 (v0.5) | 3 | 14min | 5min |
 
 **Recent Trend:**
 
@@ -74,6 +69,9 @@ Last activity: 2026-09-22
 | Phase 04 P01 | 8min | 3 tasks | 11 files |
 | Phase 05 P02 | 45min | 3 tasks | 12 files |
 | Phase 06 P01 | 8min | 3 tasks | 12 files |
+| Phase 11 P01 | 5min | 2 tasks | 9 files |
+| Phase 11 P02 | 4min | 2 tasks | 3 files |
+| Phase 11 P03 | 5min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -82,6 +80,7 @@ Last activity: 2026-09-22
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [v0.5 roadmap] v0.5 is a single phase (Phase 11) — one endpoint with no internal dependency boundary; coarse granularity. Live-payload confirmation of `predictions-near-location` is a success criterion gating DTO lock-in, not a separate phase
 - [v0.3, Phase 6] Favorites/recents identity is an anonymous device ID sent via `X-Device-Id` header, no auth system — device ID becomes a natural foreign key if real accounts are added later
 - [v0.3, Phase 5/6] Favorites/recents persisted in SQLite behind a new repository, isolated from the existing `BusDataRepository` — zero ops, fits existing repository-pattern architecture
 - [v0.3, Phase 6] Unfavorite is a plain SQL DELETE with no rows-affected check; repository upsert uses `INSERT ... ON CONFLICT DO UPDATE` — makes both favorite-an-already-favorited and unfavorite-a-non-favorite true no-op successes, no read-then-write race
@@ -99,6 +98,12 @@ Recent decisions affecting current work:
 - [Phase 9] Agency-wide alerts (no informed route/stop) are dropped from responses in v0.4; ALRT-09 (predictions embedding) deferred to v2
 - [Phase 10] `VehicleService` now validates `route` filters via `repository.getRouteByShortName` before any upstream DASH fetch, matching `BusRouteService`'s existing 404 pattern (D-04)
 - [Phase 10] Coordinate/timestamp safety filter uses `typeof value === "number" && Number.isFinite(value)`, not literal `NaN` checks — code review (CR-01/CR-02) found the NaN-only check missed missing/undefined/null lat/lon and let a malformed `loc.time` crash the whole request instead of dropping just the bad vehicle
+- [Phase 11]: [Phase 11-01] Nearby radius converts to upstream meters with Math.ceil(radius * 1609.344) (0.5 mi -> 805), never 0 and never narrower than requested
+- [Phase 11]: [Phase 11-01] Nearby upstream errors wrap as UpstreamApiError from error.message only (never the axios error object, which carries DASH_API_KEY); rider lat/lng are never logged
+- [Phase 11]: [Phase 11-02] Nearby radius/number caps (MAX_RADIUS_MILES = 1, MAX_PREDICTIONS_PER_DESTINATION = 10) are controller constants; out-of-range values return 400 and are never clamped
+- [Phase 11]: [Phase 11-02] An empty radius= or number= on /predictions/nearby is provided-but-invalid (400), not a fallback to the default
+- [Phase 11]: [Phase 11-03] Nearby prediction elements are validated in isValidNearbyEntry (finite min/sec/time, string tripId/vehicleId, no coercion); one malformed element drops its whole entry with the existing single warn. Hand-rolled guard kept per D-18 (no Zod)
+- [Phase 11]: [Phase 11-03] WR-02 (500 path echoes raw error.message) deferred to a follow-up quick task extracting one shared controller error-response helper for Prediction/Vehicle/NearbyPrediction controllers (WR-02 + IN-04); T-11-16 accepted low
 
 ### Pending Todos
 
@@ -106,13 +111,14 @@ None yet.
 
 ### Blockers/Concerns
 
+- ⚠️ [Phase 11] `NearbyPredictionController` 500 path echoes `error.message` (WR-02/IN-04, accepted as T-11-16) — shared controller error-response helper across Prediction/Vehicle/Nearby controllers recommended as a follow-up quick task. Shared axios client still has no timeout (T-11-06, pre-existing).
 - ⚠️ [Phase 1, v0.1] `lint:fix` uses Biome's deprecated `--apply-unsafe` flag (should become `--write --unsafe` per Biome 1.9.4); non-blocking, not yet addressed.
-- ⚠️ [Phase 3] Code review (archived: `.planning/milestones/v0.2-phases/03-stop-discovery/03-REVIEW.md`) flagged 2 non-blocking edge cases: empty-string `lat`/`lng` query params coerce to `0` instead of 400ing in `StopController`; `StopService.getNearbyStops` doesn't lower-bound `count` if called directly (not reachable via the controller today). Neither blocks Phase 3 completion.
+- ⚠️ [Phase 3] Code review (archived: `.planning/milestones/v0.2-phases/03-stop-discovery/03-REVIEW.md`) flagged 2 non-blocking edge cases: empty-string `lat`/`lng` query params coerce to `0` instead of 400ing in `StopController`; `StopService.getNearbyStops` doesn't lower-bound `count` if called directly (not reachable via the controller today). Neither blocks Phase 3 completion. Relevant to Phase 11: the new nearby-predictions validation must not copy this empty-string coercion bug (NEAR-08).
 - ⚠️ [Phase 4, v0.2] Residual WR-05 from the 3-iteration code-review fix cycle (archived: `.planning/milestones/v0.2-phases/04-live-predictions-via-sse/04-REVIEW.md`): `PredictionStreamController`'s initial SSE write is guarded only against synchronous throws — a mid-write client-socket error surfaces asynchronously via an `'error'` event with no handler anywhere in `src/server`. Non-blocking, doesn't violate any LIVE-01..05 requirement.
 - ⚠️ [v0.2] An unrelated, pre-existing uncommitted fix to `BusDataRepository.ts` (dedupe `initialize()`/`refreshData()` load paths) was swept into the v0.2 execution history by the automated code-review-fix pipeline (commit `b52c130`) — correct fix, but out of Phase 3/4 scope and not explicitly approved before landing. Flagged to the user; left in place.
 - ⚠️ [Phase 6, v0.3] `FavoritesController.unfavorite` doesn't validate `entityId` the way `favorite` does, and `favorite`'s `entityId` is trim-validated but the untrimmed value is what's persisted/looked up — both whitespace-padded-id edge cases (WR-01/WR-03, `.planning/milestones/v0.3-phases/06-favorites-routes-stops/06-REVIEW.md`). Non-blocking, doesn't violate any FAV-01..05/DEVICE-01 requirement.
 - ⚠️ [Phase 7, v0.3] `RecentsController.resolveDeviceId` unsafely casts the device-id header to `string` with no in-controller guard; its `NotFoundError`→404 branch is unreachable; device-id header parsing is duplicated across 4 files; the recents cap (`5`) is a magic number in a SQL string; `resolveEntity` is duplicated verbatim between `RecentsService`/`FavoritesService` (WR-02/WR-03/IN-01/IN-02/IN-03, `.planning/milestones/v0.3-phases/07-recents-routes-stops/07-REVIEW.md`). Non-blocking, doesn't violate any RECENT-01..06 requirement.
-- ⚠️ [Phase 8, v0.4 — STILL OPEN after Phase 9] The confirmed live DASH alert payload (G-05-5) includes `deletedAt`/`deletedBy` fields that `ServiceAlertService`/`ServiceAlertRepository` currently ignore entirely. If the DASH admin tool soft-deletes alerts instead of removing them from the feed, a deleted-but-still-time-active alert could still surface via `getActiveAlerts()` — and Phase 9 now exposes that data publicly on route/stop responses without addressing it. Was flagged as "consider before Phase 9 exposes alerts publicly" but not picked up during Phase 9 planning/execution. Worth a follow-up before/early in the next milestone.
+- ⚠️ [Phase 8, v0.4 — STILL OPEN after Phase 9] The confirmed live DASH alert payload (G-05-5) includes `deletedAt`/`deletedBy` fields that `ServiceAlertService`/`ServiceAlertRepository` currently ignore entirely. If the DASH admin tool soft-deletes alerts instead of removing them from the feed, a deleted-but-still-time-active alert could still surface via `getActiveAlerts()` — and Phase 9 now exposes that data publicly on route/stop responses without addressing it. Was flagged as "consider before Phase 9 exposes alerts publicly" but not picked up during Phase 9 planning/execution. Worth a follow-up before/early in the next milestone. Phase 11 (NEAR-06) now exposes alerts on one more endpoint (`/predictions/nearby`).
 - ⚠️ [Phase 9] `RouteWithAlerts` (`BusRoute & { alerts }`) is built via object spread over a `BusRoute` class instance, losing its prototype methods even though the static type doesn't reflect that (WR-01, `09-REVIEW.md`). No live call site hits it today.
 - ⚠️ [Phase 9] `ServiceAlertRepository.isAlertActive`'s date-boundary checks fail open on a malformed `activePeriod` date string rather than excluding/logging it (WR-02, `09-REVIEW.md`).
 - ⚠️ [Phase 10] CR-02's fix (dropping vehicles with malformed `loc.time` instead of crashing the request) has no committed regression test — production code is correct and independently spot-checked by both the code fixer and the phase verifier, but a future refactor could silently reintroduce the crash with nothing to catch it. Flagged as an info-level gap in `10-VERIFICATION.md`; recommend adding the 3 spot-check cases to the committed `VehicleService.test.ts` suite.
@@ -131,13 +137,18 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
+| seeds | SEED-001-service-alerts-per-route | dormant | 2026-09-24 | v0.5 |
+| seeds | SEED-002-schedule-adherence | dormant | 2026-09-24 | v0.5 |
+| verification_override | 11-nearby-stop-predictions/11-VERIFICATION.md | passed (flagged stale: REQUIREMENTS.md checkboxes edited after verification; no code change) | 2026-09-24 | v0.5 |
+| Requirement | NEAR-10: Live SSE stream of nearby-location predictions | Deferred (future) | Requirements definition | v0.5 |
+| Requirement | NEAR-11: Optional `route` filter on nearby predictions | Deferred (future) | Requirements definition | v0.5 |
 | Requirement | LIVE-06: Bidirectional WebSocket support for switching subscribed stop without reconnecting | Deferred to v2 | Roadmap creation | v0.2 |
 | Requirement | LIVE-07: Client-configurable poll/update interval | Deferred to v2 | Roadmap creation | v0.2 |
 
 ## Session Continuity
 
-Last session: 2026-09-22
-Stopped at: Phase 10 complete, ready to plan next milestone
+Last session: 2026-09-24
+Stopped at: v0.5 milestone closed (override_closeout: audit skipped, Phase 11 verification override, 2 seeds acknowledged)
 Resume file: None
 
 ## Operator Next Steps

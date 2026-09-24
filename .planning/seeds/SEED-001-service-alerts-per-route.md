@@ -5,6 +5,10 @@ planted: 2026-09-01
 planted_during: v0.3 — Favorited & Recent Routes
 trigger_when: next new-milestone cycle after v0.3 ships
 scope: medium
+audit_acknowledged:
+  milestone: v0.5
+  at: 2026-09-24
+  status: dormant
 ---
 
 # SEED-001: Service alerts per route
