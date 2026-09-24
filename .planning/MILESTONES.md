@@ -1,5 +1,22 @@
 # Milestones
 
+## v0.5 Nearby Stop Predictions (Shipped: 2026-09-24)
+
+**Phases completed:** 1 phases, 3 plans, 6 tasks
+
+**Key accomplishments:**
+
+- `GET /api/v1/predictions/nearby?lat&lng` is live. It makes one uncached DASH `predictions-near-location` call, groups the flat per-(route, stop) entries into nearest-first stops with unrounded mile distances, attaches each stop's active alerts once, returns 502 on upstream failure without leaking the API key, and drops malformed entries with a warning.
+- `isValidNearbyEntry` now checks every prediction element: finite-number `min`/`sec`/`time` and string `tripId`/`vehicleId`, with no coercion. One null, scalar, empty or partial element drops only its own upstream entry with a single warn. Before this fix, a null element returned 500 with the raw TypeError text for every nearby stop, and a scalar element was served as an empty `{}` arrival.
+
+**Stats:** 31 commits, 39 files changed (+5,042 / −95), 10 `src/` files (+1,774 / −37); 520 tests, 98.3% statement coverage; timeline 2026-09-22 → 2026-09-24.
+
+**Closeout:** override_closeout. The milestone audit was skipped by user choice. Phase 11's VERIFICATION.md (passed, UAT 3/3) was flagged stale only because REQUIREMENTS.md changed afterward, and an override was recorded.
+
+Known verification overrides: 2 newly acknowledged, 0 carried forward from a prior close (see STATE.md Deferred Items)
+
+---
+
 ## v0.4 Service Alerts (Shipped: 2026-09-08)
 
 **Phases completed:** 2 phases, 8 plans, 14 tasks

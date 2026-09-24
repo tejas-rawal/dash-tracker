@@ -2,19 +2,19 @@
 gsd_state_version: "1.0"
 milestone: v0.5
 milestone_name: Nearby Stop Predictions
-current_phase: 11
-status: completed
-stopped_at: Phase 11 complete — all phases complete
-last_updated: "2026-09-24T16:39:11.092Z"
+status: Awaiting next milestone
+stopped_at: v0.5 milestone archived and tagged
+last_updated: "2026-09-24T16:49:33.505Z"
 last_activity: 2026-09-24
-last_activity_desc: Phase 11 complete
-state_head: 364995c93c68bd8892503f63de2d69fc31b07026
+last_activity_desc: Milestone v0.5 completed and archived
+state_head: 8076c99f8e50a71d031beed4916e2146170d9446
 progress:
   total_phases: 2
   completed_phases: 11
   total_plans: 3
   completed_plans: 3
   percent: 100
+current_phase: 11
 ---
 
 # Project State
@@ -24,24 +24,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-24)
 
 **Core value:** Riders can always see accurate, near-real-time arrival predictions for their stop.
-**Current focus:** v0.5 milestone complete — ready for /gsd-complete-milestone
+**Current focus:** Planning next milestone (v0.5 shipped 2026-09-24)
 
 ## Current Position
 
-Phase: 11
-Plan: Not started
-Status: All phases complete
-Last activity: 2026-09-24 — Phase 11 complete
-
-Progress: [██████████] 100%
+Phase: Milestone v0.5 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-09-24 — Milestone v0.5 completed and archived
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed (v0.5): 0
-- Average duration: - min
-- Total execution time: 0 hours
+- Total plans completed (v0.5): 3
+- Average duration: 5 min
+- Total execution time: ~14 min
 
 **By Phase:**
 
@@ -58,7 +56,6 @@ Progress: [██████████] 100%
 | 9 (v0.4) | 2 | - | - |
 | 10 (standalone) | 1 | - | - |
 | 11 (v0.5) | 3 | 14min | 5min |
-| 11 | 3 | - | - |
 
 **Recent Trend:**
 
@@ -122,7 +119,7 @@ None yet.
 - ⚠️ [v0.2] An unrelated, pre-existing uncommitted fix to `BusDataRepository.ts` (dedupe `initialize()`/`refreshData()` load paths) was swept into the v0.2 execution history by the automated code-review-fix pipeline (commit `b52c130`) — correct fix, but out of Phase 3/4 scope and not explicitly approved before landing. Flagged to the user; left in place.
 - ⚠️ [Phase 6, v0.3] `FavoritesController.unfavorite` doesn't validate `entityId` the way `favorite` does, and `favorite`'s `entityId` is trim-validated but the untrimmed value is what's persisted/looked up — both whitespace-padded-id edge cases (WR-01/WR-03, `.planning/milestones/v0.3-phases/06-favorites-routes-stops/06-REVIEW.md`). Non-blocking, doesn't violate any FAV-01..05/DEVICE-01 requirement.
 - ⚠️ [Phase 7, v0.3] `RecentsController.resolveDeviceId` unsafely casts the device-id header to `string` with no in-controller guard; its `NotFoundError`→404 branch is unreachable; device-id header parsing is duplicated across 4 files; the recents cap (`5`) is a magic number in a SQL string; `resolveEntity` is duplicated verbatim between `RecentsService`/`FavoritesService` (WR-02/WR-03/IN-01/IN-02/IN-03, `.planning/milestones/v0.3-phases/07-recents-routes-stops/07-REVIEW.md`). Non-blocking, doesn't violate any RECENT-01..06 requirement.
-- ⚠️ [Phase 8, v0.4 — STILL OPEN after Phase 9] The confirmed live DASH alert payload (G-05-5) includes `deletedAt`/`deletedBy` fields that `ServiceAlertService`/`ServiceAlertRepository` currently ignore entirely. If the DASH admin tool soft-deletes alerts instead of removing them from the feed, a deleted-but-still-time-active alert could still surface via `getActiveAlerts()` — and Phase 9 now exposes that data publicly on route/stop responses without addressing it. Was flagged as "consider before Phase 9 exposes alerts publicly" but not picked up during Phase 9 planning/execution. Worth a follow-up before/early in the next milestone. Phase 11 (NEAR-06) will expose alerts on one more endpoint.
+- ⚠️ [Phase 8, v0.4 — STILL OPEN after Phase 9] The confirmed live DASH alert payload (G-05-5) includes `deletedAt`/`deletedBy` fields that `ServiceAlertService`/`ServiceAlertRepository` currently ignore entirely. If the DASH admin tool soft-deletes alerts instead of removing them from the feed, a deleted-but-still-time-active alert could still surface via `getActiveAlerts()` — and Phase 9 now exposes that data publicly on route/stop responses without addressing it. Was flagged as "consider before Phase 9 exposes alerts publicly" but not picked up during Phase 9 planning/execution. Worth a follow-up before/early in the next milestone. Phase 11 (NEAR-06) now exposes alerts on one more endpoint (`/predictions/nearby`).
 - ⚠️ [Phase 9] `RouteWithAlerts` (`BusRoute & { alerts }`) is built via object spread over a `BusRoute` class instance, losing its prototype methods even though the static type doesn't reflect that (WR-01, `09-REVIEW.md`). No live call site hits it today.
 - ⚠️ [Phase 9] `ServiceAlertRepository.isAlertActive`'s date-boundary checks fail open on a malformed `activePeriod` date string rather than excluding/logging it (WR-02, `09-REVIEW.md`).
 - ⚠️ [Phase 10] CR-02's fix (dropping vehicles with malformed `loc.time` instead of crashing the request) has no committed regression test — production code is correct and independently spot-checked by both the code fixer and the phase verifier, but a future refactor could silently reintroduce the crash with nothing to catch it. Flagged as an info-level gap in `10-VERIFICATION.md`; recommend adding the 3 spot-check cases to the committed `VehicleService.test.ts` suite.
@@ -141,6 +138,9 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
+| seeds | SEED-001-service-alerts-per-route | dormant | 2026-09-24 | v0.5 |
+| seeds | SEED-002-schedule-adherence | dormant | 2026-09-24 | v0.5 |
+| verification_override | 11-nearby-stop-predictions/11-VERIFICATION.md | passed (flagged stale: REQUIREMENTS.md checkboxes edited after verification; no code change) | 2026-09-24 | v0.5 |
 | Requirement | NEAR-10: Live SSE stream of nearby-location predictions | Deferred (future) | Requirements definition | v0.5 |
 | Requirement | NEAR-11: Optional `route` filter on nearby predictions | Deferred (future) | Requirements definition | v0.5 |
 | Requirement | LIVE-06: Bidirectional WebSocket support for switching subscribed stop without reconnecting | Deferred to v2 | Roadmap creation | v0.2 |
@@ -149,9 +149,9 @@ Items acknowledged and deferred at milestone close, most recent first:
 ## Session Continuity
 
 Last session: 2026-09-24
-Stopped at: Phase 11 complete (UAT 3/3 passed, 16/16 threats closed) — v0.5 milestone ready to close
+Stopped at: v0.5 milestone closed (override_closeout: audit skipped, Phase 11 verification override, 2 seeds acknowledged)
 Resume file: None
 
 ## Operator Next Steps
 
-- Close the milestone with /gsd-complete-milestone v0.5
+- Start the next milestone with /gsd-new-milestone

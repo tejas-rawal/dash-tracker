@@ -2,7 +2,7 @@
 
 ## What This Is
 
-dash-tracker is a Node.js/Express REST API that proxies and structures data from the DASH public transit API (goswift.ly), exposing bus routes, stop discovery, arrival predictions, active service alerts, and anonymous device-scoped favorites/recents — via both REST and a live Server-Sent Events feed — through a layered architecture (routes → controllers → services → repositories). v0.1 shipped a dev-tooling cleanup (Biome-only lint/format); v0.2 shipped the first real feature set (stop discovery + live SSE predictions); v0.3 added SQLite-backed favorites (routes and stops, no cap) and auto-tracked recents (last 5 per device), both scoped by an anonymous `X-Device-Id` header with no auth system; v0.4 shipped GTFS-RT service alerts, embedded directly into route and stop responses so riders can see when what they're looking at is actually disrupted.
+dash-tracker is a Node.js/Express REST API that proxies and structures data from the DASH public transit API (goswift.ly), exposing bus routes, stop discovery, arrival predictions, active service alerts, and anonymous device-scoped favorites/recents — via both REST and a live Server-Sent Events feed — through a layered architecture (routes → controllers → services → repositories). v0.1 shipped a dev-tooling cleanup (Biome-only lint/format); v0.2 shipped the first real feature set (stop discovery + live SSE predictions); v0.3 added SQLite-backed favorites (routes and stops, no cap) and auto-tracked recents (last 5 per device), both scoped by an anonymous `X-Device-Id` header with no auth system; v0.4 shipped GTFS-RT service alerts, embedded directly into route and stop responses so riders can see when what they're looking at is actually disrupted; Phase 10 (standalone) hardened a live vehicle-positions endpoint; v0.5 added location-based live predictions — one call returns arrivals for every stop around a rider.
 
 ## Core Value
 
@@ -10,13 +10,18 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 
 ## Current State
 
-**Shipped:** v0.4 Service Alerts (2026-09-08) — riders now see active service alerts (detours, disruptions, stop closures) embedded directly in route (`/routes/all`, `/routes/:shortName`) and stop (`/routes/:shortName/stops`, `/stops/nearby`) responses, refreshed on a dedicated 5-minute background poll independent of the 30s prediction poll. Four milestones shipped to date (v0.1 tooling cleanup, v0.2 stop discovery + live SSE predictions, v0.3 favorites/recents, v0.4 service alerts).
+**Shipped:** v0.5 Nearby Stop Predictions (2026-09-24). `GET /api/v1/predictions/nearby?lat&lng&radius&number` returns live arrivals for every stop around a rider from one uncached DASH `predictions-near-location` call: stops nearest-first with distance (miles), predictions grouped route → destination, embedded active alerts, and a top-level `generatedAt`. Query params are parsed strictly (400, never clamped; radius ≤ 1mi, number ≤ 10), upstream failures map to 502, and malformed upstream entries are dropped with one warn. Live UAT passed against the real DASH API. Five milestones shipped to date (v0.1 tooling cleanup, v0.2 stop discovery + live SSE predictions, v0.3 favorites/recents, v0.4 service alerts, v0.5 nearby predictions), plus standalone Phase 10 (vehicle positions).
 
-**v0.5 Phase 11 complete (2026-09-24):** `GET /api/v1/predictions/nearby` shipped — one live upstream `predictions-near-location` call per request, stops nearest-first with distance (miles), route/destination predictions and embedded active alerts. Strict query parsing (blank/array/object/out-of-range → 400, radius ≤ 1mi, number ≤ 10), malformed upstream bodies → 502, malformed entries/elements dropped with one warn. Live UAT passed against the real DASH API (stop-ID space matches `BusStop.id`; stop-scoped alert embedded on live data; client abort mid-flight is clean). 0 open security threats (16/16 closed, see `11-SECURITY.md`).
+## Next Milestone Goals
 
-**Since v0.4:** Phase 10 (Solidify vehicle position work, completed 2026-09-22) hardened the `GET /api/v1/vehicles` endpoint that had landed as a quick task (260915-fc8) without discussion/research/plan-checking — corrected `DashVehicle`/`VehiclePosition` to match DASH's real nested `loc` payload (verified against a live SFMTA response), added repository-backed 404 route validation, and fixed two code-review-caught bugs in the malformed-coordinate safety filter. Not part of a new milestone — a standalone backlog item promoted from the v0.4 blockers list.
+Not yet defined — start with `/gsd-new-milestone`. Candidates on file:
+- NEAR-10 / NEAR-11: live SSE stream and `route` filter for nearby predictions (deferred from v0.5)
+- SEED-001 (service alerts per route) and SEED-002 (schedule adherence) — dormant seeds, acknowledged at v0.5 close
+- v0.5 tech debt: upstream axios call has no timeout (WR-02), display-field type checks in the nearby entry guard (WR-01)
+- The Expo/React Native frontend (long-planned monorepo milestone)
 
-## Current Milestone: v0.5 Nearby Stop Predictions
+<details>
+<summary>Archived: v0.5 Nearby Stop Predictions milestone goal (shipped 2026-09-24)</summary>
 
 **Goal:** A rider can send their location and get live arrival predictions for every stop around them in one call, backed by DASH/Swiftly's `predictions-near-location` real-time endpoint.
 
@@ -27,8 +32,10 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 - Input validation (400), upstream failure → 502, following routes → controller → service → repository with factory DI
 - Existing `GET /api/v1/stops/nearby` (local haversine, no upstream call) stays unchanged
 
+</details>
+
 <details>
-<summary>v0.4 Service Alerts — original milestone goal (for reference)</summary>
+<summary>Archived: v0.4 Service Alerts milestone goal (shipped 2026-09-08)</summary>
 
 **Goal:** Surface DASH/Swiftly's GTFS-RT service alerts (detours, disruptions, stop closures) so riders can see when a route or stop is affected, instead of only seeing an ETA for a bus that isn't actually coming.
 
@@ -80,10 +87,12 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 - ✓ Each nearby stop includes distance (miles), predictions grouped by route/destination, and active service alerts — v0.5 Phase 11
 - ✓ Response carries a `generatedAt` freshness timestamp — v0.5 Phase 11
 - ✓ Invalid input returns 400; upstream failure returns 502 — v0.5 Phase 11
+- ✓ Optional `radius` (miles → Swiftly `meters`, ≤ 1mi) and `number` (1..10) on nearby predictions — v0.5 Phase 11
+- ✓ Malformed upstream nearby entries dropped (down to each prediction element) instead of failing the request — v0.5 Phase 11
 
 ### Active
 
-(none — v0.5 requirements all validated; next milestone not yet defined)
+(none — all v0.5 requirements validated; define the next milestone with `/gsd-new-milestone`)
 
 ### Out of Scope
 
@@ -119,6 +128,8 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 - v0.4 originates from a planted seed (SEED-001) captured in a prior session, itself from research over the Swiftly API docs cross-checked against the DASH real-time API already integrated here; this worktree treated v0.4 as the next milestone after v0.2 independent of the then-unmerged v0.3 (Favorited & Recent Routes) branch — v0.4's phases were renumbered from 5-6 to 8-9 when both branches were merged into `main`, to keep phase numbering continuous
 - Shipped v0.4 Phase 8 (2026-09-04): `ServiceAlertService`/`ServiceAlertRepository`/`ServiceAlertPollService` ingest GTFS-RT service alerts from DASH/Swiftly's `gtfs-rt-alerts/v2?format=json` endpoint on a dedicated 5-minute poll, independent of the 30s prediction poll; alerts are filtered to only the currently-active window in-memory. Took 6 gap-closure rounds to reach the real live payload shape — the endpoint is a flat, custom Swiftly/Alexandria JSON format (bare top-level array, camelCase fields, ISO-8601 dates), not the nested GTFS-RT-protobuf-derived `{entities:[...]}` envelope with `{translation:[...]}` wrappers that early rounds assumed from an unreliable auto-generated API-doc example. Ingestion-only phase — no HTTP surface yet, wired into responses in Phase 9. 255/255 tests pass, `bun run build` clean, 0 open security threats (12/12 closed, see `08-SECURITY.md`)
 - Shipped v0.4 Phase 9 (2026-09-08), completing the v0.4 milestone: alerts embedded onto `GET /api/v1/routes/all`, `/routes/:shortName`, `/routes/:shortName/stops`, and `/stops/nearby` via a new trimmed `ServiceAlertSummary` response type and `ServiceAlertRepository.getActiveAlertsForRoute`/`getActiveAlertsForStop`, wired into `BusRouteService`/`StopService` via factory-DI. ALRT-09 (predictions) was descoped mid-phase to v2 — a route/stop's own response already carries its alerts, making a predictions-side duplicate redundant. 283/283 tests pass, 98% coverage, 0 open security threats (6/6 closed, see `09-SECURITY.md`). Code review surfaced 2 non-blocking warnings carried forward as tech debt (see Constraints/tech-debt note below). Human UAT confirmed the atomic Map-swap concurrency reasoning for the 5-minute alert-refresh poll.
+- Shipped v0.5 (2026-09-24), one phase (Phase 11, 3 plans): `NearbyPredictionService`/`NearbyPredictionController` plus a shared `predictionMapping` module reused by `PredictionService`. The live `predictions-near-location` shape was captured before the `Dash*` types were locked (applying the Phase 8 lesson). The first verification found a gap (CR-01: a null prediction element returned 500 for every stop), which gap-closure plan 11-03 fixed. 520/520 tests, 98.3% statements / 93.7% branches, 0 open security threats (16/16 closed). Live UAT confirmed the nearby stop IDs share the `BusStop.id` space, so alert embedding works on live data.
+- Known tech debt (v0.5 Phase 11, see `.planning/milestones/v0.5-phases/11-nearby-stop-predictions/11-REVIEW.md`): WR-01, the nearby entry guard doesn't type-check display fields (`stopName`, `routeShortName`, `headsign`, …) or `agencyKey`, so an entry missing `stopName` is served with no `name` key; WR-02, the shared axios instance has no timeout, so a blackholed upstream leaves nearby requests pending; WR-03, one malformed element drops its whole entry, and if that is a stop's only entry, the stop's locally sourced alerts go with it; IN-01..IN-04, minor cleanup and test gaps
 
 ## Constraints
 
@@ -176,4 +187,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-24 after Phase 11*
+*Last updated: 2026-09-24 after v0.5 milestone*
