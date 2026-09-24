@@ -603,6 +603,53 @@ describe("GET /api/v1/predictions/nearby", () => {
         expect((response.body.data.stops as NearbyStopBody[]).map((stop) => stop.id)).toEqual(["548", "561", "949"]);
     });
 
+    it.each([
+        { label: "null", element: null },
+        { label: "a string", element: "x" },
+    ])(
+        "keeps the valid stops and serves no incomplete prediction when a prediction element is $label",
+        async ({ element }) => {
+            // Arrange
+            const body = makeLiveNearbyPredictionsResponse();
+            body.data.predictionsData.push({
+                ...body.data.predictionsData[2],
+                routeShortName: "31",
+                routeName: "31 - KING",
+                routeId: "31",
+                destinations: [{ directionId: "1", headsign: "Braddock Road Station", predictions: [element] }],
+            });
+            getSpy.mockResolvedValue({ data: body });
+
+            // Act
+            const response = await request(app).get(nearbyUrl);
+
+            // Assert
+            expect(response.status).toBe(200);
+            const stops = response.body.data.stops as NearbyStopBody[];
+            expect(stops.map((stop) => stop.id)).toEqual(["548", "561", "949"]);
+            expect(stops.find((stop) => stop.id === "561")?.routes.map((route) => route.routeShortName)).toEqual([
+                "30",
+            ]);
+            for (const stop of stops) {
+                for (const route of stop.routes) {
+                    for (const destination of route.destinations) {
+                        for (const prediction of destination.predictions) {
+                            expect(Object.keys(prediction).sort()).toEqual([
+                                "min",
+                                "sec",
+                                "time",
+                                "tripId",
+                                "vehicleId",
+                            ]);
+                        }
+                    }
+                }
+            }
+            expect(JSON.stringify(response.body)).not.toContain("Cannot read properties");
+            expect(getSpy).toHaveBeenCalledTimes(1);
+        },
+    );
+
     it("forwards radius=0.25 as meters=403 and number=3 upstream", async () => {
         // Arrange
         getSpy.mockResolvedValue({ data: makeLiveNearbyPredictionsResponse() });
