@@ -69,29 +69,29 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| UPST-01 | — | Pending |
-| UPST-02 | — | Pending |
-| DATA-01 | — | Pending |
-| DATA-02 | — | Pending |
-| DATA-03 | — | Pending |
-| BOOT-01 | — | Pending |
-| BOOT-02 | — | Pending |
-| BOOT-03 | — | Pending |
-| ERR-01 | — | Pending |
-| ERR-02 | — | Pending |
-| HLTH-01 | — | Pending |
-| HLTH-02 | — | Pending |
-| RATE-01 | — | Pending |
-| RATE-02 | — | Pending |
-| ALRT-12 | — | Pending |
-| ALRT-13 | — | Pending |
-| NEAR-12 | — | Pending |
+| UPST-01 | Phase 12 | Pending |
+| UPST-02 | Phase 12 | Pending |
+| DATA-01 | Phase 13 | Pending |
+| DATA-02 | Phase 13 | Pending |
+| DATA-03 | Phase 13 | Pending |
+| BOOT-01 | Phase 13 | Pending |
+| BOOT-02 | Phase 13 | Pending |
+| BOOT-03 | Phase 13 | Pending |
+| ERR-01 | Phase 12 | Pending |
+| ERR-02 | Phase 12 | Pending |
+| HLTH-01 | Phase 14 | Pending |
+| HLTH-02 | Phase 14 | Pending |
+| RATE-01 | Phase 14 | Pending |
+| RATE-02 | Phase 14 | Pending |
+| ALRT-12 | Phase 15 | Pending |
+| ALRT-13 | Phase 15 | Pending |
+| NEAR-12 | Phase 15 | Pending |
 
 **Coverage:**
 - v0.6 requirements: 17 total
-- Mapped to phases: 0
-- Unmapped: 17 ⚠️
+- Mapped to phases: 17
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-09-28*
-*Last updated: 2026-09-28 after initial definition*
+*Last updated: 2026-09-28 after v0.6 roadmap creation*

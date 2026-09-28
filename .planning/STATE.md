@@ -3,10 +3,10 @@ gsd_state_version: "1.0"
 milestone: v0.6
 milestone_name: Solidifying the backend
 status: planning
-last_updated: "2026-09-28T19:12:57.615Z"
+last_updated: "2026-09-28T20:00:00.000Z"
 last_activity: 2026-09-28
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,17 +17,19 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-24)
+See: .planning/PROJECT.md (updated 2026-09-28)
 
 **Core value:** Riders can always see accurate, near-real-time arrival predictions for their stop.
-**Current focus:** Planning next milestone (v0.5 shipped 2026-09-24)
+**Current focus:** v0.6 Solidifying the backend — Phase 12: Bounded Upstream Calls & Error Safety Nets
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 12 of 12-15 (Bounded Upstream Calls & Error Safety Nets)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-09-28 — Milestone v0.6 started
+Status: Ready to plan (roadmap created)
+Last activity: 2026-09-28 — v0.6 roadmap created (Phases 12-15, 17/17 requirements mapped)
+
+Progress (v0.6): [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -77,6 +79,8 @@ Last activity: 2026-09-28 — Milestone v0.6 started
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [v0.6 roadmap] v0.6 is 4 phases (12-15), ordered reliability → operational basics → tech debt: 12 bounded upstream calls + error safety nets (UPST, ERR); 13 resilient route/stop data lifecycle (BOOT, DATA); 14 health + rate limiting (HLTH, RATE); 15 alert/nearby data hygiene (ALRT-12, ALRT-13, NEAR-12)
+- [v0.6 roadmap] Timeouts come first because boot retry and periodic refresh are only meaningful if each attempt is bounded; readiness (HLTH-02) waits on Phase 13's loaded-state + last-loaded timestamp (DATA-03); Phase 15 is independent and could run earlier if needed
 - [v0.5 roadmap] v0.5 is a single phase (Phase 11) — one endpoint with no internal dependency boundary; coarse granularity. Live-payload confirmation of `predictions-near-location` is a success criterion gating DTO lock-in, not a separate phase
 - [v0.3, Phase 6] Favorites/recents identity is an anonymous device ID sent via `X-Device-Id` header, no auth system — device ID becomes a natural foreign key if real accounts are added later
 - [v0.3, Phase 5/6] Favorites/recents persisted in SQLite behind a new repository, isolated from the existing `BusDataRepository` — zero ops, fits existing repository-pattern architecture
@@ -108,16 +112,16 @@ None yet.
 
 ### Blockers/Concerns
 
-- ⚠️ [Phase 11] `NearbyPredictionController` 500 path echoes `error.message` (WR-02/IN-04, accepted as T-11-16) — shared controller error-response helper across Prediction/Vehicle/Nearby controllers recommended as a follow-up quick task. Shared axios client still has no timeout (T-11-06, pre-existing).
+- ⚠️ [Phase 11] `NearbyPredictionController` 500 path echoes `error.message` (WR-02/IN-04, accepted as T-11-16) — shared controller error-response helper across Prediction/Vehicle/Nearby controllers recommended as a follow-up quick task. Shared axios client still has no timeout (T-11-06, pre-existing) — scheduled: v0.6 Phase 12 (UPST-01).
 - ⚠️ [Phase 1, v0.1] `lint:fix` uses Biome's deprecated `--apply-unsafe` flag (should become `--write --unsafe` per Biome 1.9.4); non-blocking, not yet addressed.
 - ⚠️ [Phase 3] Code review (archived: `.planning/milestones/v0.2-phases/03-stop-discovery/03-REVIEW.md`) flagged 2 non-blocking edge cases: empty-string `lat`/`lng` query params coerce to `0` instead of 400ing in `StopController`; `StopService.getNearbyStops` doesn't lower-bound `count` if called directly (not reachable via the controller today). Neither blocks Phase 3 completion. Relevant to Phase 11: the new nearby-predictions validation must not copy this empty-string coercion bug (NEAR-08).
-- ⚠️ [Phase 4, v0.2] Residual WR-05 from the 3-iteration code-review fix cycle (archived: `.planning/milestones/v0.2-phases/04-live-predictions-via-sse/04-REVIEW.md`): `PredictionStreamController`'s initial SSE write is guarded only against synchronous throws — a mid-write client-socket error surfaces asynchronously via an `'error'` event with no handler anywhere in `src/server`. Non-blocking, doesn't violate any LIVE-01..05 requirement.
+- ⚠️ [Phase 4, v0.2] Residual WR-05 from the 3-iteration code-review fix cycle (archived: `.planning/milestones/v0.2-phases/04-live-predictions-via-sse/04-REVIEW.md`): `PredictionStreamController`'s initial SSE write is guarded only against synchronous throws — a mid-write client-socket error surfaces asynchronously via an `'error'` event with no handler anywhere in `src/server`. Non-blocking, doesn't violate any LIVE-01..05 requirement. Scheduled: v0.6 Phase 12 (ERR-01/ERR-02).
 - ⚠️ [v0.2] An unrelated, pre-existing uncommitted fix to `BusDataRepository.ts` (dedupe `initialize()`/`refreshData()` load paths) was swept into the v0.2 execution history by the automated code-review-fix pipeline (commit `b52c130`) — correct fix, but out of Phase 3/4 scope and not explicitly approved before landing. Flagged to the user; left in place.
 - ⚠️ [Phase 6, v0.3] `FavoritesController.unfavorite` doesn't validate `entityId` the way `favorite` does, and `favorite`'s `entityId` is trim-validated but the untrimmed value is what's persisted/looked up — both whitespace-padded-id edge cases (WR-01/WR-03, `.planning/milestones/v0.3-phases/06-favorites-routes-stops/06-REVIEW.md`). Non-blocking, doesn't violate any FAV-01..05/DEVICE-01 requirement.
 - ⚠️ [Phase 7, v0.3] `RecentsController.resolveDeviceId` unsafely casts the device-id header to `string` with no in-controller guard; its `NotFoundError`→404 branch is unreachable; device-id header parsing is duplicated across 4 files; the recents cap (`5`) is a magic number in a SQL string; `resolveEntity` is duplicated verbatim between `RecentsService`/`FavoritesService` (WR-02/WR-03/IN-01/IN-02/IN-03, `.planning/milestones/v0.3-phases/07-recents-routes-stops/07-REVIEW.md`). Non-blocking, doesn't violate any RECENT-01..06 requirement.
-- ⚠️ [Phase 8, v0.4 — STILL OPEN after Phase 9] The confirmed live DASH alert payload (G-05-5) includes `deletedAt`/`deletedBy` fields that `ServiceAlertService`/`ServiceAlertRepository` currently ignore entirely. If the DASH admin tool soft-deletes alerts instead of removing them from the feed, a deleted-but-still-time-active alert could still surface via `getActiveAlerts()` — and Phase 9 now exposes that data publicly on route/stop responses without addressing it. Was flagged as "consider before Phase 9 exposes alerts publicly" but not picked up during Phase 9 planning/execution. Worth a follow-up before/early in the next milestone. Phase 11 (NEAR-06) now exposes alerts on one more endpoint (`/predictions/nearby`).
+- ⚠️ [Phase 8, v0.4 — STILL OPEN after Phase 9] The confirmed live DASH alert payload (G-05-5) includes `deletedAt`/`deletedBy` fields that `ServiceAlertService`/`ServiceAlertRepository` currently ignore entirely. If the DASH admin tool soft-deletes alerts instead of removing them from the feed, a deleted-but-still-time-active alert could still surface via `getActiveAlerts()` — and Phase 9 now exposes that data publicly on route/stop responses without addressing it. Was flagged as "consider before Phase 9 exposes alerts publicly" but not picked up during Phase 9 planning/execution. Worth a follow-up before/early in the next milestone. Phase 11 (NEAR-06) now exposes alerts on one more endpoint (`/predictions/nearby`). Scheduled: v0.6 Phase 15 (ALRT-12).
 - ⚠️ [Phase 9] `RouteWithAlerts` (`BusRoute & { alerts }`) is built via object spread over a `BusRoute` class instance, losing its prototype methods even though the static type doesn't reflect that (WR-01, `09-REVIEW.md`). No live call site hits it today.
-- ⚠️ [Phase 9] `ServiceAlertRepository.isAlertActive`'s date-boundary checks fail open on a malformed `activePeriod` date string rather than excluding/logging it (WR-02, `09-REVIEW.md`).
+- ⚠️ [Phase 9] `ServiceAlertRepository.isAlertActive`'s date-boundary checks fail open on a malformed `activePeriod` date string rather than excluding/logging it (WR-02, `09-REVIEW.md`). Scheduled: v0.6 Phase 15 (ALRT-13).
 - ⚠️ [Phase 10] CR-02's fix (dropping vehicles with malformed `loc.time` instead of crashing the request) has no committed regression test — production code is correct and independently spot-checked by both the code fixer and the phase verifier, but a future refactor could silently reintroduce the crash with nothing to catch it. Flagged as an info-level gap in `10-VERIFICATION.md`; recommend adding the 3 spot-check cases to the committed `VehicleService.test.ts` suite.
 
 ### Quick Tasks Completed
@@ -144,10 +148,10 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-24
-Stopped at: v0.5 milestone closed (override_closeout: audit skipped, Phase 11 verification override, 2 seeds acknowledged)
+Last session: 2026-09-28
+Stopped at: v0.6 roadmap created (Phases 12-15), awaiting approval
 Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Discuss the first v0.6 phase with /gsd-discuss-phase 12
