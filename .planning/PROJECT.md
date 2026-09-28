@@ -12,13 +12,20 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 
 **Shipped:** v0.5 Nearby Stop Predictions (2026-09-24). `GET /api/v1/predictions/nearby?lat&lng&radius&number` returns live arrivals for every stop around a rider from one uncached DASH `predictions-near-location` call: stops nearest-first with distance (miles), predictions grouped route → destination, embedded active alerts, and a top-level `generatedAt`. Query params are parsed strictly (400, never clamped; radius ≤ 1mi, number ≤ 10), upstream failures map to 502, and malformed upstream entries are dropped with one warn. Live UAT passed against the real DASH API. Five milestones shipped to date (v0.1 tooling cleanup, v0.2 stop discovery + live SSE predictions, v0.3 favorites/recents, v0.4 service alerts, v0.5 nearby predictions), plus standalone Phase 10 (vehicle positions).
 
-## Next Milestone Goals
+## Current Milestone: v0.6 Solidifying the backend
 
-Not yet defined — start with `/gsd-new-milestone`. Candidates on file:
-- NEAR-10 / NEAR-11: live SSE stream and `route` filter for nearby predictions (deferred from v0.5)
-- SEED-001 (service alerts per route) and SEED-002 (schedule adherence) — dormant seeds, acknowledged at v0.5 close
-- v0.5 tech debt: upstream axios call has no timeout (WR-02), display-field type checks in the nearby entry guard (WR-01)
-- The Expo/React Native frontend (long-planned monorepo milestone)
+**Goal:** The server stays up, stays current, and stays responsive when DASH is slow, down, or changing — and can tell a host or load balancer whether it is healthy.
+
+**Target features:**
+- Timeout on the shared DASH axios client — no request or startup load can hang indefinitely (closes v0.5 WR-02)
+- Periodic route/stop refresh poll loop driving `BusDataRepository.refreshData()`; a failed refresh keeps serving last-good data
+- Resilient startup — listen immediately, retry the route/stop load with backoff in the background, data endpoints 503 until ready
+- SSE `res.on("error")` handling with subscriber cleanup, plus a process-level `unhandledRejection` handler (closes v0.2 WR-05)
+- Liveness + readiness endpoints (readiness = route/stop data loaded and not stale, with data age)
+- Per-IP rate limiting (429) on the live-upstream endpoints: nearby predictions, predictions, vehicles
+- Carried-forward tech debt: filter soft-deleted (`deletedAt`) alerts, stop `isAlertActive` failing open on malformed dates (Phase 9 WR-02), type-check display fields in the nearby entry guard (v0.5 WR-01)
+
+**Still on file for later:** NEAR-10/NEAR-11 (nearby SSE + route filter), SEED-002 (schedule adherence), the Expo/React Native frontend.
 
 <details>
 <summary>Archived: v0.5 Nearby Stop Predictions milestone goal (shipped 2026-09-24)</summary>
@@ -92,7 +99,15 @@ Not yet defined — start with `/gsd-new-milestone`. Candidates on file:
 
 ### Active
 
-(none — all v0.5 requirements validated; define the next milestone with `/gsd-new-milestone`)
+- [ ] DASH upstream calls time out instead of hanging (requests and startup load)
+- [ ] Route/stop data refreshes periodically; failed refreshes keep last-good data
+- [ ] Server starts listening even when DASH is down at boot, and becomes ready once the load succeeds
+- [ ] SSE connection errors and unhandled promise rejections are handled and logged
+- [ ] Liveness and readiness endpoints expose process health and data freshness
+- [ ] Live-upstream endpoints are rate-limited per client IP
+- [ ] Alert and nearby-entry tech debt closed (deletedAt filter, fail-open dates, display-field guard)
+
+See `.planning/REQUIREMENTS.md` for REQ-IDs.
 
 ### Out of Scope
 
@@ -187,4 +202,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-24 after v0.5 milestone*
+*Last updated: 2026-09-28 after starting v0.6 milestone*

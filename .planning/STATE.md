@@ -1,19 +1,16 @@
 ---
 gsd_state_version: "1.0"
-milestone: v0.5
-status: "v0.5 shipped — PR #15"
-stopped_at: v0.5 milestone archived and tagged
-last_updated: "2026-09-24T18:09:18.728Z"
-last_activity: 2026-09-24
-state_head: 6d9791adbfac1e24a713d99fc346533b85bc05d4
+milestone: v0.6
+milestone_name: Solidifying the backend
+status: planning
+last_updated: "2026-09-28T19:12:57.615Z"
+last_activity: 2026-09-28
 progress:
-  total_phases: 2
-  completed_phases: 11
-  total_plans: 3
-  completed_plans: 3
-  percent: 100
-milestone_name: Nearby Stop Predictions
-current_phase: 11
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -27,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-09-24)
 
 ## Current Position
 
-Phase: Milestone v0.5 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: v0.5 shipped — PR #15
-Last activity: 2026-09-24
+Status: Defining requirements
+Last activity: 2026-09-28 — Milestone v0.6 started
 
 ## Performance Metrics
 
