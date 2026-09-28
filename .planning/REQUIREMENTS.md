@@ -1,0 +1,97 @@
+# Requirements: dash-tracker
+
+**Defined:** 2026-09-28
+**Core Value:** Riders can always see accurate, near-real-time arrival predictions for their stop.
+
+## v0.6 Requirements
+
+Milestone v0.6 — Solidifying the backend. Reliability first, then operational basics, then carried-forward tech debt.
+
+### Upstream Resilience
+
+- [ ] **UPST-01**: Every DASH call through the shared axios client (`src/server/config/axios.ts`) fails with a timeout error after a bounded, env-configurable duration instead of hanging indefinitely (closes v0.5 WR-02)
+- [ ] **UPST-02**: A timed-out live request (predictions, nearby predictions, vehicles) returns 502 via the existing `UpstreamApiError` mapping
+
+### Data Freshness
+
+- [ ] **DATA-01**: Route/stop data is refreshed from DASH on a background interval for as long as the server runs (drives the currently-uncalled `BusDataRepository.refreshData()`)
+- [ ] **DATA-02**: A failed refresh is logged and the server keeps serving the last successfully loaded route/stop data
+- [ ] **DATA-03**: The repository records when route/stop data was last successfully loaded, so readiness can report it
+
+### Startup
+
+- [ ] **BOOT-01**: The server starts listening even when DASH is unreachable at boot
+- [ ] **BOOT-02**: The initial route/stop load retries with backoff in the background until it succeeds
+- [ ] **BOOT-03**: Until the first successful load, endpoints that depend on route/stop data return 503 (not 500)
+
+### Error Handling
+
+- [ ] **ERR-01**: An error on an SSE response is logged and removes that subscriber, with the same cleanup a client disconnect gets (closes v0.2 WR-05, SSE half)
+- [ ] **ERR-02**: A process-level `unhandledRejection` handler logs the rejection instead of leaving it unhandled (closes v0.2 WR-05, process half)
+
+### Health
+
+- [ ] **HLTH-01**: A liveness endpoint returns 200 whenever the process is up, without touching DASH or data state
+- [ ] **HLTH-02**: A readiness endpoint returns 200 when route/stop data is loaded and fresher than a staleness threshold, and 503 otherwise, reporting the data's age in both cases
+
+### Rate Limiting
+
+- [ ] **RATE-01**: Live-upstream endpoints (`/predictions`, `/predictions/nearby`, `/vehicles`) are rate-limited per client IP, returning 429 with a `Retry-After` header when exceeded
+- [ ] **RATE-02**: In-memory endpoints (routes, stops, favorites/recents, health) are not rate-limited
+
+### Tech Debt (carried forward)
+
+- [ ] **ALRT-12**: Alerts carrying a `deletedAt` value are never surfaced on route, stop, or nearby-prediction responses
+- [ ] **ALRT-13**: An alert with a malformed `activePeriod` date is excluded and logged rather than treated as active (Phase 9 WR-02)
+- [ ] **NEAR-12**: The nearby-prediction entry guard drops entries whose display fields (route/stop/destination names and IDs, `agencyKey`) are missing or mistyped (v0.5 WR-01)
+
+## Future Requirements
+
+Deferred. Tracked but not in the current roadmap.
+
+- **NEAR-10**: Live SSE stream for nearby-location predictions (deferred from v0.5)
+- **NEAR-11**: `route` filter on nearby predictions (deferred from v0.5)
+- **UPST-03**: Short-TTL caching / in-flight coalescing of identical upstream calls, so many clients asking about the same stop share one DASH call
+- **SEED-002**: Schedule adherence / "how late is this bus"
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| Distributed / shared-store rate limiting (e.g. Redis) | Single-process deployment; in-memory per-IP limiting is sufficient |
+| Metrics / APM export (Prometheus, OpenTelemetry) | Health + readiness covers the host/load-balancer need for this milestone |
+| Upstream response caching or request coalescing | Chosen scope is per-IP limiting only; tracked as UPST-03 |
+| Exiting the process when DASH is down at boot | Replaced by listen-immediately + background retry with readiness gating |
+
+## Traceability
+
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| UPST-01 | — | Pending |
+| UPST-02 | — | Pending |
+| DATA-01 | — | Pending |
+| DATA-02 | — | Pending |
+| DATA-03 | — | Pending |
+| BOOT-01 | — | Pending |
+| BOOT-02 | — | Pending |
+| BOOT-03 | — | Pending |
+| ERR-01 | — | Pending |
+| ERR-02 | — | Pending |
+| HLTH-01 | — | Pending |
+| HLTH-02 | — | Pending |
+| RATE-01 | — | Pending |
+| RATE-02 | — | Pending |
+| ALRT-12 | — | Pending |
+| ALRT-13 | — | Pending |
+| NEAR-12 | — | Pending |
+
+**Coverage:**
+- v0.6 requirements: 17 total
+- Mapped to phases: 0
+- Unmapped: 17 ⚠️
+
+---
+*Requirements defined: 2026-09-28*
+*Last updated: 2026-09-28 after initial definition*
