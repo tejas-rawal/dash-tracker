@@ -65,7 +65,7 @@ export function createPredictionStreamController(streamService: PredictionStream
         // The response, not the request, tracks the connection: the request closes as soon as its body is
         // consumed (express.json() reads any GET body), while the client may still be listening.
         res.on("close", cleanup);
-        res.on("error", (error: Error): void => {
+        res.on("error", (error: unknown): void => {
             const message = error instanceof Error ? error.message : "Unknown error";
             logger.warn(`SSE response error for stop ${stop}: ${message}`);
             cleanup();

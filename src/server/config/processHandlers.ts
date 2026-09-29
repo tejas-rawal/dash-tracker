@@ -20,7 +20,7 @@ export function registerProcessErrorHandlers(): void {
 
     // A synchronous throw that escapes leaves unknown state, so the process still exits. The only change
     // from Node's default is that the crash is logged through Winston instead of a raw stderr dump (D-11).
-    process.on("uncaughtException", (error: Error): void => {
+    process.on("uncaughtException", (error: unknown): void => {
         logger.error(`Uncaught exception: ${describeReason(error)}`);
         exitAfterLogFlush(1);
     });
