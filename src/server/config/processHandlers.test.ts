@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./logger", () => ({
-    logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+    logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), once: vi.fn(), end: vi.fn() },
 }));
 
 import { logger } from "./logger";
@@ -27,6 +27,9 @@ describe("registerProcessErrorHandlers", () => {
     });
 
     afterEach(() => {
+        // The exit fallback timer must never fire for real: once process.exit is restored it would kill the worker.
+        vi.clearAllTimers();
+        vi.useRealTimers();
         vi.restoreAllMocks();
     });
 
@@ -54,9 +57,17 @@ describe("registerProcessErrorHandlers", () => {
         expect([...listeners.keys()].sort()).toEqual(["uncaughtException", "unhandledRejection"]);
     });
 
-    it("logs an uncaught exception through Winston before exiting with code 1", () => {
+    it("logs an uncaught exception, then exits with code 1 only after Winston and stdout have flushed", () => {
         // Arrange
+        vi.useFakeTimers();
         const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => undefined) as never);
+        const writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(((
+            _chunk: unknown,
+            callback: () => void,
+        ) => {
+            callback();
+            return true;
+        }) as never);
         const listeners = captureProcessListeners();
         const onUncaughtException = listeners.get("uncaughtException") as (error: Error) => void;
 
@@ -67,11 +78,35 @@ describe("registerProcessErrorHandlers", () => {
         expect(logger.error).toHaveBeenCalledTimes(1);
         const [message] = vi.mocked(logger.error).mock.calls[0] as unknown[];
         expect(String(message).startsWith("Uncaught exception: Error: kaboom")).toBe(true);
+        expect(logger.end).toHaveBeenCalledTimes(1);
+        expect(exitSpy).not.toHaveBeenCalled();
+
+        const [event, onFinish] = vi.mocked(logger.once).mock.calls[0] as unknown as [string, () => void];
+        expect(event).toBe("finish");
+        onFinish();
+
+        expect(writeSpy).toHaveBeenCalledTimes(1);
         expect(exitSpy).toHaveBeenCalledTimes(1);
         expect(exitSpy).toHaveBeenCalledWith(1);
-        const logOrder = vi.mocked(logger.error).mock.invocationCallOrder[0] as number;
-        const exitOrder = exitSpy.mock.invocationCallOrder[0] as number;
-        expect(logOrder).toBeLessThan(exitOrder);
+    });
+
+    it("exits with code 1 after the fallback delay when the logger never finishes flushing", () => {
+        // Arrange
+        vi.useFakeTimers();
+        const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => undefined) as never);
+        const listeners = captureProcessListeners();
+        const onUncaughtException = listeners.get("uncaughtException") as (error: Error) => void;
+
+        // Act
+        onUncaughtException(new Error("kaboom"));
+        vi.advanceTimersByTime(999);
+        const exitedEarly = exitSpy.mock.calls.length > 0;
+        vi.advanceTimersByTime(1);
+
+        // Assert
+        expect(exitedEarly).toBe(false);
+        expect(exitSpy).toHaveBeenCalledTimes(1);
+        expect(exitSpy).toHaveBeenCalledWith(1);
     });
 
     it.each<{ label: string; reason: unknown; includes: string; exact: string | null }>([
