@@ -469,6 +469,14 @@ describe("NearbyPredictionService", () => {
                 label: "a non-array predictionsData",
                 body: { success: true, route: "r", data: { agencyKey: "alexandria-dash", predictionsData: {} } },
             },
+            {
+                label: "a body without data.agencyKey",
+                body: { success: true, route: "r", data: { predictionsData: [] } },
+            },
+            {
+                label: "a non-string agencyKey",
+                body: { success: true, route: "r", data: { agencyKey: 42, predictionsData: [] } },
+            },
         ])("rejects with UpstreamApiError for $label", async ({ body }) => {
             // Arrange
             resolveUpstream(body);

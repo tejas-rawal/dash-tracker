@@ -117,7 +117,12 @@ export function createNearbyPredictionService(serviceAlertRepository: ServiceAle
                 "DASH API returned a malformed nearby predictions response (predictionsData is not an array)",
             );
         }
-        return { agencyKey: data.agencyKey as string, predictionsData: data.predictionsData };
+        if (typeof data.agencyKey !== "string") {
+            throw new UpstreamApiError(
+                "DASH API returned a malformed nearby predictions response (agencyKey is not a string)",
+            );
+        }
+        return { agencyKey: data.agencyKey, predictionsData: data.predictionsData };
     }
 
     function filterValidEntries(entries: unknown[]): DashNearbyPredictionData[] {
