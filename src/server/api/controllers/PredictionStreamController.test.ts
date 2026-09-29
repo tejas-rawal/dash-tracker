@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../config", () => ({
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
@@ -8,6 +8,8 @@ vi.mock("../../config", () => ({
 import { logger } from "../../config";
 import { NotFoundError, UpstreamApiError } from "../errors";
 import type { StopPredictionsResponse } from "../models/Prediction";
+import type { PredictionService } from "../services/PredictionService";
+import { createPredictionStreamService } from "../services/PredictionStreamService";
 import { createPredictionStreamController } from "./PredictionStreamController";
 
 const makeMockRes = () => {
@@ -221,6 +223,129 @@ describe("PredictionStreamController", () => {
             expect(logger.warn).toHaveBeenCalledTimes(1);
             expect(logger.warn).toHaveBeenCalledWith("SSE response error for stop stop-1: write EPIPE");
             expect(logger.error).not.toHaveBeenCalled();
+        });
+
+        it("runs the cleanup once when the response errors and the request then closes", async () => {
+            // Arrange
+            const mockStreamService = makeMockStreamService();
+            const unsubscribe = vi.fn();
+            mockStreamService.subscribe.mockResolvedValue({
+                initialPayload: makeStopPredictionsResponse("stop-1"),
+                unsubscribe,
+            });
+            const { getPredictionsStream } = createPredictionStreamController(mockStreamService);
+            const { req, triggerClose } = makeMockReq({ stop: "stop-1" });
+            const res = makeMockRes();
+            await getPredictionsStream(req, res, vi.fn());
+
+            // Act
+            emitResponseError(res, new Error("write EPIPE"));
+            triggerClose();
+
+            // Assert
+            expect(unsubscribe).toHaveBeenCalledTimes(1);
+            expect(res.end).toHaveBeenCalledTimes(1);
+            expect(logger.warn).toHaveBeenCalledTimes(1);
+        });
+
+        it("runs the cleanup once when the request closes and the response then errors", async () => {
+            // Arrange
+            const mockStreamService = makeMockStreamService();
+            const unsubscribe = vi.fn();
+            mockStreamService.subscribe.mockResolvedValue({
+                initialPayload: makeStopPredictionsResponse("stop-1"),
+                unsubscribe,
+            });
+            const { getPredictionsStream } = createPredictionStreamController(mockStreamService);
+            const { req, triggerClose } = makeMockReq({ stop: "stop-1" });
+            const res = makeMockRes();
+            await getPredictionsStream(req, res, vi.fn());
+
+            // Act
+            triggerClose();
+            emitResponseError(res, new Error("write EPIPE"));
+
+            // Assert
+            expect(unsubscribe).toHaveBeenCalledTimes(1);
+            expect(res.end).toHaveBeenCalledTimes(1);
+            expect(logger.warn).toHaveBeenCalledTimes(1);
+            expect(logger.warn).toHaveBeenCalledWith("SSE response error for stop stop-1: write EPIPE");
+        });
+
+        it("unsubscribes without writing headers when the response errors while subscribe is still pending", async () => {
+            // Arrange
+            const mockStreamService = makeMockStreamService();
+            const unsubscribe = vi.fn();
+            let resolveSubscribe: (value: {
+                initialPayload: StopPredictionsResponse;
+                unsubscribe: () => void;
+            }) => void = () => {};
+            mockStreamService.subscribe.mockImplementation(
+                () =>
+                    new Promise((resolve) => {
+                        resolveSubscribe = resolve;
+                    }),
+            );
+            const { getPredictionsStream } = createPredictionStreamController(mockStreamService);
+            const { req } = makeMockReq({ stop: "stop-1" });
+            const res = makeMockRes();
+
+            // Act: start the handler (subscribe pending), error the response, then let subscribe resolve
+            const handlerPromise = getPredictionsStream(req, res, vi.fn());
+            emitResponseError(res, new Error("read ECONNRESET"));
+            resolveSubscribe({ initialPayload: makeStopPredictionsResponse("stop-1"), unsubscribe });
+            await handlerPromise;
+
+            // Assert
+            expect(unsubscribe).toHaveBeenCalledTimes(1);
+            expect(res.writeHead).not.toHaveBeenCalled();
+            expect(res.write).not.toHaveBeenCalled();
+            expect(logger.warn).toHaveBeenCalledTimes(1);
+            expect(logger.warn).toHaveBeenCalledWith("SSE response error for stop stop-1: read ECONNRESET");
+        });
+
+        describe("with the real PredictionStreamService", () => {
+            beforeEach(() => {
+                vi.useFakeTimers();
+            });
+
+            afterEach(() => {
+                vi.useRealTimers();
+            });
+
+            it("keeps streaming to other subscribers on the stop after one subscriber's response errors, and stops polling when the last leaves", async () => {
+                // Arrange
+                const mockPredictionService = {
+                    getPredictionsForStop: vi.fn().mockResolvedValue(makeStopPredictionsResponse("stop-1")),
+                };
+                const { getPredictionsStream } = createPredictionStreamController(
+                    createPredictionStreamService(mockPredictionService as unknown as PredictionService),
+                );
+                const { req: reqA } = makeMockReq({ stop: "stop-1" });
+                const resA = makeMockRes();
+                const { req: reqB, triggerClose: triggerCloseB } = makeMockReq({ stop: "stop-1" });
+                const resB = makeMockRes();
+                await getPredictionsStream(reqA, resA, vi.fn());
+                await getPredictionsStream(reqB, resB, vi.fn());
+
+                // Act 1: subscriber A's socket breaks, then one poll tick elapses
+                emitResponseError(resA, new Error("write EPIPE"));
+                await vi.advanceTimersByTimeAsync(30_000);
+
+                // Assert 1: B still receives the tick, A received only its initial frame
+                expect(mockPredictionService.getPredictionsForStop).toHaveBeenCalledTimes(2);
+                expect(resB.write).toHaveBeenCalledTimes(2);
+                expect(resA.write).toHaveBeenCalledTimes(1);
+                expect(resA.end).toHaveBeenCalledTimes(1);
+
+                // Act 2: the last subscriber leaves, then another poll tick elapses
+                triggerCloseB();
+                await vi.advanceTimersByTimeAsync(30_000);
+
+                // Assert 2: the per-stop poll has stopped
+                expect(mockPredictionService.getPredictionsForStop).toHaveBeenCalledTimes(2);
+                expect(resB.end).toHaveBeenCalledTimes(1);
+            });
         });
     });
 });
