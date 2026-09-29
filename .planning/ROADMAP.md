@@ -90,12 +90,12 @@ See `.planning/milestones/v0.5-ROADMAP.md` for full phase details.
   4. When an SSE response emits an error mid-stream, the error is logged, that subscriber is removed exactly as a client disconnect would remove it (the per-stop poll stops if it was the last subscriber), and other subscribers on the same stop keep receiving updates.
   5. An unhandled promise rejection anywhere in the process is logged through Winston with its reason instead of going unhandled.
 
-**Plans**: 4 plans
+**Plans**: 1/4 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 12-01-PLAN.md — Bounded shared DASH client: `DASH_API_TIMEOUT_MS` (Zod, default 10000), per-request `AbortSignal.timeout` deadline, central message-only `UpstreamApiError` mapping; tracer on `/vehicles` against a blackholed DASH (wave 1)
+- [x] 12-01-PLAN.md — Bounded shared DASH client: `DASH_API_TIMEOUT_MS` (Zod, default 10000), per-request `AbortSignal.timeout` deadline, central message-only `UpstreamApiError` mapping; tracer on `/vehicles` against a blackholed DASH (wave 1)
 - [ ] 12-03-PLAN.md — SSE `res.on("error")` warn + shared idempotent disconnect cleanup in `PredictionStreamController`, multi-subscriber isolation (wave 1)
 - [ ] 12-04-PLAN.md — `registerProcessErrorHandlers()`: `unhandledRejection` logs and stays up, `uncaughtException` logs then exits 1, secret-safe reason logging, registered first in `app.ts` (wave 1)
 
@@ -164,7 +164,7 @@ Phases execute in numeric order: 12 → 13 → 14 → 15
 | 9. Alerts Surfaced on Routes, Stops & Predictions | v0.4 | 2/2 | Complete | 2026-09-08 |
 | 10. Solidify vehicle position work | standalone | 1/1 | Complete | 2026-09-22 |
 | 11. Nearby Stop Predictions | v0.5 | 3/3 | Complete | 2026-09-24 |
-| 12. Bounded Upstream Calls & Error Safety Nets | v0.6 | 0/4 | Planned | - |
+| 12. Bounded Upstream Calls & Error Safety Nets | v0.6 | 1/4 | In Progress|  |
 | 13. Resilient Route/Stop Data Lifecycle | v0.6 | 0/TBD | Not started | - |
 | 14. Health Checks & Rate Limiting | v0.6 | 0/TBD | Not started | - |
 | 15. Alert & Nearby Data Hygiene | v0.6 | 0/TBD | Not started | - |

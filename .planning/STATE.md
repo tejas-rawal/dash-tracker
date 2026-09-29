@@ -3,19 +3,19 @@ gsd_state_version: "1.0"
 milestone: v0.6
 milestone_name: Solidifying the backend
 current_phase: 12
-current_phase_name: bounded-upstream-calls-error-safety-nets
-status: planning
-stopped_at: Phase 12 context gathered
-last_updated: "2026-09-29T14:58:28.026Z"
-last_activity: 2026-09-28
-last_activity_desc: v0.6 roadmap created (Phases 12-15, 17/17 requirements mapped)
-state_head: 8a91098a69d6bedbafa4f7064940c2daac3f5a20
+current_phase_name: Bounded Upstream Calls & Error Safety Nets
+status: executing
+stopped_at: Completed 12-01-PLAN.md
+last_updated: "2026-09-29T15:03:24.710Z"
+last_activity: 2026-09-29
+last_activity_desc: Phase 12 execution started
+state_head: a8353b49903b2b7454a799c3f83ea733a900de42
 progress:
   total_phases: 4
   completed_phases: 11
   total_plans: 4
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 25
 ---
 
 # Project State
@@ -25,14 +25,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-28)
 
 **Core value:** Riders can always see accurate, near-real-time arrival predictions for their stop.
-**Current focus:** v0.6 Solidifying the backend — Phase 12: Bounded Upstream Calls & Error Safety Nets
+**Current focus:** Phase 12 — Bounded Upstream Calls & Error Safety Nets
 
 ## Current Position
 
-Phase: 12 (bounded-upstream-calls-error-safety-nets) — READY TO EXECUTE
-Plan: —
-Status: Ready to plan (roadmap created)
-Last activity: 2026-09-28 — v0.6 roadmap created (Phases 12-15, 17/17 requirements mapped)
+Phase: 12 (Bounded Upstream Calls & Error Safety Nets) — EXECUTING
+Plan: 2 of 4
+Status: Ready to execute
+Last activity: 2026-09-29 — Phase 12 execution started
 
 Progress (v0.6): [░░░░░░░░░░] 0%
 
@@ -76,6 +76,7 @@ Progress (v0.6): [░░░░░░░░░░] 0%
 | Phase 11 P01 | 5min | 2 tasks | 9 files |
 | Phase 11 P02 | 4min | 2 tasks | 3 files |
 | Phase 11 P03 | 5min | 2 tasks | 3 files |
+| Phase 12 P01 | 2min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -110,6 +111,8 @@ Recent decisions affecting current work:
 - [Phase 11]: [Phase 11-02] An empty radius= or number= on /predictions/nearby is provided-but-invalid (400), not a fallback to the default
 - [Phase 11]: [Phase 11-03] Nearby prediction elements are validated in isValidNearbyEntry (finite min/sec/time, string tripId/vehicleId, no coercion); one malformed element drops its whole entry with the existing single warn. Hand-rolled guard kept per D-18 (no Zod)
 - [Phase 11]: [Phase 11-03] WR-02 (500 path echoes raw error.message) deferred to a follow-up quick task extracting one shared controller error-response helper for Prediction/Vehicle/NearbyPrediction controllers (WR-02 + IN-04); T-11-16 accepted low
+- [Phase 12]: [Phase 12-01] DASH deadline is a fresh AbortSignal.timeout(DASH_API_TIMEOUT_MS) per request via an axios request interceptor (no axios idle timeout); axios.isCancel identifies a fired deadline
+- [Phase 12]: [Phase 12-01] One response-error interceptor on the shared DASH client maps every transport failure to a message-only UpstreamApiError ('timed out after {ms}ms' vs 'request failed: {message}'); services need no transport try/catch
 
 ### Pending Todos
 
@@ -153,9 +156,9 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-28T20:06:52.177Z
-Stopped at: Phase 12 context gathered
-Resume file: .planning/phases/12-bounded-upstream-calls-error-safety-nets/12-CONTEXT.md
+Last session: 2026-09-29T15:03:24.685Z
+Stopped at: Completed 12-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
