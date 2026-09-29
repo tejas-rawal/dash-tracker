@@ -1,5 +1,11 @@
 import type { Request, Response } from "express";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("../../config", () => ({
+    logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}));
+
+import { logger } from "../../config";
 import { NotFoundError, UpstreamApiError } from "../errors";
 import type { StopPredictionsResponse } from "../models/Prediction";
 import { createPredictionStreamController } from "./PredictionStreamController";
@@ -11,22 +17,38 @@ const makeMockRes = () => {
         status: vi.fn(),
         json: vi.fn(),
         end: vi.fn(),
+        on: vi.fn(),
     } as unknown as Response;
     (res.status as ReturnType<typeof vi.fn>).mockReturnValue(res);
     return res;
 };
 
+// Fires every listener the controller registered for "error" on the mock response.
+const emitResponseError = (res: Response, error: Error): void => {
+    const calls = (res.on as ReturnType<typeof vi.fn>).mock.calls as [string, (error: Error) => void][];
+    for (const [event, listener] of calls) {
+        if (event === "error") {
+            listener(error);
+        }
+    }
+};
+
 const makeMockReq = (query: Record<string, string> = {}) => {
-    let closeCallback: (() => void) | undefined;
+    const closeCallbacks: (() => void)[] = [];
     const req = {
         query,
         on: vi.fn((event: string, callback: () => void) => {
             if (event === "close") {
-                closeCallback = callback;
+                closeCallbacks.push(callback);
             }
         }),
     } as unknown as Request;
-    return { req, triggerClose: () => closeCallback?.() };
+    const triggerClose = (): void => {
+        for (const callback of closeCallbacks) {
+            callback();
+        }
+    };
+    return { req, triggerClose };
 };
 
 const makeStopPredictionsResponse = (stopId = "stop-1"): StopPredictionsResponse => ({
@@ -44,6 +66,10 @@ const makeMockStreamService = () => ({
 });
 
 describe("PredictionStreamController", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
     describe("getPredictionsStream", () => {
         it("responds with 400 when the stop query parameter is missing and never calls subscribe", async () => {
             // Arrange
@@ -171,6 +197,30 @@ describe("PredictionStreamController", () => {
                 details: "DASH API returned success: false",
             });
             expect(res.writeHead).not.toHaveBeenCalled();
+        });
+
+        it("logs a warning and runs the disconnect cleanup once when the SSE response errors", async () => {
+            // Arrange
+            const mockStreamService = makeMockStreamService();
+            const unsubscribe = vi.fn();
+            mockStreamService.subscribe.mockResolvedValue({
+                initialPayload: makeStopPredictionsResponse("stop-1"),
+                unsubscribe,
+            });
+            const { getPredictionsStream } = createPredictionStreamController(mockStreamService);
+            const { req } = makeMockReq({ stop: "stop-1" });
+            const res = makeMockRes();
+            await getPredictionsStream(req, res, vi.fn());
+
+            // Act
+            emitResponseError(res, new Error("write EPIPE"));
+
+            // Assert
+            expect(unsubscribe).toHaveBeenCalledTimes(1);
+            expect(res.end).toHaveBeenCalledTimes(1);
+            expect(logger.warn).toHaveBeenCalledTimes(1);
+            expect(logger.warn).toHaveBeenCalledWith("SSE response error for stop stop-1: write EPIPE");
+            expect(logger.error).not.toHaveBeenCalled();
         });
     });
 });

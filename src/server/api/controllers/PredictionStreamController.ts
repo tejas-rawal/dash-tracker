@@ -44,9 +44,29 @@ export function createPredictionStreamController(streamService: PredictionStream
             res.write(`event: prediction\ndata: ${JSON.stringify(payload)}\n\n`);
         };
 
-        let closed = false;
-        req.on("close", () => {
-            closed = true;
+        let finished = false;
+        let unsubscribe: (() => void) | undefined = undefined;
+        let cleanedUp = false;
+
+        // One cleanup path for both client disconnect and response socket errors. The guard makes an
+        // error followed by a close (or the reverse) run it only once (D-14). It is registered before
+        // subscribe is awaited so an error before or around writeHead is still caught: an 'error' event
+        // with no listener would be thrown as an uncaught exception and take the process down.
+        const cleanup = (): void => {
+            finished = true;
+            if (cleanedUp || !unsubscribe) {
+                return;
+            }
+            cleanedUp = true;
+            unsubscribe();
+            res.end();
+        };
+
+        req.on("close", cleanup);
+        res.on("error", (error: Error): void => {
+            const message = error instanceof Error ? error.message : "Unknown error";
+            logger.warn(`SSE response error for stop ${stop}: ${message}`);
+            cleanup();
         });
 
         let subscription: { initialPayload: StopPredictionsResponse; unsubscribe: () => void };
@@ -60,10 +80,11 @@ export function createPredictionStreamController(streamService: PredictionStream
             return;
         }
 
-        const { initialPayload, unsubscribe } = subscription;
+        const { initialPayload } = subscription;
+        unsubscribe = subscription.unsubscribe;
 
-        if (closed || req.destroyed) {
-            unsubscribe();
+        if (finished || req.destroyed) {
+            cleanup();
             return;
         }
 
@@ -78,14 +99,8 @@ export function createPredictionStreamController(streamService: PredictionStream
         } catch (writeError: unknown) {
             const message = writeError instanceof Error ? writeError.message : "Unknown error";
             logger.error(`Failed to write initial SSE frame for stop ${stop}: ${message}`);
-            unsubscribe();
-            return;
+            cleanup();
         }
-
-        req.on("close", () => {
-            unsubscribe();
-            res.end();
-        });
     };
 
     return { getPredictionsStream };
