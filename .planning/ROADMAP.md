@@ -90,7 +90,7 @@ See `.planning/milestones/v0.5-ROADMAP.md` for full phase details.
   4. When an SSE response emits an error mid-stream, the error is logged, that subscriber is removed exactly as a client disconnect would remove it (the per-stop poll stops if it was the last subscriber), and other subscribers on the same stop keep receiving updates.
   5. An unhandled promise rejection anywhere in the process is logged through Winston with its reason instead of going unhandled.
 
-**Plans**: 3/4 plans executed
+**Plans**: 4/4 plans executed
 
 Plans:
 **Wave 1**
@@ -101,7 +101,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 12-02-PLAN.md — Remove Nearby's redundant transport wrap (D-07); blackholed-DASH 502s for `/predictions` and `/predictions/nearby`, concurrent requests, startup load and alert poll logged timeouts (wave 2, after 12-01)
+- [x] 12-02-PLAN.md — Remove Nearby's redundant transport wrap (D-07); blackholed-DASH 502s for `/predictions` and `/predictions/nearby`, concurrent requests, startup load and alert poll logged timeouts (wave 2, after 12-01)
 
 ### Phase 13: Resilient Route/Stop Data Lifecycle
 
@@ -164,7 +164,7 @@ Phases execute in numeric order: 12 → 13 → 14 → 15
 | 9. Alerts Surfaced on Routes, Stops & Predictions | v0.4 | 2/2 | Complete | 2026-09-08 |
 | 10. Solidify vehicle position work | standalone | 1/1 | Complete | 2026-09-22 |
 | 11. Nearby Stop Predictions | v0.5 | 3/3 | Complete | 2026-09-24 |
-| 12. Bounded Upstream Calls & Error Safety Nets | v0.6 | 3/4 | In Progress|  |
+| 12. Bounded Upstream Calls & Error Safety Nets | v0.6 | 4/4 | In Progress|  |
 | 13. Resilient Route/Stop Data Lifecycle | v0.6 | 0/TBD | Not started | - |
 | 14. Health Checks & Rate Limiting | v0.6 | 0/TBD | Not started | - |
 | 15. Alert & Nearby Data Hygiene | v0.6 | 0/TBD | Not started | - |

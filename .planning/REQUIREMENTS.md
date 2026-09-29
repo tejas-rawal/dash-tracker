@@ -9,8 +9,8 @@ Milestone v0.6 — Solidifying the backend. Reliability first, then operational 
 
 ### Upstream Resilience
 
-- [ ] **UPST-01**: Every DASH call through the shared axios client (`src/server/config/axios.ts`) fails with a timeout error after a bounded, env-configurable duration instead of hanging indefinitely (closes v0.5 WR-02)
-- [ ] **UPST-02**: A timed-out live request (predictions, nearby predictions, vehicles) returns 502 via the existing `UpstreamApiError` mapping
+- [x] **UPST-01**: Every DASH call through the shared axios client (`src/server/config/axios.ts`) fails with a timeout error after a bounded, env-configurable duration instead of hanging indefinitely (closes v0.5 WR-02)
+- [x] **UPST-02**: A timed-out live request (predictions, nearby predictions, vehicles) returns 502 via the existing `UpstreamApiError` mapping
 
 ### Data Freshness
 
@@ -69,8 +69,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| UPST-01 | Phase 12 | Pending |
-| UPST-02 | Phase 12 | Pending |
+| UPST-01 | Phase 12 | Complete |
+| UPST-02 | Phase 12 | Complete |
 | DATA-01 | Phase 13 | Pending |
 | DATA-02 | Phase 13 | Pending |
 | DATA-03 | Phase 13 | Pending |

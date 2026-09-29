@@ -4,18 +4,18 @@ milestone: v0.6
 milestone_name: Solidifying the backend
 current_phase: 12
 current_phase_name: Bounded Upstream Calls & Error Safety Nets
-status: executing
-stopped_at: Completed 12-04-PLAN.md
-last_updated: "2026-09-29T15:13:17.118Z"
+status: verifying
+stopped_at: Completed 12-02-PLAN.md
+last_updated: "2026-09-29T15:19:30.614Z"
 last_activity: 2026-09-29
 last_activity_desc: Phase 12 execution started
-state_head: af65f6c062414ab74f18b0b9880edd8371788b22
+state_head: 92daac1e1ca58ac6ff912bd63236234481eab334
 progress:
   total_phases: 4
   completed_phases: 11
   total_plans: 4
-  completed_plans: 3
-  percent: 75
+  completed_plans: 4
+  percent: 100
 ---
 
 # Project State
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-09-28)
 
 Phase: 12 (Bounded Upstream Calls & Error Safety Nets) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-29 — Phase 12 execution started
 
 Progress (v0.6): [░░░░░░░░░░] 0%
@@ -79,6 +79,7 @@ Progress (v0.6): [░░░░░░░░░░] 0%
 | Phase 12 P01 | 2min | 2 tasks | 7 files |
 | Phase 12 P03 | 3min | 2 tasks | 2 files |
 | Phase 12 P04 | 3min | 2 tasks | 4 files |
+| Phase 12 P02 | 3min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -118,6 +119,8 @@ Recent decisions affecting current work:
 - [Phase 12]: [Phase 12-03] SSE res 'error' logs warn 'SSE response error for stop <stop>: <message>' (message only) and runs the disconnect cleanup; one guarded cleanup closure serves req close + res error (runs once in either order), registered before subscribe is awaited so a close/error during a pending subscribe is replayed once the subscription exists
 - [Phase 12]: [Phase 12-04] Process error handlers live in src/server/config/processHandlers.ts (registerProcessErrorHandlers), called first in app.ts; unhandledRejection logs and keeps running (D-10), uncaughtException logs then exits 1 (D-11)
 - [Phase 12]: [Phase 12-04] One describeReason formatter (stack ?? message for Error, String(reason) otherwise) passed as the single logger.error argument, so no reason object or DASH_API_KEY is ever serialized (D-12)
+- [Phase 12]: [Phase 12-02] NearbyPredictionService no longer wraps axios rejections (D-07): the shared client's interceptor is the single transport-error wrap, so nearby 502 details are exactly the interceptor's message; content-level UpstreamApiErrors stay
+- [Phase 12]: [Phase 12-02] BusDataRepository.fetchAndProcessData catch/rethrow left unchanged: it already rethrows message-only, and the E2E shows a startup timeout is logged as a Failed to initialize bus data error with the timeout text
 
 ### Pending Todos
 
@@ -161,8 +164,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-29T15:13:17.094Z
-Stopped at: Completed 12-04-PLAN.md
+Last session: 2026-09-29T15:19:25.521Z
+Stopped at: Completed 12-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
