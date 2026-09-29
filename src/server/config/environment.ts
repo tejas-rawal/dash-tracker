@@ -12,6 +12,8 @@ const environmentSchema = z.object({
     // biome-ignore lint/style/useNamingConvention: env vars use SCREAMING_SNAKE_CASE by convention
     DASH_API_KEY: z.string().min(1, "DASH_API_KEY must not be empty"),
     // biome-ignore lint/style/useNamingConvention: env vars use SCREAMING_SNAKE_CASE by convention
+    DASH_API_TIMEOUT_MS: z.coerce.number().int().positive().default(10000),
+    // biome-ignore lint/style/useNamingConvention: env vars use SCREAMING_SNAKE_CASE by convention
     PORT: z.coerce.number().int().positive().default(3000),
     // biome-ignore lint/style/useNamingConvention: env vars use SCREAMING_SNAKE_CASE by convention
     DB_PATH: z.string().min(1).default("data/dash-tracker.sqlite"),
@@ -31,6 +33,7 @@ export const environment = {
         baseUrl: parsed.data.DASH_API_BASE_URL,
         agency: parsed.data.DASH_API_AGENCY,
         apiKey: parsed.data.DASH_API_KEY,
+        timeoutMs: parsed.data.DASH_API_TIMEOUT_MS,
     },
     server: {
         port: parsed.data.PORT,
