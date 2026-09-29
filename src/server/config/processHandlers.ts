@@ -17,4 +17,11 @@ export function registerProcessErrorHandlers(): void {
     process.on("unhandledRejection", (reason: unknown): void => {
         logger.error(`Unhandled promise rejection: ${describeReason(reason)}`);
     });
+
+    // A synchronous throw that escapes leaves unknown state, so the process still exits. The only change
+    // from Node's default is that the crash is logged through Winston instead of a raw stderr dump (D-11).
+    process.on("uncaughtException", (error: Error): void => {
+        logger.error(`Uncaught exception: ${describeReason(error)}`);
+        process.exit(1);
+    });
 }
