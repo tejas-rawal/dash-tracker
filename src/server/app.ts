@@ -3,7 +3,10 @@ import { BusDataRepository, FavoritesRecentsRepository, ServiceAlertRepository }
 import router from "./api/routes";
 import { createServiceAlertPollService } from "./api/services/ServiceAlertPollService";
 import { createServiceAlertService } from "./api/services/ServiceAlertService";
-import { environment, logger } from "./config";
+import { environment, logger, registerProcessErrorHandlers } from "./config";
+
+// Registered before the alert poll and repository init start, so rejections during boot are caught too.
+registerProcessErrorHandlers();
 
 const app = express();
 const port = environment.server.port;
