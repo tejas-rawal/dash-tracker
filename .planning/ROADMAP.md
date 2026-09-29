@@ -70,7 +70,7 @@ See `.planning/milestones/v0.5-ROADMAP.md` for full phase details.
 
 **Milestone Goal:** The server stays up, stays current, and stays responsive when DASH is slow, down, or changing — and can tell a host or load balancer whether it is healthy.
 
-- [ ] **Phase 12: Bounded Upstream Calls & Error Safety Nets** - No DASH call can hang (timeouts map to 502), and SSE socket errors and stray promise rejections are logged and cleaned up instead of escaping
+- [x] **Phase 12: Bounded Upstream Calls & Error Safety Nets** - No DASH call can hang (timeouts map to 502), and SSE socket errors and stray promise rejections are logged and cleaned up instead of escaping (completed 2026-09-29)
 - [ ] **Phase 13: Resilient Route/Stop Data Lifecycle** - Server listens even when DASH is down at boot, loads route/stop data in the background with backoff (503 until ready), then keeps it fresh on an interval while holding last-good data through failures
 - [ ] **Phase 14: Health Checks & Rate Limiting** - Liveness and readiness endpoints report process health and route/stop data age; live-upstream endpoints return 429 per client IP while in-memory endpoints stay unlimited
 - [ ] **Phase 15: Alert & Nearby Data Hygiene** - Soft-deleted and malformed-date alerts never reach riders, and nearby-prediction entries with missing or mistyped display fields are dropped
@@ -164,7 +164,7 @@ Phases execute in numeric order: 12 → 13 → 14 → 15
 | 9. Alerts Surfaced on Routes, Stops & Predictions | v0.4 | 2/2 | Complete | 2026-09-08 |
 | 10. Solidify vehicle position work | standalone | 1/1 | Complete | 2026-09-22 |
 | 11. Nearby Stop Predictions | v0.5 | 3/3 | Complete | 2026-09-24 |
-| 12. Bounded Upstream Calls & Error Safety Nets | v0.6 | 4/4 | In Progress|  |
+| 12. Bounded Upstream Calls & Error Safety Nets | v0.6 | 4/4 | Complete    | 2026-09-29 |
 | 13. Resilient Route/Stop Data Lifecycle | v0.6 | 0/TBD | Not started | - |
 | 14. Health Checks & Rate Limiting | v0.6 | 0/TBD | Not started | - |
 | 15. Alert & Nearby Data Hygiene | v0.6 | 0/TBD | Not started | - |
