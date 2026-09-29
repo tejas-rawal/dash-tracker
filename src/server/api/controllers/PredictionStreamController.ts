@@ -75,7 +75,8 @@ export function createPredictionStreamController(streamService: PredictionStream
         try {
             subscription = await streamService.subscribe(stop, send);
         } catch (error: unknown) {
-            if (res.headersSent) {
+            // A client that already disconnected has no one to read the error response.
+            if (finished || res.headersSent) {
                 return;
             }
             res.status(resolveErrorStatus(error)).json(resolveErrorBody(error));

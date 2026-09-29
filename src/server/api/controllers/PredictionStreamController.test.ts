@@ -189,6 +189,32 @@ describe("PredictionStreamController", () => {
             expect(res.writeHead).not.toHaveBeenCalled();
         });
 
+        it("writes no error response when subscribe rejects after the client has already disconnected", async () => {
+            // Arrange
+            const mockStreamService = makeMockStreamService();
+            let rejectSubscribe: (reason: unknown) => void = () => {};
+            mockStreamService.subscribe.mockImplementation(
+                () =>
+                    new Promise((_resolve, reject) => {
+                        rejectSubscribe = reject;
+                    }),
+            );
+            const { getPredictionsStream } = createPredictionStreamController(mockStreamService);
+            const req = makeMockReq({ stop: "stop-1" });
+            const res = makeMockRes();
+
+            // Act: start the handler (subscribe pending), disconnect, then let subscribe reject
+            const handlerPromise = getPredictionsStream(req, res, vi.fn());
+            emitResponseClose(res);
+            rejectSubscribe(new UpstreamApiError("DASH API returned success: false"));
+            await handlerPromise;
+
+            // Assert
+            expect(res.status).not.toHaveBeenCalled();
+            expect(res.json).not.toHaveBeenCalled();
+            expect(res.writeHead).not.toHaveBeenCalled();
+        });
+
         it("logs a warning and runs the disconnect cleanup once when the SSE response errors", async () => {
             // Arrange
             const mockStreamService = makeMockStreamService();
