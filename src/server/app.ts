@@ -40,9 +40,17 @@ Promise.all([repository.initialize(), favoritesRecentsRepository.initialize()])
         });
 
         // graceful shutdown
-        const shutdown = () => {
-            server.close(async () => {
-                await favoritesRecentsRepository.close();
+        const shutdown = (): void => {
+            server.close(async (): Promise<void> => {
+                // Nothing awaits this callback, and the unhandledRejection handler deliberately keeps the
+                // process alive, so a failed close must exit here or shutdown hangs until SIGKILL.
+                try {
+                    await favoritesRecentsRepository.close();
+                } catch (error: unknown) {
+                    const message = error instanceof Error ? error.message : "Unknown error";
+                    logger.error(`Shutdown failed: ${message}`);
+                    process.exit(1);
+                }
                 logger.info("Server is gracefully shutting down");
                 process.exit(0);
             });
