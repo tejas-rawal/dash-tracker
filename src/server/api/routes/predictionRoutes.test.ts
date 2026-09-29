@@ -251,6 +251,43 @@ describe("GET /api/v1/predictions/stream", () => {
         });
     });
 
+    it("keeps the stream open when express.json() consumed a request body, which closes the request early", async () => {
+        // Arrange
+        getMockService().getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse("stop-body"));
+        const server = app.listen(0);
+        const port = (server.address() as AddressInfo).port;
+        const body = JSON.stringify({ ignored: true });
+
+        // Act
+        const firstChunk = await new Promise<string>((resolve, reject) => {
+            const req = http.request(
+                `http://localhost:${port}/api/v1/predictions/stream?stop=stop-body`,
+                {
+                    method: "GET",
+                    headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
+                },
+                (res) => {
+                    res.on("data", (chunk: Buffer) => {
+                        req.destroy();
+                        resolve(chunk.toString());
+                    });
+                    res.on("end", () => resolve(""));
+                },
+            );
+            req.on("error", () => {
+                // ignore socket-hangup from req.destroy()
+            });
+            req.end(body);
+            setTimeout(() => reject(new Error("timed out waiting for stream data")), 2000);
+        });
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        server.close();
+
+        // Assert
+        expect(firstChunk).toContain("event: prediction");
+        expect(firstChunk).toContain("stop-body");
+    });
+
     it("responds with 400 when the stop query parameter is missing", async () => {
         // Arrange & Act
         const response = await request(app).get("/api/v1/predictions/stream");

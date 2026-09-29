@@ -25,33 +25,21 @@ const makeMockRes = () => {
     return res;
 };
 
-// Fires every listener the controller registered for "error" on the mock response.
-const emitResponseError = (res: Response, error: Error): void => {
-    const calls = (res.on as ReturnType<typeof vi.fn>).mock.calls as [string, (error: Error) => void][];
-    for (const [event, listener] of calls) {
-        if (event === "error") {
-            listener(error);
+// Fires every listener the controller registered for the given event on the mock response.
+const emitResponseEvent = (res: Response, event: "close" | "error", ...args: unknown[]): void => {
+    const calls = (res.on as ReturnType<typeof vi.fn>).mock.calls as [string, (...args: unknown[]) => void][];
+    for (const [registeredEvent, listener] of calls) {
+        if (registeredEvent === event) {
+            listener(...args);
         }
     }
 };
 
-const makeMockReq = (query: Record<string, string> = {}) => {
-    const closeCallbacks: (() => void)[] = [];
-    const req = {
-        query,
-        on: vi.fn((event: string, callback: () => void) => {
-            if (event === "close") {
-                closeCallbacks.push(callback);
-            }
-        }),
-    } as unknown as Request;
-    const triggerClose = (): void => {
-        for (const callback of closeCallbacks) {
-            callback();
-        }
-    };
-    return { req, triggerClose };
-};
+const emitResponseError = (res: Response, error: Error): void => emitResponseEvent(res, "error", error);
+
+const emitResponseClose = (res: Response): void => emitResponseEvent(res, "close");
+
+const makeMockReq = (query: Record<string, string> = {}) => ({ query }) as unknown as Request;
 
 const makeStopPredictionsResponse = (stopId = "stop-1"): StopPredictionsResponse => ({
     success: true,
@@ -77,7 +65,7 @@ describe("PredictionStreamController", () => {
             // Arrange
             const mockStreamService = makeMockStreamService();
             const { getPredictionsStream } = createPredictionStreamController(mockStreamService);
-            const { req } = makeMockReq({});
+            const req = makeMockReq({});
             const res = makeMockRes();
 
             // Act
@@ -95,7 +83,7 @@ describe("PredictionStreamController", () => {
             const initialPayload = makeStopPredictionsResponse("stop-1");
             mockStreamService.subscribe.mockResolvedValue({ initialPayload, unsubscribe: vi.fn() });
             const { getPredictionsStream } = createPredictionStreamController(mockStreamService);
-            const { req } = makeMockReq({ stop: "stop-1" });
+            const req = makeMockReq({ stop: "stop-1" });
             const res = makeMockRes();
 
             // Act
@@ -113,7 +101,7 @@ describe("PredictionStreamController", () => {
             expect(writtenFrame).toContain(JSON.stringify(initialPayload));
         });
 
-        it("invokes unsubscribe and ends the response when the request closes", async () => {
+        it("invokes unsubscribe and ends the response when the connection closes", async () => {
             // Arrange
             const mockStreamService = makeMockStreamService();
             const unsubscribe = vi.fn();
@@ -122,12 +110,12 @@ describe("PredictionStreamController", () => {
                 unsubscribe,
             });
             const { getPredictionsStream } = createPredictionStreamController(mockStreamService);
-            const { req, triggerClose } = makeMockReq({ stop: "stop-1" });
+            const req = makeMockReq({ stop: "stop-1" });
             const res = makeMockRes();
             await getPredictionsStream(req, res, vi.fn());
 
             // Act
-            triggerClose();
+            emitResponseClose(res);
 
             // Assert
             expect(unsubscribe).toHaveBeenCalledTimes(1);
@@ -149,12 +137,12 @@ describe("PredictionStreamController", () => {
                     }),
             );
             const { getPredictionsStream } = createPredictionStreamController(mockStreamService);
-            const { req, triggerClose } = makeMockReq({ stop: "stop-1" });
+            const req = makeMockReq({ stop: "stop-1" });
             const res = makeMockRes();
 
             // Act: start the handler (subscribe pending), disconnect, then let subscribe resolve
             const handlerPromise = getPredictionsStream(req, res, vi.fn());
-            triggerClose();
+            emitResponseClose(res);
             resolveSubscribe({ initialPayload: makeStopPredictionsResponse("stop-1"), unsubscribe });
             await handlerPromise;
 
@@ -169,7 +157,7 @@ describe("PredictionStreamController", () => {
             const mockStreamService = makeMockStreamService();
             mockStreamService.subscribe.mockRejectedValue(new NotFoundError("Stop not found: missing-stop"));
             const { getPredictionsStream } = createPredictionStreamController(mockStreamService);
-            const { req } = makeMockReq({ stop: "missing-stop" });
+            const req = makeMockReq({ stop: "missing-stop" });
             const res = makeMockRes();
 
             // Act
@@ -186,7 +174,7 @@ describe("PredictionStreamController", () => {
             const mockStreamService = makeMockStreamService();
             mockStreamService.subscribe.mockRejectedValue(new UpstreamApiError("DASH API returned success: false"));
             const { getPredictionsStream } = createPredictionStreamController(mockStreamService);
-            const { req } = makeMockReq({ stop: "stop-1" });
+            const req = makeMockReq({ stop: "stop-1" });
             const res = makeMockRes();
 
             // Act
@@ -210,7 +198,7 @@ describe("PredictionStreamController", () => {
                 unsubscribe,
             });
             const { getPredictionsStream } = createPredictionStreamController(mockStreamService);
-            const { req } = makeMockReq({ stop: "stop-1" });
+            const req = makeMockReq({ stop: "stop-1" });
             const res = makeMockRes();
             await getPredictionsStream(req, res, vi.fn());
 
@@ -225,7 +213,7 @@ describe("PredictionStreamController", () => {
             expect(logger.error).not.toHaveBeenCalled();
         });
 
-        it("runs the cleanup once when the response errors and the request then closes", async () => {
+        it("runs the cleanup once when the response errors and then closes", async () => {
             // Arrange
             const mockStreamService = makeMockStreamService();
             const unsubscribe = vi.fn();
@@ -234,13 +222,13 @@ describe("PredictionStreamController", () => {
                 unsubscribe,
             });
             const { getPredictionsStream } = createPredictionStreamController(mockStreamService);
-            const { req, triggerClose } = makeMockReq({ stop: "stop-1" });
+            const req = makeMockReq({ stop: "stop-1" });
             const res = makeMockRes();
             await getPredictionsStream(req, res, vi.fn());
 
             // Act
             emitResponseError(res, new Error("write EPIPE"));
-            triggerClose();
+            emitResponseClose(res);
 
             // Assert
             expect(unsubscribe).toHaveBeenCalledTimes(1);
@@ -248,7 +236,7 @@ describe("PredictionStreamController", () => {
             expect(logger.warn).toHaveBeenCalledTimes(1);
         });
 
-        it("runs the cleanup once when the request closes and the response then errors", async () => {
+        it("runs the cleanup once when the response closes and then errors", async () => {
             // Arrange
             const mockStreamService = makeMockStreamService();
             const unsubscribe = vi.fn();
@@ -257,12 +245,12 @@ describe("PredictionStreamController", () => {
                 unsubscribe,
             });
             const { getPredictionsStream } = createPredictionStreamController(mockStreamService);
-            const { req, triggerClose } = makeMockReq({ stop: "stop-1" });
+            const req = makeMockReq({ stop: "stop-1" });
             const res = makeMockRes();
             await getPredictionsStream(req, res, vi.fn());
 
             // Act
-            triggerClose();
+            emitResponseClose(res);
             emitResponseError(res, new Error("write EPIPE"));
 
             // Assert
@@ -287,7 +275,7 @@ describe("PredictionStreamController", () => {
                     }),
             );
             const { getPredictionsStream } = createPredictionStreamController(mockStreamService);
-            const { req } = makeMockReq({ stop: "stop-1" });
+            const req = makeMockReq({ stop: "stop-1" });
             const res = makeMockRes();
 
             // Act: start the handler (subscribe pending), error the response, then let subscribe resolve
@@ -321,9 +309,9 @@ describe("PredictionStreamController", () => {
                 const { getPredictionsStream } = createPredictionStreamController(
                     createPredictionStreamService(mockPredictionService as unknown as PredictionService),
                 );
-                const { req: reqA } = makeMockReq({ stop: "stop-1" });
+                const reqA = makeMockReq({ stop: "stop-1" });
                 const resA = makeMockRes();
-                const { req: reqB, triggerClose: triggerCloseB } = makeMockReq({ stop: "stop-1" });
+                const reqB = makeMockReq({ stop: "stop-1" });
                 const resB = makeMockRes();
                 await getPredictionsStream(reqA, resA, vi.fn());
                 await getPredictionsStream(reqB, resB, vi.fn());
@@ -339,7 +327,7 @@ describe("PredictionStreamController", () => {
                 expect(resA.end).toHaveBeenCalledTimes(1);
 
                 // Act 2: the last subscriber leaves, then another poll tick elapses
-                triggerCloseB();
+                emitResponseClose(resB);
                 await vi.advanceTimersByTimeAsync(30_000);
 
                 // Assert 2: the per-stop poll has stopped
