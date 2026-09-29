@@ -5,17 +5,17 @@ milestone_name: Solidifying the backend
 current_phase: 12
 current_phase_name: Bounded Upstream Calls & Error Safety Nets
 status: executing
-stopped_at: Completed 12-01-PLAN.md
-last_updated: "2026-09-29T15:03:24.710Z"
+stopped_at: Completed 12-03-PLAN.md
+last_updated: "2026-09-29T15:08:06.335Z"
 last_activity: 2026-09-29
 last_activity_desc: Phase 12 execution started
-state_head: a8353b49903b2b7454a799c3f83ea733a900de42
+state_head: c83e9df386b47d2ef7238da22da38fc0108d546c
 progress:
   total_phases: 4
   completed_phases: 11
   total_plans: 4
-  completed_plans: 1
-  percent: 25
+  completed_plans: 2
+  percent: 50
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-28)
 ## Current Position
 
 Phase: 12 (Bounded Upstream Calls & Error Safety Nets) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-09-29 — Phase 12 execution started
 
@@ -77,6 +77,7 @@ Progress (v0.6): [░░░░░░░░░░] 0%
 | Phase 11 P02 | 4min | 2 tasks | 3 files |
 | Phase 11 P03 | 5min | 2 tasks | 3 files |
 | Phase 12 P01 | 2min | 2 tasks | 7 files |
+| Phase 12 P03 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -113,6 +114,7 @@ Recent decisions affecting current work:
 - [Phase 11]: [Phase 11-03] WR-02 (500 path echoes raw error.message) deferred to a follow-up quick task extracting one shared controller error-response helper for Prediction/Vehicle/NearbyPrediction controllers (WR-02 + IN-04); T-11-16 accepted low
 - [Phase 12]: [Phase 12-01] DASH deadline is a fresh AbortSignal.timeout(DASH_API_TIMEOUT_MS) per request via an axios request interceptor (no axios idle timeout); axios.isCancel identifies a fired deadline
 - [Phase 12]: [Phase 12-01] One response-error interceptor on the shared DASH client maps every transport failure to a message-only UpstreamApiError ('timed out after {ms}ms' vs 'request failed: {message}'); services need no transport try/catch
+- [Phase 12]: [Phase 12-03] SSE res 'error' logs warn 'SSE response error for stop <stop>: <message>' (message only) and runs the disconnect cleanup; one guarded cleanup closure serves req close + res error (runs once in either order), registered before subscribe is awaited so a close/error during a pending subscribe is replayed once the subscription exists
 
 ### Pending Todos
 
@@ -156,8 +158,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-29T15:03:24.685Z
-Stopped at: Completed 12-01-PLAN.md
+Last session: 2026-09-29T15:08:06.308Z
+Stopped at: Completed 12-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

@@ -26,7 +26,7 @@ Milestone v0.6 — Solidifying the backend. Reliability first, then operational 
 
 ### Error Handling
 
-- [ ] **ERR-01**: An error on an SSE response is logged and removes that subscriber, with the same cleanup a client disconnect gets (closes v0.2 WR-05, SSE half)
+- [x] **ERR-01**: An error on an SSE response is logged and removes that subscriber, with the same cleanup a client disconnect gets (closes v0.2 WR-05, SSE half)
 - [ ] **ERR-02**: A process-level `unhandledRejection` handler logs the rejection instead of leaving it unhandled (closes v0.2 WR-05, process half)
 
 ### Health
@@ -77,7 +77,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BOOT-01 | Phase 13 | Pending |
 | BOOT-02 | Phase 13 | Pending |
 | BOOT-03 | Phase 13 | Pending |
-| ERR-01 | Phase 12 | Pending |
+| ERR-01 | Phase 12 | Complete |
 | ERR-02 | Phase 12 | Pending |
 | HLTH-01 | Phase 14 | Pending |
 | HLTH-02 | Phase 14 | Pending |
@@ -88,6 +88,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NEAR-12 | Phase 15 | Pending |
 
 **Coverage:**
+
 - v0.6 requirements: 17 total
 - Mapped to phases: 17
 - Unmapped: 0 ✓
