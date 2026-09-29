@@ -99,6 +99,40 @@ describe("shared DASH axios client", () => {
         expect(third.data).toEqual({ ok: true });
     });
 
+    it("honours a caller's own signal and reports its abort as a cancel, not a timeout", async () => {
+        // Arrange
+        const baseUrl = await startServer(neverRespond);
+        const controller = new AbortController();
+        const startedAt = performance.now();
+        setTimeout(() => controller.abort(), 20);
+
+        // Act
+        const error = await axiosInstance
+            .get(`${baseUrl}/slow`, { signal: controller.signal })
+            .catch((caught: unknown) => caught);
+
+        // Assert
+        const elapsedMs = performance.now() - startedAt;
+        expect(error).toBeInstanceOf(UpstreamApiError);
+        expect((error as UpstreamApiError).message).toBe("DASH API request was canceled");
+        expect(elapsedMs).toBeLessThan(150);
+    });
+
+    it("still applies the deadline when the caller passes a signal that never aborts", async () => {
+        // Arrange
+        const baseUrl = await startServer(neverRespond);
+        const controller = new AbortController();
+
+        // Act
+        const error = await axiosInstance
+            .get(`${baseUrl}/slow`, { signal: controller.signal })
+            .catch((caught: unknown) => caught);
+
+        // Assert
+        expect(error).toBeInstanceOf(UpstreamApiError);
+        expect((error as UpstreamApiError).message).toBe("DASH API request timed out after 200ms");
+    });
+
     it("maps a refused connection to the generic failure message", async () => {
         // Arrange
         const baseUrl = await startServer(respondOk);
