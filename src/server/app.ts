@@ -21,6 +21,8 @@ app.get("/", (_req, res) => {
 // V1 API
 app.use("/api/v1", router);
 
+const SHUTDOWN_GRACE_MS = 10_000;
+
 // Initialize repository data before accepting requests
 const repository = BusDataRepository.getInstance();
 const favoritesRecentsRepository = FavoritesRecentsRepository.getInstance();
@@ -54,6 +56,10 @@ Promise.all([repository.initialize(), favoritesRecentsRepository.initialize()])
                 logger.info("Server is gracefully shutting down");
                 process.exit(0);
             });
+            // server.close waits for every open connection, and SSE streams never end on their own, so one
+            // connected rider would block shutdown until SIGKILL. Past the grace period, in-flight requests
+            // have had a full default DASH deadline to finish and the remaining connections are dropped.
+            setTimeout((): void => server.closeAllConnections(), SHUTDOWN_GRACE_MS);
         };
 
         process.on("SIGTERM", shutdown);
