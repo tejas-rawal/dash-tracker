@@ -11,8 +11,10 @@ const environmentSchema = z.object({
     DASH_API_AGENCY: z.string().min(1, "DASH_API_AGENCY must not be empty"),
     // biome-ignore lint/style/useNamingConvention: env vars use SCREAMING_SNAKE_CASE by convention
     DASH_API_KEY: z.string().min(1, "DASH_API_KEY must not be empty"),
+    // Capped at Node's max timer delay: a larger value overflows AbortSignal.timeout, which then
+    // aborts every DASH call after 1ms or throws, instead of failing startup here.
     // biome-ignore lint/style/useNamingConvention: env vars use SCREAMING_SNAKE_CASE by convention
-    DASH_API_TIMEOUT_MS: z.coerce.number().int().positive().default(10000),
+    DASH_API_TIMEOUT_MS: z.coerce.number().int().positive().max(2_147_483_647).default(10000),
     // biome-ignore lint/style/useNamingConvention: env vars use SCREAMING_SNAKE_CASE by convention
     PORT: z.coerce.number().int().positive().default(3000),
     // biome-ignore lint/style/useNamingConvention: env vars use SCREAMING_SNAKE_CASE by convention

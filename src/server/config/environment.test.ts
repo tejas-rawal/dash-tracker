@@ -40,6 +40,7 @@ describe("DASH_API_TIMEOUT_MS", () => {
         { label: "negative", value: "-1" },
         { label: "fractional", value: "1.5" },
         { label: "empty", value: "" },
+        { label: "above the max timer delay", value: "2147483648" },
     ])("fails startup when DASH_API_TIMEOUT_MS is $label", async ({ value }) => {
         // Arrange
         vi.stubEnv("DASH_API_TIMEOUT_MS", value);
