@@ -565,7 +565,8 @@ describe("GET /api/v1/predictions/nearby", () => {
     });
     it("responds with 502 when the upstream request fails at the network level", async () => {
         // Arrange
-        getSpy.mockRejectedValue(new Error("connect ECONNREFUSED"));
+        // vi.spyOn replaces axios.get outright, so the client's interceptors never run in this block.
+        getSpy.mockRejectedValue(new UpstreamApiError("DASH API request failed: connect ECONNREFUSED"));
 
         // Act
         const response = await request(app).get(nearbyUrl);
@@ -573,7 +574,7 @@ describe("GET /api/v1/predictions/nearby", () => {
         // Assert
         expect(response.status).toBe(502);
         expect(response.body.error).toBe("Bad Gateway");
-        expect(response.body.details).toContain("DASH API request failed for nearby predictions");
+        expect(response.body.details).toBe("DASH API request failed: connect ECONNREFUSED");
     });
 
     it("responds with 502 when the upstream body has no predictionsData array", async () => {

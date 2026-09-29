@@ -18,7 +18,6 @@ import { createNearbyPredictionService } from "./NearbyPredictionService";
 const mockAxiosGet = vi.mocked(axios.get);
 const mockLoggerInfo = vi.mocked(logger.info);
 const mockLoggerWarn = vi.mocked(logger.warn);
-const mockLoggerError = vi.mocked(logger.error);
 
 const LAT = 38.8048;
 const LNG = -77.0469;
@@ -447,28 +446,15 @@ describe("NearbyPredictionService", () => {
             await expect(getNearbyPredictions(LAT, LNG)).rejects.toBeInstanceOf(UpstreamApiError);
         });
 
-        it("wraps a network error as UpstreamApiError once, without leaking the API key", async () => {
+        it("propagates the shared DASH client's rejection unchanged", async () => {
             // Arrange
-            const networkError = Object.assign(new Error("connect ECONNREFUSED"), {
-                // biome-ignore lint/style/useNamingConvention: mirrors the real axios header that carries DASH_API_KEY
-                config: { headers: { Authorization: "super-secret-key" } },
-            });
-            mockAxiosGet.mockRejectedValue(networkError);
+            // axios is mocked in this file so interceptors never run; key-leak test: src/server/config/axios.test.ts
+            const upstreamError = new UpstreamApiError("DASH API request failed: connect ECONNREFUSED");
+            mockAxiosGet.mockRejectedValue(upstreamError);
             const { getNearbyPredictions } = createNearbyPredictionService(makeMockAlertRepo() as never);
 
-            // Act
-            const error = await getNearbyPredictions(LAT, LNG).catch((caught: unknown) => caught);
-
-            // Assert
-            expect(error).toBeInstanceOf(UpstreamApiError);
-            expect((error as Error).message).toContain("connect ECONNREFUSED");
-            expect((error as Error).message).not.toContain("super-secret-key");
-            const logged = JSON.stringify([
-                mockLoggerInfo.mock.calls,
-                mockLoggerWarn.mock.calls,
-                mockLoggerError.mock.calls,
-            ]);
-            expect(logged).not.toContain("super-secret-key");
+            // Act & Assert
+            await expect(getNearbyPredictions(LAT, LNG)).rejects.toBe(upstreamError);
             expect(mockAxiosGet).toHaveBeenCalledTimes(1);
         });
 

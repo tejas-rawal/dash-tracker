@@ -98,15 +98,8 @@ export function createNearbyPredictionService(serviceAlertRepository: ServiceAle
         const url = buildDashApiUrl(lat, lng, meters, options.number);
         // The rider's coordinates are deliberately kept out of the log line.
         logger.info(`Fetching nearby predictions from DASH API: predictions-near-location (meters=${meters})`);
-        try {
-            const response = await axios.get(url);
-            return response.data;
-        } catch (error: unknown) {
-            // Only the message may leave this block: axios errors carry config.headers.Authorization,
-            // which is DASH_API_KEY, so the error object is never logged or rethrown.
-            const message = error instanceof Error ? error.message : "Unknown error";
-            throw new UpstreamApiError(`DASH API request failed for nearby predictions: ${message}`);
-        }
+        const response = await axios.get(url);
+        return response.data;
     }
 
     function parseDashResponse(body: unknown): { agencyKey: string; predictionsData: unknown[] } {
