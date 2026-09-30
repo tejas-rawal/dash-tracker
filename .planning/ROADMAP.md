@@ -116,7 +116,22 @@ Plans:
   4. A failed refresh is logged and every endpoint keeps serving the last successfully loaded route/stop data, with no 5xx and no partially swapped data.
   5. The repository records when route/stop data was last loaded successfully, advancing that timestamp on each successful load or refresh and leaving it unchanged on a failed one. Background load and refresh timers stop cleanly on SIGTERM/SIGINT.
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 13-01-PLAN.md — `DataNotReadyError` + shared `sendErrorResponse` (404/503 + `Retry-After: 5`/502/generic logged 500); tracer on `/predictions/stream`, then `/vehicles?route=` (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 13-02-PLAN.md — BusRoute, Stop and Prediction controllers on the shared helper; 503 before load for `/routes/all`, `/routes/:shortName`, `/routes/:shortName/stops`, `/stops/nearby`, `/predictions` (wave 2)
+- [ ] 13-03-PLAN.md — Single atomic `BusDataRepository.load()` with `getLoadState()` (`lastLoadedAt`/`lastFailedAt`/`lastError`), zero routes = failure, no repository logging; failed reloads keep the last good data (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 13-04-PLAN.md — Favorites, Recents and NearbyPrediction controllers on the shared helper; favorites/recents hydration surfaces 503; all 8 controllers share one mapping (wave 3)
+- [ ] 13-05-PLAN.md — `BusDataRefreshService` (equal-jitter backoff 1s→60s cap, then hourly, chained `setTimeout`, one log line per attempt), D-18 boot order (listen before DASH), `ServiceAlertPollService.stop()`, clean SIGTERM/SIGINT (wave 3)
 
 ### Phase 14: Health Checks & Rate Limiting
 
@@ -165,7 +180,7 @@ Phases execute in numeric order: 12 → 13 → 14 → 15
 | 10. Solidify vehicle position work | standalone | 1/1 | Complete | 2026-09-22 |
 | 11. Nearby Stop Predictions | v0.5 | 3/3 | Complete | 2026-09-24 |
 | 12. Bounded Upstream Calls & Error Safety Nets | v0.6 | 4/4 | Complete    | 2026-09-29 |
-| 13. Resilient Route/Stop Data Lifecycle | v0.6 | 0/TBD | Not started | - |
+| 13. Resilient Route/Stop Data Lifecycle | v0.6 | 0/5 | Planned | - |
 | 14. Health Checks & Rate Limiting | v0.6 | 0/TBD | Not started | - |
 | 15. Alert & Nearby Data Hygiene | v0.6 | 0/TBD | Not started | - |
 
