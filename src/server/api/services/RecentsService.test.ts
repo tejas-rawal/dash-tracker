@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { DataNotReadyError } from "../errors";
 import { BusRoute, BusStop, type RecentRecord, RouteType } from "../models";
 import { createRecentsService } from "./RecentsService";
 
@@ -134,6 +135,22 @@ describe("RecentsService", () => {
 
             // Assert
             expect(result).toHaveLength(100);
+        });
+
+        it("listRecents rejects with DataNotReadyError instead of dropping entries when route/stop data has not loaded", async () => {
+            // Arrange
+            const mockRecentsRepo = makeMockRecentsRepository();
+            const mockBusDataRepo = makeMockBusDataRepository();
+            mockRecentsRepo.listRecents.mockResolvedValue([
+                makeRecentRecord("route", "route-1", "2026-08-31T10:00:00.000Z"),
+            ]);
+            mockBusDataRepo.getRouteById.mockImplementation(() => {
+                throw new DataNotReadyError("Route and stop data is still loading");
+            });
+            const { listRecents } = createRecentsService(mockRecentsRepo as never, mockBusDataRepo as never);
+
+            // Act & Assert
+            await expect(listRecents("device-a")).rejects.toBeInstanceOf(DataNotReadyError);
         });
     });
 });
