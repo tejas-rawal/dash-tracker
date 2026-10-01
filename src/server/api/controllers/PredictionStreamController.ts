@@ -1,34 +1,11 @@
 import type { Request, RequestHandler, Response } from "express";
 import { logger } from "../../config";
-import { NotFoundError, UpstreamApiError } from "../errors";
 import type { StopPredictionsResponse } from "../models/Prediction";
 import type { PredictionStreamService } from "../services/PredictionStreamService";
+import { sendErrorResponse } from "./errorResponse";
 
 export interface PredictionStreamController {
     getPredictionsStream: RequestHandler;
-}
-
-function resolveErrorStatus(error: unknown): number {
-    if (error instanceof NotFoundError) {
-        return 404;
-    }
-    if (error instanceof UpstreamApiError) {
-        return 502;
-    }
-    return 500;
-}
-
-function resolveErrorBody(error: unknown): { error: string; details: string } {
-    const details = error instanceof Error ? error.message : "Unknown error";
-    let label: string;
-    if (error instanceof NotFoundError) {
-        label = "Not Found";
-    } else if (error instanceof UpstreamApiError) {
-        label = "Bad Gateway";
-    } else {
-        label = "Request Failed";
-    }
-    return { error: label, details };
 }
 
 export function createPredictionStreamController(streamService: PredictionStreamService): PredictionStreamController {
@@ -79,7 +56,7 @@ export function createPredictionStreamController(streamService: PredictionStream
             if (finished || res.headersSent) {
                 return;
             }
-            res.status(resolveErrorStatus(error)).json(resolveErrorBody(error));
+            sendErrorResponse(res, error);
             return;
         }
 

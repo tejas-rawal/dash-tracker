@@ -12,6 +12,7 @@ vi.mock("../../config", () => ({
 }));
 
 import { axios } from "../../config";
+import { DataNotReadyError } from "../errors";
 import { BusDataRepository } from "./BusDataRepository";
 
 const mockAxiosGet = vi.mocked(axios.get);
@@ -331,7 +332,7 @@ describe("BusDataRepository", () => {
     describe("getAllRoutes", () => {
         it("throws when called before initialization", () => {
             // Arrange & Act & Assert
-            expect(() => repo.getAllRoutes()).toThrow("BusDataRepository has not been initialized");
+            expect(() => repo.getAllRoutes()).toThrow(DataNotReadyError);
         });
     });
 
@@ -363,7 +364,7 @@ describe("BusDataRepository", () => {
 
         it("throws when called before initialization", () => {
             // Arrange & Act & Assert
-            expect(() => repo.getRouteById("r1")).toThrow("BusDataRepository has not been initialized");
+            expect(() => repo.getRouteById("r1")).toThrow(DataNotReadyError);
         });
     });
 
@@ -394,7 +395,7 @@ describe("BusDataRepository", () => {
 
         it("throws when called before initialization", () => {
             // Arrange & Act & Assert
-            expect(() => repo.getRouteByShortName("1A")).toThrow("BusDataRepository has not been initialized");
+            expect(() => repo.getRouteByShortName("1A")).toThrow(DataNotReadyError);
         });
     });
 
@@ -416,7 +417,7 @@ describe("BusDataRepository", () => {
 
         it("throws when called before initialization", () => {
             // Arrange & Act & Assert
-            expect(() => repo.getAllStops()).toThrow("BusDataRepository has not been initialized");
+            expect(() => repo.getAllStops()).toThrow(DataNotReadyError);
         });
     });
 
@@ -450,7 +451,7 @@ describe("BusDataRepository", () => {
 
         it("throws when called before initialization", () => {
             // Arrange & Act & Assert
-            expect(() => repo.getStopById("s1")).toThrow("BusDataRepository has not been initialized");
+            expect(() => repo.getStopById("s1")).toThrow(DataNotReadyError);
         });
     });
 
@@ -484,7 +485,7 @@ describe("BusDataRepository", () => {
 
         it("throws when called before initialization", () => {
             // Arrange & Act & Assert
-            expect(() => repo.getRoutesForStop("s1")).toThrow("BusDataRepository has not been initialized");
+            expect(() => repo.getRoutesForStop("s1")).toThrow(DataNotReadyError);
         });
 
         it("returns routes from multiple routes that share the given stop", async () => {

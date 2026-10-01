@@ -1,4 +1,5 @@
 import { axios, environment, logger } from "../../config";
+import { DataNotReadyError } from "../errors";
 // BusDataRepository.ts
 import { BusRoute, BusStop, RouteDirection, type RouteType } from "../models";
 
@@ -228,7 +229,7 @@ export class BusDataRepository {
 
     private assertInitialized(): void {
         if (!this.isInitialized) {
-            throw new Error("BusDataRepository has not been initialized. Call initialize() before accessing data.");
+            throw new DataNotReadyError("Route and stop data is still loading");
         }
     }
 
