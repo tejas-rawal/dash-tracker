@@ -1,4 +1,4 @@
-import { axios, environment, logger } from "../../config";
+import { axios, environment } from "../../config";
 import { DataNotReadyError } from "../errors";
 // BusDataRepository.ts
 import { BusRoute, BusStop, RouteDirection, type RouteType } from "../models";
@@ -28,12 +28,24 @@ interface StopData {
     lon: string | number;
 }
 
+export interface BusDataLoadState {
+    lastLoadedAt?: Date;
+    lastFailedAt?: Date;
+    lastError?: string;
+}
+
+export interface BusDataLoadSummary {
+    routeCount: number;
+    stopCount: number;
+}
+
 export class BusDataRepository {
     private routes: Map<string, BusRoute> = new Map();
     private routesByShortName: Map<string, BusRoute> = new Map();
     private stops: Map<string, BusStop> = new Map();
-    private isInitialized = false;
-    private initializationPromise: Promise<void> | null = null;
+    private lastLoadedAt?: Date;
+    private lastFailedAt?: Date;
+    private lastError?: string;
 
     private static instance: BusDataRepository;
 
@@ -47,35 +59,37 @@ export class BusDataRepository {
         return BusDataRepository.instance;
     }
 
-    public async initialize(): Promise<void> {
-        if (this.isInitialized) {
-            return;
+    /**
+     * The only way to fetch route/stop data. Either commits a complete dataset through applyData or
+     * changes nothing riders can see, and records the outcome for getLoadState().
+     */
+    public async load(): Promise<BusDataLoadSummary> {
+        try {
+            const data = await this.fetchAndProcessData();
+            this.applyData(data);
+            return { routeCount: data.routes.size, stopCount: data.stops.size };
+        } catch (error) {
+            // Only the message is kept or rethrown: an axios-shaped error carries the Authorization
+            // header (DASH_API_KEY), so the original error object must never be stored or propagated.
+            const message = error instanceof Error ? error.message : "Unknown error";
+            this.lastFailedAt = new Date();
+            this.lastError = message;
+            throw new Error(message);
         }
-
-        if (this.initializationPromise) {
-            return this.initializationPromise;
-        }
-
-        this.initializationPromise = this.fetchAndProcessData()
-            .then((data) => this.applyData(data))
-            .catch((error) => this.handleLoadError("initialize", error));
-
-        return this.initializationPromise;
     }
 
-    // Method to refresh data if needed
-    public async refreshData(): Promise<void> {
-        const refreshPromise = this.fetchAndProcessData()
-            .then((data) => this.applyData(data))
-            .catch((error) => this.handleLoadError("refresh", error));
-
-        this.initializationPromise = refreshPromise;
-        return refreshPromise;
+    /** Phase 14 readiness serializes this snapshot; "ready" means lastLoadedAt is defined. */
+    public getLoadState(): BusDataLoadState {
+        return {
+            lastLoadedAt: this.lastLoadedAt === undefined ? undefined : new Date(this.lastLoadedAt.getTime()),
+            lastFailedAt: this.lastFailedAt === undefined ? undefined : new Date(this.lastFailedAt.getTime()),
+            lastError: this.lastError,
+        };
     }
 
     /**
-     * Pure-ish state application shared by initialize() and refreshData(): commits a
-     * freshly fetched dataset and clears in-flight tracking now that loading is done.
+     * The single synchronous commit step: all three maps switch together, so readers never see one
+     * load's routes with another load's stops.
      */
     private applyData(data: {
         routes: Map<string, BusRoute>;
@@ -85,20 +99,9 @@ export class BusDataRepository {
         this.routes = data.routes;
         this.routesByShortName = data.routesByShortName;
         this.stops = data.stops;
-        this.isInitialized = true;
-        this.initializationPromise = null;
-    }
-
-    /**
-     * Shared failure path for initialize()/refreshData(). Clears the in-flight
-     * promise so a subsequent initialize() call can retry instead of permanently
-     * returning a dead rejection, logs, then rethrows a wrapped error.
-     */
-    private handleLoadError(action: "initialize" | "refresh", error: unknown): never {
-        this.initializationPromise = null;
-        const message = error instanceof Error ? error.message : "Unknown error";
-        logger.error(`Failed to ${action} bus data: ${message}`);
-        throw new Error(`Failed to ${action} bus data: ${message}`);
+        this.lastLoadedAt = new Date();
+        this.lastFailedAt = undefined;
+        this.lastError = undefined;
     }
 
     private async fetchAndProcessData(): Promise<{
@@ -106,42 +109,31 @@ export class BusDataRepository {
         routesByShortName: Map<string, BusRoute>;
         stops: Map<string, BusStop>;
     }> {
-        try {
-            const { agency } = environment.dashApi;
-            const apiUrl = `/info/${agency}/routes?verbose=true`;
-            logger.info(`Fetching bus data from API: ${apiUrl}`);
-            const response = await axios.get(apiUrl);
+        const { agency } = environment.dashApi;
+        const apiUrl = `/info/${agency}/routes?verbose=true`;
+        const response = await axios.get(apiUrl);
+        const routes: RouteData[] | null | undefined = response.data?.data?.routes;
 
-            const {
-                data: { routes },
-            } = response.data;
-
-            const stagingRoutes = new Map<string, BusRoute>();
-            const stagingRoutesByShortName = new Map<string, BusRoute>();
-            const stagingStops = new Map<string, BusStop>();
-
-            if (!routes || !Array.isArray(routes) || routes.length === 0) {
-                logger.warn("No routes found in API response");
-                return { routes: stagingRoutes, routesByShortName: stagingRoutesByShortName, stops: stagingStops };
-            }
-
-            // Process all routes in a single pass into staging maps
-            for (const routeData of routes) {
-                const directions = this.processDirectionsAndStops(routeData.directions || [], stagingStops);
-                const route = this.createRoute(routeData, directions);
-                stagingRoutes.set(route.id, route);
-                if (route.shortName) {
-                    stagingRoutesByShortName.set(route.shortName, route);
-                }
-            }
-
-            logger.info(`Processed ${stagingRoutes.size} routes and ${stagingStops.size} stops`);
-            return { routes: stagingRoutes, routesByShortName: stagingRoutesByShortName, stops: stagingStops };
-        } catch (error) {
-            const message = error instanceof Error ? error.message : "Unknown error";
-            logger.error(`Failed to fetch and process data: ${message}`);
-            throw new Error(`Failed to fetch and process data: ${message}`);
+        // An empty dataset is a failed attempt, never applied: a refresh must not wipe live data.
+        if (!Array.isArray(routes) || routes.length === 0) {
+            throw new Error("DASH API returned no routes");
         }
+
+        const stagingRoutes = new Map<string, BusRoute>();
+        const stagingRoutesByShortName = new Map<string, BusRoute>();
+        const stagingStops = new Map<string, BusStop>();
+
+        // Process all routes in a single pass into staging maps
+        for (const routeData of routes) {
+            const directions = this.processDirectionsAndStops(routeData.directions || [], stagingStops);
+            const route = this.createRoute(routeData, directions);
+            stagingRoutes.set(route.id, route);
+            if (route.shortName) {
+                stagingRoutesByShortName.set(route.shortName, route);
+            }
+        }
+
+        return { routes: stagingRoutes, routesByShortName: stagingRoutesByShortName, stops: stagingStops };
     }
 
     /**
@@ -227,20 +219,20 @@ export class BusDataRepository {
         });
     }
 
-    private assertInitialized(): void {
-        if (!this.isInitialized) {
+    private assertLoaded(): void {
+        if (this.lastLoadedAt === undefined) {
             throw new DataNotReadyError("Route and stop data is still loading");
         }
     }
 
     // Public methods to access data
     public getAllRoutes(): BusRoute[] {
-        this.assertInitialized();
+        this.assertLoaded();
         return Array.from(this.routes.values());
     }
 
     public getRouteById(id: string): BusRoute | undefined {
-        this.assertInitialized();
+        this.assertLoaded();
         return this.routes.get(id);
     }
 
@@ -250,17 +242,17 @@ export class BusDataRepository {
      * @returns The route with the given short name, or undefined if not found
      */
     public getRouteByShortName(shortName: string): BusRoute | undefined {
-        this.assertInitialized();
+        this.assertLoaded();
         return this.routesByShortName.get(shortName);
     }
 
     public getAllStops(): BusStop[] {
-        this.assertInitialized();
+        this.assertLoaded();
         return Array.from(this.stops.values());
     }
 
     public getStopById(id: string): BusStop | undefined {
-        this.assertInitialized();
+        this.assertLoaded();
         return this.stops.get(id);
     }
 
@@ -270,7 +262,7 @@ export class BusDataRepository {
      * @returns An array of routes that contain the stop
      */
     public getRoutesForStop(stopId: string): BusRoute[] {
-        this.assertInitialized();
+        this.assertLoaded();
         return Array.from(this.routes.values()).filter((route) => {
             return route.directions.some((direction) => direction.stops.some((stop) => stop.id === stopId));
         });

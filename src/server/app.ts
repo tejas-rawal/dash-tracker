@@ -35,7 +35,7 @@ const serviceAlertPollService = createServiceAlertPollService(
 );
 serviceAlertPollService.start();
 
-Promise.all([repository.initialize(), favoritesRecentsRepository.initialize()])
+Promise.all([repository.load(), favoritesRecentsRepository.initialize()])
     .then(() => {
         const server = app.listen(port, () => {
             logger.info(`Server is running on port ${port}`);

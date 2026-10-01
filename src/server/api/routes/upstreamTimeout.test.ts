@@ -51,9 +51,8 @@ describe("upstream deadline against a blackholed DASH", () => {
         return JSON.stringify([infoSpy.mock.calls, warnSpy.mock.calls, errorSpy.mock.calls]);
     }
 
-    // The stop lookup is in-memory, so stubbing it leaves only the DASH call under test. Never seed the
-    // repository with initialize() in this file: the startup-load test relies on the singleton never
-    // having loaded successfully.
+    // The stop lookup is in-memory, so stubbing it leaves only the DASH call under test. Never load data
+    // successfully in this file: the live-endpoint tests rely on the singleton never having loaded.
     function stubKnownStop(): void {
         vi.spyOn(BusDataRepository.getInstance(), "getStopById").mockReturnValue(
             new BusStop({ id: "stop-1", name: "Main St", code: 101, lat: 38.8, lon: -77.1 }),
@@ -148,17 +147,19 @@ describe("upstream deadline against a blackholed DASH", () => {
             vi.useRealTimers();
         });
 
-        it("fails the startup route/stop load with a logged timeout error instead of hanging", async () => {
+        it("fails a route/stop load against a blackholed DASH with the timeout message and records it, without leaking the API key", async () => {
             // Arrange
             const repository = BusDataRepository.getInstance();
 
-            // Act & Assert
-            await expect(repository.initialize()).rejects.toThrow("DASH API request timed out after 200ms");
-            expect(errorSpy).toHaveBeenCalledWith(
-                expect.stringContaining(
-                    "Failed to initialize bus data: Failed to fetch and process data: DASH API request timed out after 200ms",
-                ),
-            );
+            // Act
+            await expect(repository.load()).rejects.toThrow("DASH API request timed out after 200ms");
+            const state = repository.getLoadState();
+
+            // Assert
+            expect(state.lastLoadedAt).toBeUndefined();
+            expect(state.lastFailedAt).toBeInstanceOf(Date);
+            expect(state.lastError).toBe("DASH API request timed out after 200ms");
+            expect(JSON.stringify(state)).not.toContain("test-api-key");
             expect(loggedText()).not.toContain("test-api-key");
         });
 

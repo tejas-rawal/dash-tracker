@@ -73,24 +73,24 @@ describe("BusDataRepository", () => {
         });
     });
 
-    describe("initialize", () => {
+    describe("load", () => {
         it("fetches data from the correct API path on first call", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue(makeApiResponse([makeApiRoute("r1", "1A")]));
 
             // Act
-            await repo.initialize();
+            await repo.load();
 
             // Assert
             expect(mockAxiosGet).toHaveBeenCalledWith("/info/test-agency/routes?verbose=true");
         });
 
-        it("populates routes after successful initialization", async () => {
+        it("populates routes after a successful load", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue(makeApiResponse([makeApiRoute("r1", "1A")]));
 
             // Act
-            await repo.initialize();
+            await repo.load();
             const routes = repo.getAllRoutes();
 
             // Assert
@@ -99,14 +99,14 @@ describe("BusDataRepository", () => {
             expect(routes[0].shortName).toBe("1A");
         });
 
-        it("populates stops after successful initialization", async () => {
+        it("populates stops after a successful load", async () => {
             // Arrange
             const stop = makeApiStop("s1");
             const direction = makeApiDirection("d1", [stop]);
             mockAxiosGet.mockResolvedValue(makeApiResponse([makeApiRoute("r1", "1A", [direction])]));
 
             // Act
-            await repo.initialize();
+            await repo.load();
             const stops = repo.getAllStops();
 
             // Assert
@@ -115,72 +115,49 @@ describe("BusDataRepository", () => {
             expect(stops[0].id).toBe("s1");
         });
 
-        it("does not call the API again when already initialized", async () => {
-            // Arrange
-            mockAxiosGet.mockResolvedValue(makeApiResponse([makeApiRoute("r1", "1A")]));
-
-            // Act
-            await repo.initialize();
-            await repo.initialize();
-
-            // Assert
-            expect(mockAxiosGet).toHaveBeenCalledOnce();
-        });
-
-        it("does not call the API a second time when initialization is already in progress", async () => {
-            // Arrange
-            mockAxiosGet.mockResolvedValue(makeApiResponse([makeApiRoute("r1", "1A")]));
-
-            // Act
-            await Promise.all([repo.initialize(), repo.initialize()]);
-
-            // Assert
-            expect(mockAxiosGet).toHaveBeenCalledOnce();
-        });
-
-        it("throws when the API call rejects", async () => {
+        it("rejects with the upstream message when the API call rejects", async () => {
             // Arrange
             mockAxiosGet.mockRejectedValue(new Error("network error"));
 
             // Act & Assert
-            await expect(repo.initialize()).rejects.toThrow("Failed to initialize bus data");
+            await expect(repo.load()).rejects.toThrow("network error");
         });
 
-        it("resets the initialization promise so a retry is possible after failure", async () => {
+        it("calls the API again on the next load after a failure", async () => {
             // Arrange
             mockAxiosGet.mockRejectedValueOnce(new Error("network error"));
             mockAxiosGet.mockResolvedValueOnce(makeApiResponse([makeApiRoute("r1", "1A")]));
 
             // Act
-            await repo.initialize().catch(() => undefined);
-            await repo.initialize();
+            await repo.load().catch(() => undefined);
+            await repo.load();
 
             // Assert
             expect(mockAxiosGet).toHaveBeenCalledTimes(2);
         });
 
-        it("handles an API response with no routes gracefully", async () => {
+        it("rejects an API response with no routes and applies nothing", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue(makeApiResponse([]));
 
             // Act
-            await repo.initialize();
-            const routes = repo.getAllRoutes();
+            const result = repo.load();
 
             // Assert
-            expect(routes).toEqual([]);
+            await expect(result).rejects.toThrow("DASH API returned no routes");
+            expect(() => repo.getAllRoutes()).toThrow(DataNotReadyError);
         });
 
-        it("handles an API response where routes is null", async () => {
+        it("rejects an API response where routes is null and applies nothing", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue({ data: { data: { routes: null } } });
 
             // Act
-            await repo.initialize();
-            const routes = repo.getAllRoutes();
+            const result = repo.load();
 
             // Assert
-            expect(routes).toEqual([]);
+            await expect(result).rejects.toThrow("DASH API returned no routes");
+            expect(() => repo.getAllRoutes()).toThrow(DataNotReadyError);
         });
 
         it("handles a route without shortName without adding it to the shortName map", async () => {
@@ -191,7 +168,7 @@ describe("BusDataRepository", () => {
             mockAxiosGet.mockResolvedValue(makeApiResponse([routeWithoutShortName]));
 
             // Act
-            await repo.initialize();
+            await repo.load();
 
             // Assert
             expect(repo.getRouteByShortName("")).toBeUndefined();
@@ -205,41 +182,41 @@ describe("BusDataRepository", () => {
             mockAxiosGet.mockResolvedValue(makeApiResponse([makeApiRoute("r1", "1A", [dir1, dir2])]));
 
             // Act
-            await repo.initialize();
+            await repo.load();
             const stops = repo.getAllStops();
 
             // Assert
             expect(stops).toHaveLength(1);
         });
 
-        it("throws when a stop has an invalid numeric code", async () => {
+        it("rejects when a stop has an invalid numeric code", async () => {
             // Arrange
             const badStop = makeApiStop("s1", { code: "not-a-number" });
             const direction = makeApiDirection("d1", [badStop]);
             mockAxiosGet.mockResolvedValue(makeApiResponse([makeApiRoute("r1", "1A", [direction])]));
 
             // Act & Assert
-            await expect(repo.initialize()).rejects.toThrow();
+            await expect(repo.load()).rejects.toThrow();
         });
 
-        it("throws when a stop has an invalid latitude", async () => {
+        it("rejects when a stop has an invalid latitude", async () => {
             // Arrange
             const badStop = makeApiStop("s1", { lat: "not-a-number" });
             const direction = makeApiDirection("d1", [badStop]);
             mockAxiosGet.mockResolvedValue(makeApiResponse([makeApiRoute("r1", "1A", [direction])]));
 
             // Act & Assert
-            await expect(repo.initialize()).rejects.toThrow();
+            await expect(repo.load()).rejects.toThrow();
         });
 
-        it("throws when a stop has an invalid longitude", async () => {
+        it("rejects when a stop has an invalid longitude", async () => {
             // Arrange
             const badStop = makeApiStop("s1", { lon: "not-a-number" });
             const direction = makeApiDirection("d1", [badStop]);
             mockAxiosGet.mockResolvedValue(makeApiResponse([makeApiRoute("r1", "1A", [direction])]));
 
             // Act & Assert
-            await expect(repo.initialize()).rejects.toThrow();
+            await expect(repo.load()).rejects.toThrow();
         });
 
         it("accepts numeric code, lat and lon values without conversion errors", async () => {
@@ -249,7 +226,7 @@ describe("BusDataRepository", () => {
             mockAxiosGet.mockResolvedValue(makeApiResponse([makeApiRoute("r1", "1A", [direction])]));
 
             // Act
-            await repo.initialize();
+            await repo.load();
             const stops = repo.getAllStops();
 
             // Assert
@@ -267,7 +244,7 @@ describe("BusDataRepository", () => {
             );
 
             // Act
-            await repo.initialize();
+            await repo.load();
             const routes = repo.getAllRoutes();
 
             // Assert
@@ -282,55 +259,44 @@ describe("BusDataRepository", () => {
             mockAxiosGet.mockResolvedValue(makeApiResponse([routeWithoutDirs]));
 
             // Act
-            await repo.initialize();
+            await repo.load();
             const routes = repo.getAllRoutes();
 
             // Assert
             expect(routes[0].directions).toEqual([]);
         });
-    });
 
-    describe("refreshData", () => {
-        it("re-fetches from the API and updates routes", async () => {
+        it("replaces the data on a later successful load", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValueOnce(makeApiResponse([makeApiRoute("r1", "1A")]));
-            await repo.initialize();
+            await repo.load();
             mockAxiosGet.mockResolvedValueOnce(makeApiResponse([makeApiRoute("r1", "1A"), makeApiRoute("r2", "2B")]));
 
             // Act
-            await repo.refreshData();
+            await repo.load();
             const routes = repo.getAllRoutes();
 
             // Assert
             expect(routes).toHaveLength(2);
         });
 
-        it("throws when the refresh API call rejects", async () => {
+        it("rejects a later failed load with the upstream message and keeps the previous data", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValueOnce(makeApiResponse([makeApiRoute("r1", "1A")]));
-            await repo.initialize();
+            await repo.load();
             mockAxiosGet.mockRejectedValueOnce(new Error("refresh failed"));
 
-            // Act & Assert
-            await expect(repo.refreshData()).rejects.toThrow("Failed to refresh bus data");
-        });
-
-        it("does not permanently break initialize() after a refresh failure with no prior successful load", async () => {
-            // Arrange: refreshData fails before any successful initialize()
-            mockAxiosGet.mockRejectedValueOnce(new Error("refresh failed"));
-            await expect(repo.refreshData()).rejects.toThrow("Failed to refresh bus data");
-
-            // Act: initialize() must retry against the API, not replay the dead rejection
-            mockAxiosGet.mockResolvedValueOnce(makeApiResponse([makeApiRoute("r1", "1A")]));
-            await repo.initialize();
+            // Act
+            const result = repo.load();
 
             // Assert
-            expect(repo.getAllRoutes()).toHaveLength(1);
+            await expect(result).rejects.toThrow("refresh failed");
+            expect(repo.getAllRoutes().map((route) => route.id)).toEqual(["r1"]);
         });
     });
 
     describe("getAllRoutes", () => {
-        it("throws when called before initialization", () => {
+        it("throws DataNotReadyError before the first successful load", () => {
             // Arrange & Act & Assert
             expect(() => repo.getAllRoutes()).toThrow(DataNotReadyError);
         });
@@ -340,7 +306,7 @@ describe("BusDataRepository", () => {
         it("returns the route matching the given id", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue(makeApiResponse([makeApiRoute("r1", "1A")]));
-            await repo.initialize();
+            await repo.load();
 
             // Act
             const route = repo.getRouteById("r1");
@@ -353,7 +319,7 @@ describe("BusDataRepository", () => {
         it("returns undefined when no route matches the given id", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue(makeApiResponse([makeApiRoute("r1", "1A")]));
-            await repo.initialize();
+            await repo.load();
 
             // Act
             const route = repo.getRouteById("nonexistent");
@@ -362,7 +328,7 @@ describe("BusDataRepository", () => {
             expect(route).toBeUndefined();
         });
 
-        it("throws when called before initialization", () => {
+        it("throws DataNotReadyError before the first successful load", () => {
             // Arrange & Act & Assert
             expect(() => repo.getRouteById("r1")).toThrow(DataNotReadyError);
         });
@@ -372,7 +338,7 @@ describe("BusDataRepository", () => {
         it("returns the route matching the given short name", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue(makeApiResponse([makeApiRoute("r1", "1A")]));
-            await repo.initialize();
+            await repo.load();
 
             // Act
             const route = repo.getRouteByShortName("1A");
@@ -384,7 +350,7 @@ describe("BusDataRepository", () => {
         it("returns undefined when no route matches the given short name", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue(makeApiResponse([makeApiRoute("r1", "1A")]));
-            await repo.initialize();
+            await repo.load();
 
             // Act
             const route = repo.getRouteByShortName("UNKNOWN");
@@ -393,19 +359,19 @@ describe("BusDataRepository", () => {
             expect(route).toBeUndefined();
         });
 
-        it("throws when called before initialization", () => {
+        it("throws DataNotReadyError before the first successful load", () => {
             // Arrange & Act & Assert
             expect(() => repo.getRouteByShortName("1A")).toThrow(DataNotReadyError);
         });
     });
 
     describe("getAllStops", () => {
-        it("returns all stops after initialization", async () => {
+        it("returns all stops after a load", async () => {
             // Arrange
             const stop = makeApiStop("s1");
             const direction = makeApiDirection("d1", [stop]);
             mockAxiosGet.mockResolvedValue(makeApiResponse([makeApiRoute("r1", "1A", [direction])]));
-            await repo.initialize();
+            await repo.load();
 
             // Act
             const stops = repo.getAllStops();
@@ -415,7 +381,7 @@ describe("BusDataRepository", () => {
             expect(stops[0]).toBeInstanceOf(BusStop);
         });
 
-        it("throws when called before initialization", () => {
+        it("throws DataNotReadyError before the first successful load", () => {
             // Arrange & Act & Assert
             expect(() => repo.getAllStops()).toThrow(DataNotReadyError);
         });
@@ -427,7 +393,7 @@ describe("BusDataRepository", () => {
             const stop = makeApiStop("s1");
             const direction = makeApiDirection("d1", [stop]);
             mockAxiosGet.mockResolvedValue(makeApiResponse([makeApiRoute("r1", "1A", [direction])]));
-            await repo.initialize();
+            await repo.load();
 
             // Act
             const found = repo.getStopById("s1");
@@ -440,7 +406,7 @@ describe("BusDataRepository", () => {
         it("returns undefined when no stop matches the given id", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue(makeApiResponse([makeApiRoute("r1", "1A")]));
-            await repo.initialize();
+            await repo.load();
 
             // Act
             const found = repo.getStopById("unknown-stop");
@@ -449,7 +415,7 @@ describe("BusDataRepository", () => {
             expect(found).toBeUndefined();
         });
 
-        it("throws when called before initialization", () => {
+        it("throws DataNotReadyError before the first successful load", () => {
             // Arrange & Act & Assert
             expect(() => repo.getStopById("s1")).toThrow(DataNotReadyError);
         });
@@ -461,7 +427,7 @@ describe("BusDataRepository", () => {
             const stop = makeApiStop("s1");
             const direction = makeApiDirection("d1", [stop]);
             mockAxiosGet.mockResolvedValue(makeApiResponse([makeApiRoute("r1", "1A", [direction])]));
-            await repo.initialize();
+            await repo.load();
 
             // Act
             const routes = repo.getRoutesForStop("s1");
@@ -474,7 +440,7 @@ describe("BusDataRepository", () => {
         it("returns an empty array when no routes contain the given stop", async () => {
             // Arrange
             mockAxiosGet.mockResolvedValue(makeApiResponse([makeApiRoute("r1", "1A")]));
-            await repo.initialize();
+            await repo.load();
 
             // Act
             const routes = repo.getRoutesForStop("nonexistent-stop");
@@ -483,7 +449,7 @@ describe("BusDataRepository", () => {
             expect(routes).toEqual([]);
         });
 
-        it("throws when called before initialization", () => {
+        it("throws DataNotReadyError before the first successful load", () => {
             // Arrange & Act & Assert
             expect(() => repo.getRoutesForStop("s1")).toThrow(DataNotReadyError);
         });
@@ -496,7 +462,7 @@ describe("BusDataRepository", () => {
             mockAxiosGet.mockResolvedValue(
                 makeApiResponse([makeApiRoute("r1", "1A", [dir1]), makeApiRoute("r2", "2B", [dir2])]),
             );
-            await repo.initialize();
+            await repo.load();
 
             // Act
             const routes = repo.getRoutesForStop("shared");
