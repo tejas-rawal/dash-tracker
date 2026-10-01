@@ -6,9 +6,10 @@ const MAX_RETRY_DELAY_MS = 60_000; // a long DASH outage is still retried about 
 const REFRESH_INTERVAL_MS = 60 * 60_000; // hourly once loaded: DASH route/stop data changes rarely (D-09)
 
 /**
- * Equal jitter: every delay is at least half its ceiling, so consecutive logged delays never shrink
- * (SC1's increasing delays stay visible) while restarted instances still spread out. Very large attempt
- * counts cap at MAX_RETRY_DELAY_MS because Math.min absorbs an infinite power of two.
+ * Equal jitter: every delay is at least half its ceiling, so below the cap consecutive logged delays never
+ * shrink (SC1's increasing delays stay visible) while restarted instances still spread out. Once capped,
+ * delays stay between half the cap and the cap. Very large attempt counts cap at MAX_RETRY_DELAY_MS
+ * because Math.min absorbs an infinite power of two.
  */
 export function computeRetryDelayMs(attempt: number, random: () => number = Math.random): number {
     const ceiling = Math.min(MAX_RETRY_DELAY_MS, INITIAL_RETRY_DELAY_MS * 2 ** (attempt - 1));
