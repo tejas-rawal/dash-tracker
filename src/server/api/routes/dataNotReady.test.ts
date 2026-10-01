@@ -36,4 +36,21 @@ describe("route/stop-dependent endpoints before the first successful load", () =
             expect(response.body).toEqual(NOT_READY_BODY);
         },
     );
+
+    it("POST /api/v1/favorites answers 503 with Retry-After before the first route/stop load", async () => {
+        // Arrange
+        // resolveEntity reads the route/stop repository before any SQLite write, so this runs without an open database.
+        const client = request(app);
+
+        // Act
+        const response = await client
+            .post("/api/v1/favorites")
+            .set("X-Device-Id", "device-a")
+            .send({ entityType: "route", entityId: "route-1" });
+
+        // Assert
+        expect(response.status).toBe(503);
+        expect(response.headers["retry-after"]).toBe("5");
+        expect(response.body).toEqual(NOT_READY_BODY);
+    });
 });
