@@ -5,7 +5,7 @@ import { BusRoute, BusStop, RouteDirection, type RouteType } from "../models";
 
 // Define interfaces for data structures to improve type safety
 interface RouteData {
-    id: string;
+    id: unknown;
     longName?: string;
     shortName?: string;
     name?: string;
@@ -14,14 +14,14 @@ interface RouteData {
 }
 
 interface DirectionData {
-    id: string;
+    id: unknown;
     title: string;
     stops?: StopData[];
     headSigns?: string[];
 }
 
 interface StopData {
-    id: string;
+    id: unknown;
     name: string;
     code: unknown;
     lat: unknown;
@@ -38,6 +38,15 @@ function parseDashNumber(value: unknown, parseText: (text: string) => number): n
         return parseText(value);
     }
     return Number.NaN;
+}
+
+// An id is a map key, and a missing one used to be stored under the key "undefined". The id is
+// kept untrimmed; whitespace-only ids are rejected because they cannot name anything.
+function requireId(value: unknown, entity: "route" | "direction" | "stop"): string {
+    if (typeof value === "string" && value.trim() !== "") {
+        return value;
+    }
+    throw new Error(`Invalid ${entity} id: '${String(value)}'`);
 }
 
 export interface BusDataLoadState {
@@ -137,8 +146,10 @@ export class BusDataRepository {
 
         // Process all routes in a single pass into staging maps
         for (const routeData of routes) {
+            // Each id is checked before its children, so a rejection names the first bad item in DASH order.
+            const routeId = requireId(routeData.id, "route");
             const directions = this.processDirectionsAndStops(routeData.directions || [], stagingStops);
-            const route = this.createRoute(routeData, directions);
+            const route = this.createRoute({ id: routeId, routeData, directions });
             stagingRoutes.set(route.id, route);
             if (route.shortName) {
                 stagingRoutesByShortName.set(route.shortName, route);
@@ -159,33 +170,38 @@ export class BusDataRepository {
         stagingStops: Map<string, BusStop>,
     ): RouteDirection[] {
         return directionsData.map((directionData) => {
+            const directionId = requireId(directionData.id, "direction");
             const stops = (directionData.stops || []).map((stopData) => {
-                // Check if we've already processed this stop
-                let stop = stagingStops.get(stopData.id);
+                const stopId = requireId(stopData.id, "stop");
+                // A stop listed under several directions resolves to its first occurrence
+                let stop = stagingStops.get(stopId);
 
                 if (!stop) {
-                    // Create the stop if it doesn't exist
-                    stop = this.createStop(stopData);
-                    stagingStops.set(stop.id, stop);
+                    stop = this.createStop({ id: stopId, stopData });
+                    stagingStops.set(stopId, stop);
                 }
 
                 return stop;
             });
 
-            // Create and return the direction with its stops
-            return this.createDirection(directionData, stops);
+            return this.createDirection({ id: directionId, directionData, stops });
         });
     }
 
     /**
      * Pure function to create a BusRoute instance
+     * @param id The validated route id
      * @param routeData The route data from the API
      * @param directions The processed direction objects
      * @returns A new BusRoute instance
      */
-    private createRoute(routeData: RouteData, directions: RouteDirection[]): BusRoute {
+    private createRoute({
+        id,
+        routeData,
+        directions,
+    }: { id: string; routeData: RouteData; directions: RouteDirection[] }): BusRoute {
         return new BusRoute({
-            id: routeData.id,
+            id,
             longName: routeData.longName || "",
             shortName: routeData.shortName || "",
             name: routeData.name || "",
@@ -196,35 +212,41 @@ export class BusDataRepository {
 
     /**
      * Pure function to create a BusStop instance
+     * @param id The validated stop id
      * @param stopData The stop data from the API
      * @returns A new BusStop instance
      */
-    private createStop(stopData: StopData): BusStop {
+    private createStop({ id, stopData }: { id: string; stopData: StopData }): BusStop {
         const code = parseDashNumber(stopData.code, (text) => Number.parseInt(text, 10));
         const lat = parseDashNumber(stopData.lat, Number.parseFloat);
         const lon = parseDashNumber(stopData.lon, Number.parseFloat);
 
         if (!Number.isFinite(code)) {
-            throw new Error(`Invalid stop code for stop '${stopData.id}': '${String(stopData.code)}'`);
+            throw new Error(`Invalid stop code for stop '${id}': '${String(stopData.code)}'`);
         }
         if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
             throw new Error(
-                `Invalid coordinates for stop '${stopData.id}': lat='${String(stopData.lat)}', lon='${String(stopData.lon)}'`,
+                `Invalid coordinates for stop '${id}': lat='${String(stopData.lat)}', lon='${String(stopData.lon)}'`,
             );
         }
 
-        return new BusStop({ id: stopData.id, name: stopData.name, code, lat, lon });
+        return new BusStop({ id, name: stopData.name, code, lat, lon });
     }
 
     /**
      * Pure function to create a RouteDirection instance
+     * @param id The validated direction id
      * @param directionData The direction data from the API
      * @param stops The processed stops for this direction
      * @returns A new RouteDirection instance
      */
-    private createDirection(directionData: DirectionData, stops: BusStop[]): RouteDirection {
+    private createDirection({
+        id,
+        directionData,
+        stops,
+    }: { id: string; directionData: DirectionData; stops: BusStop[] }): RouteDirection {
         return new RouteDirection({
-            id: directionData.id,
+            id,
             title: directionData.title,
             stops,
             headSigns: directionData.headSigns || [],
