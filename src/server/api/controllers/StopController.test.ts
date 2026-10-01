@@ -93,11 +93,11 @@ describe("StopController", () => {
             });
         });
 
-        it("responds with 500 and a Request Failed error body when the service throws a generic Error", () => {
+        it("responds with 500 and a generic Request Failed body that does not echo the thrown message", () => {
             // Arrange
             const mockService = makeMockService();
             mockService.getStopsForRoute.mockImplementation(() => {
-                throw new Error("unexpected");
+                throw new Error("direction table corrupted");
             });
             const { getStopsForRoute } = createStopController(mockService);
             const req = makeMockReq({ shortName: "1A" });
@@ -110,8 +110,9 @@ describe("StopController", () => {
             expect(res.status).toHaveBeenCalledWith(500);
             expect(res.json).toHaveBeenCalledWith({
                 error: "Request Failed",
-                details: "unexpected",
+                details: "An unexpected error occurred",
             });
+            expect(JSON.stringify(vi.mocked(res.json).mock.calls[0][0])).not.toContain("direction table corrupted");
         });
     });
 
@@ -352,6 +353,28 @@ describe("StopController", () => {
                 radius: undefined,
                 count: undefined,
             });
+        });
+
+        it("responds with 500 and a generic Request Failed body that does not echo the thrown message", () => {
+            // Arrange
+            const mockService = makeMockService();
+            mockService.getNearbyStops.mockImplementation(() => {
+                throw new Error("stop index corrupted");
+            });
+            const { getNearbyStops } = createStopController(mockService);
+            const req = makeMockQueryReq({ lat: "38.8", lng: "-77.1" });
+            const res = makeMockRes();
+
+            // Act
+            getNearbyStops(req, res, vi.fn());
+
+            // Assert
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith({
+                error: "Request Failed",
+                details: "An unexpected error occurred",
+            });
+            expect(JSON.stringify(vi.mocked(res.json).mock.calls[0][0])).not.toContain("stop index corrupted");
         });
     });
 });

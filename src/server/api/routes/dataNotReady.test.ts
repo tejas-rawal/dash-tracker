@@ -13,6 +13,8 @@ const NOT_READY_ROWS: { label: string; path: string }[] = [
     { label: "GET /api/v1/vehicles with a route filter", path: "/api/v1/vehicles?route=1A" },
     { label: "GET /api/v1/routes/all", path: "/api/v1/routes/all" },
     { label: "GET /api/v1/routes/:shortName", path: "/api/v1/routes/1A" },
+    { label: "GET /api/v1/routes/:shortName/stops", path: "/api/v1/routes/1A/stops" },
+    { label: "GET /api/v1/stops/nearby", path: "/api/v1/stops/nearby?lat=38.8&lng=-77.1" },
 ];
 
 describe("route/stop-dependent endpoints before the first successful load", () => {

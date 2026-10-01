@@ -1,6 +1,6 @@
 import type { Request, RequestHandler, Response } from "express";
-import { NotFoundError } from "../errors";
 import type { StopService } from "../services/StopService";
+import { sendErrorResponse } from "./errorResponse";
 
 export interface StopController {
     getStopsForRoute: RequestHandler;
@@ -31,19 +31,6 @@ function parseCountParam(raw: unknown): number | undefined {
     return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
-function resolveErrorStatus(error: unknown): number {
-    if (error instanceof NotFoundError) {
-        return 404;
-    }
-    return 500;
-}
-
-function resolveErrorBody(error: unknown): { error: string; details: string } {
-    const details = error instanceof Error ? error.message : "Unknown error";
-    const label = error instanceof NotFoundError ? "Not Found" : "Request Failed";
-    return { error: label, details };
-}
-
 export function createStopController(service: StopService): StopController {
     const getStopsForRoute: RequestHandler = (req: Request, res: Response) => {
         try {
@@ -51,7 +38,7 @@ export function createStopController(service: StopService): StopController {
             const result = service.getStopsForRoute(Array.isArray(shortName) ? shortName[0] : shortName);
             res.json(result);
         } catch (error: unknown) {
-            res.status(resolveErrorStatus(error)).json(resolveErrorBody(error));
+            sendErrorResponse(res, error);
         }
     };
 
@@ -94,7 +81,7 @@ export function createStopController(service: StopService): StopController {
             const result = service.getNearbyStops(lat, lng, { radius, count });
             res.json(result);
         } catch (error: unknown) {
-            res.status(resolveErrorStatus(error)).json(resolveErrorBody(error));
+            sendErrorResponse(res, error);
         }
     };
 
