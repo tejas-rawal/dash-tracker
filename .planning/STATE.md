@@ -22,10 +22,10 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-30)
+See: .planning/PROJECT.md (updated 2026-10-01)
 
 **Core value:** Riders can always see accurate, near-real-time arrival predictions for their stop.
-**Current focus:** Phase 13 — Resilient Route/Stop Data Lifecycle
+**Current focus:** Phase 14 — Health Checks & Rate Limiting
 
 ## Current Position
 
@@ -34,7 +34,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-10-01 — Phase 13 complete, transitioned to Phase 14
 
-Progress (v0.6): [██░░░░░░░░] 1/4 phases (25%)
+Progress (v0.6): [█████░░░░░] 2/4 phases (50%)
 
 ## Performance Metrics
 
@@ -161,6 +161,8 @@ None yet.
 - ⚠️ [Phase 9] `ServiceAlertRepository.isAlertActive`'s date-boundary checks fail open on a malformed `activePeriod` date string rather than excluding/logging it (WR-02, `09-REVIEW.md`). Scheduled: v0.6 Phase 15 (ALRT-13).
 - ⚠️ [Phase 12] `exitAfterLogFlush` in `processHandlers.ts` calls `logger.end()` and then waits for the flush; a log call in that window (two uncaught exceptions in one tick, or other logging while stdout is slow) hits Winston's unhandled "write after end" error and the process exits 7 instead of 1, sometimes losing the crash reason (reproduced; see `12-VERIFICATION.md`). Still non-zero, so a supervisor restarts it. Fix is a few lines plus a test that fires the handler twice: attach an error listener before `logger.end()`, or skip `logger.end()` and wait only for stdout.
 - ⚠️ [Phase 10] CR-02's fix (dropping vehicles with malformed `loc.time` instead of crashing the request) has no committed regression test — production code is correct and independently spot-checked by both the code fixer and the phase verifier, but a future refactor could silently reintroduce the crash with nothing to catch it. Flagged as an info-level gap in `10-VERIFICATION.md`; recommend adding the 3 spot-check cases to the committed `VehicleService.test.ts` suite.
+- ⚠️ [Phase 13] Code review (`13-REVIEW.md`) left 2 non-blocking warnings: numeric route/stop fields parsed with lenient `parseInt`/`parseFloat` and lat/lon not range-checked (WR-01); string fields unchecked, so a numeric `shortName` 404s on `/routes/:shortName` and a missing stop `name` is dropped (WR-02 — coerce, don't reject). Also open: no guard against overlapping `load()` calls (IN-03); permanent load failures log only at warn. Readiness signal (old WR-03) is Phase 14 HLTH-02.
+- ⚠️ [Phase 13] `.claude/CLAUDE.md`/`AGENTS.md` still list Vitest 2.1.5 (package.json pins 3.2.6) and an incomplete endpoint list.
 - [Phase 13-05] Bun 1.0.31 'bunx' does not forward SIGTERM/SIGINT to its child: signalling a 'bunx tsx' wrapper orphans the server. Smokes ran ./node_modules/.bin/tsx directly. Check how production is supervised (start-server uses ts-node via bun run, untested).
 
 ### Quick Tasks Completed
@@ -188,10 +190,10 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-01T18:44:16.132Z
+Last session: 2026-10-01T19:15:00Z
 Stopped at: Phase 13 complete, ready to plan Phase 14
 Resume file: None
 
 ## Operator Next Steps
 
-- Discuss the next v0.6 phase with /gsd-discuss-phase 13
+- Discuss the next v0.6 phase with /gsd-discuss-phase 14
