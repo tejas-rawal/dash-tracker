@@ -50,7 +50,8 @@ export function createPredictionStreamController(streamService: PredictionStream
 
         let subscription: { initialPayload: StopPredictionsResponse; unsubscribe: () => void };
         try {
-            subscription = await streamService.subscribe(stop, send);
+            // The service ends the stream when its stop leaves the dataset; cleanup ends the response once.
+            subscription = await streamService.subscribe(stop, { onUpdate: send, onEnd: cleanup });
         } catch (error: unknown) {
             // A client that already disconnected has no one to read the error response.
             if (finished || res.headersSent) {

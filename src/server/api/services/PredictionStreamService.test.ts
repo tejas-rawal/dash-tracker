@@ -13,6 +13,11 @@ const makeMockPredictionService = () => ({
     getPredictionsForStop: vi.fn(),
 });
 
+const makeSubscriber = () => ({
+    onUpdate: vi.fn(),
+    onEnd: vi.fn(),
+});
+
 const makeResponse = (stopId = "stop-1", suffix = "a"): StopPredictionsResponse => ({
     success: true,
     generatedAt: `2026-01-01T00:00:00.00${suffix}Z`,
@@ -39,7 +44,7 @@ describe("PredictionStreamService", () => {
         const { subscribe } = createPredictionStreamService(mockPredictionService as never);
 
         // Act
-        await subscribe("stop-1", vi.fn());
+        await subscribe("stop-1", makeSubscriber());
         expect(mockPredictionService.getPredictionsForStop).toHaveBeenCalledWith("stop-1");
 
         await vi.advanceTimersByTimeAsync(30_000);
@@ -59,7 +64,7 @@ describe("PredictionStreamService", () => {
         const { subscribe } = createPredictionStreamService(mockPredictionService as never);
 
         // Act
-        const { initialPayload } = await subscribe("stop-1", vi.fn());
+        const { initialPayload } = await subscribe("stop-1", makeSubscriber());
 
         // Assert
         expect(initialPayload).toBe(payload);
@@ -74,8 +79,8 @@ describe("PredictionStreamService", () => {
         const { subscribe } = createPredictionStreamService(mockPredictionService as never);
 
         // Act
-        const first = await subscribe("stop-1", vi.fn());
-        const second = await subscribe("stop-1", vi.fn());
+        const first = await subscribe("stop-1", makeSubscriber());
+        const second = await subscribe("stop-1", makeSubscriber());
 
         // Assert
         expect(mockPredictionService.getPredictionsForStop).toHaveBeenCalledTimes(1);
@@ -92,18 +97,18 @@ describe("PredictionStreamService", () => {
             .mockResolvedValueOnce(firstPayload)
             .mockResolvedValue(secondPayload);
         const { subscribe } = createPredictionStreamService(mockPredictionService as never);
-        const onUpdateA = vi.fn();
-        const onUpdateB = vi.fn();
+        const subscriberA = makeSubscriber();
+        const subscriberB = makeSubscriber();
 
         // Act
-        await subscribe("stop-1", onUpdateA);
-        await subscribe("stop-1", onUpdateB);
+        await subscribe("stop-1", subscriberA);
+        await subscribe("stop-1", subscriberB);
         await vi.advanceTimersByTimeAsync(30_000);
 
         // Assert
         expect(mockPredictionService.getPredictionsForStop).toHaveBeenCalledTimes(2);
-        expect(onUpdateA).toHaveBeenCalledWith(secondPayload);
-        expect(onUpdateB).toHaveBeenCalledWith(secondPayload);
+        expect(subscriberA.onUpdate).toHaveBeenCalledWith(secondPayload);
+        expect(subscriberB.onUpdate).toHaveBeenCalledWith(secondPayload);
     });
 
     it("stops polling once the sole subscriber unsubscribes", async () => {
@@ -111,7 +116,7 @@ describe("PredictionStreamService", () => {
         const mockPredictionService = makeMockPredictionService();
         mockPredictionService.getPredictionsForStop.mockResolvedValue(makeResponse());
         const { subscribe } = createPredictionStreamService(mockPredictionService as never);
-        const { unsubscribe } = await subscribe("stop-1", vi.fn());
+        const { unsubscribe } = await subscribe("stop-1", makeSubscriber());
 
         // Act
         unsubscribe();
@@ -126,11 +131,11 @@ describe("PredictionStreamService", () => {
         const mockPredictionService = makeMockPredictionService();
         mockPredictionService.getPredictionsForStop.mockResolvedValue(makeResponse());
         const { subscribe } = createPredictionStreamService(mockPredictionService as never);
-        const { unsubscribe } = await subscribe("stop-1", vi.fn());
+        const { unsubscribe } = await subscribe("stop-1", makeSubscriber());
         unsubscribe();
 
         // Act
-        await subscribe("stop-1", vi.fn());
+        await subscribe("stop-1", makeSubscriber());
 
         // Assert
         expect(mockPredictionService.getPredictionsForStop).toHaveBeenCalledTimes(2);
@@ -146,21 +151,21 @@ describe("PredictionStreamService", () => {
             .mockRejectedValueOnce(new Error("upstream down"))
             .mockResolvedValueOnce(recoveredPayload);
         const { subscribe } = createPredictionStreamService(mockPredictionService as never);
-        const onUpdate = vi.fn();
-        await subscribe("stop-1", onUpdate);
+        const subscriber = makeSubscriber();
+        await subscribe("stop-1", subscriber);
 
         // Act: first tick fails
         await vi.advanceTimersByTimeAsync(30_000);
 
         // Assert: failure logged, subscriber not called with failed-tick data, interval still alive
-        expect(onUpdate).not.toHaveBeenCalled();
+        expect(subscriber.onUpdate).not.toHaveBeenCalled();
         expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("stop-1"));
 
         // Act: second tick succeeds
         await vi.advanceTimersByTimeAsync(30_000);
 
         // Assert: recovery fans out fresh data
-        expect(onUpdate).toHaveBeenCalledWith(recoveredPayload);
+        expect(subscriber.onUpdate).toHaveBeenCalledWith(recoveredPayload);
         expect(mockPredictionService.getPredictionsForStop).toHaveBeenCalledTimes(3);
     });
 
@@ -176,12 +181,12 @@ describe("PredictionStreamService", () => {
                 }),
         );
         const { subscribe } = createPredictionStreamService(mockPredictionService as never);
-        const onUpdateA = vi.fn();
-        const onUpdateB = vi.fn();
+        const subscriberA = makeSubscriber();
+        const subscriberB = makeSubscriber();
 
         // Act: fire both subscribes without awaiting the first before starting the second
-        const firstPromise = subscribe("stop-1", onUpdateA);
-        const secondPromise = subscribe("stop-1", onUpdateB);
+        const firstPromise = subscribe("stop-1", subscriberA);
+        const secondPromise = subscribe("stop-1", subscriberB);
         resolveFetch(payload);
         const [first, second] = await Promise.all([firstPromise, secondPromise]);
 
@@ -205,20 +210,23 @@ describe("PredictionStreamService", () => {
             .mockResolvedValueOnce(firstPayload)
             .mockResolvedValue(secondPayload);
         const { subscribe } = createPredictionStreamService(mockPredictionService as never);
-        const onUpdateA = vi.fn(() => {
-            throw new Error("subscriber A exploded");
-        });
-        const onUpdateB = vi.fn();
+        const subscriberA = {
+            onUpdate: vi.fn(() => {
+                throw new Error("subscriber A exploded");
+            }),
+            onEnd: vi.fn(),
+        };
+        const subscriberB = makeSubscriber();
 
         // Act
-        await subscribe("stop-1", onUpdateA);
-        await subscribe("stop-1", onUpdateB);
+        await subscribe("stop-1", subscriberA);
+        await subscribe("stop-1", subscriberB);
         await vi.advanceTimersByTimeAsync(30_000);
 
         // Assert: the failing subscriber's error is caught and logged...
         expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("Failed to deliver prediction update"));
         // ...but the other subscriber in the same tick still receives the update.
-        expect(onUpdateB).toHaveBeenCalledWith(secondPayload);
+        expect(subscriberB.onUpdate).toHaveBeenCalledWith(secondPayload);
     });
 
     it("propagates the error when the very first subscribe fetch rejects, without creating a zombie loop", async () => {
@@ -230,10 +238,10 @@ describe("PredictionStreamService", () => {
         const { subscribe } = createPredictionStreamService(mockPredictionService as never);
 
         // Act & Assert: first attempt rejects
-        await expect(subscribe("stop-1", vi.fn())).rejects.toThrow(NotFoundError);
+        await expect(subscribe("stop-1", makeSubscriber())).rejects.toThrow(NotFoundError);
 
         // Act: a following subscribe triggers a brand-new fetch (no zombie loop entry survived)
-        await subscribe("stop-1", vi.fn());
+        await subscribe("stop-1", makeSubscriber());
 
         // Assert
         expect(mockPredictionService.getPredictionsForStop).toHaveBeenCalledTimes(2);
