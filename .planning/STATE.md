@@ -4,18 +4,18 @@ milestone: v0.6
 milestone_name: Solidifying the backend
 current_phase: 13
 current_phase_name: Resilient Route/Stop Data Lifecycle
-status: executing
-stopped_at: Completed 13-04-PLAN.md
-last_updated: "2026-10-01T14:24:44.155Z"
+status: verifying
+stopped_at: Completed 13-05-PLAN.md
+last_updated: "2026-10-01T14:33:19.720Z"
 last_activity: 2026-10-01
 last_activity_desc: Phase 13 execution started
-state_head: 5ae0e1b10ba44eba97a19a418f1e5f6c6533ec1a
+state_head: 440b0026eef37100bd53338415266fb0a86c2099
 progress:
   total_phases: 4
   completed_phases: 12
   total_plans: 9
-  completed_plans: 8
-  percent: 89
+  completed_plans: 9
+  percent: 100
 ---
 
 # Project State
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-09-30)
 
 Phase: 13 (Resilient Route/Stop Data Lifecycle) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-01 — Phase 13 execution started
 
 Progress (v0.6): [██░░░░░░░░] 1/4 phases (25%)
@@ -85,6 +85,7 @@ Progress (v0.6): [██░░░░░░░░] 1/4 phases (25%)
 | Phase 13 P02 | 2min | 3 tasks | 9 files |
 | Phase 13 P03 | 3 min | 2 tasks | 5 files |
 | Phase 13 P04 | 2min | 3 tasks | 9 files |
+| Phase 13 P05 | 6min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -134,6 +135,8 @@ Recent decisions affecting current work:
 - [Phase 13]: 13-03: an empty/null/missing DASH routes list is a failed load ('DASH API returned no routes'), never applied
 - [Phase 13]: 13-04: All 8 controllers map errors only through sendErrorResponse; no controller keeps a local mapper (D-02 complete, WR-02/IN-04 closed)
 - [Phase 13]: 13-04: Favorites/recents hydration propagates DataNotReadyError as 503 rather than silently dropping entries; no service-side change was needed
+- [Phase 13]: 13-05: Route/stop data loads in the background via BusDataRefreshService (chained setTimeout): equal-jitter backoff 1 s base / 60 s cap until first success, then hourly; one warn/info per attempt; stop() also blocks in-flight rescheduling
+- [Phase 13]: 13-05: app.ts boot order is process handlers -> SQLite initialize (fatal) -> listen -> start loader + alert poll; shutdown stops both loops before server.close
 
 ### Pending Todos
 
@@ -151,6 +154,7 @@ None yet.
 - ⚠️ [Phase 9] `ServiceAlertRepository.isAlertActive`'s date-boundary checks fail open on a malformed `activePeriod` date string rather than excluding/logging it (WR-02, `09-REVIEW.md`). Scheduled: v0.6 Phase 15 (ALRT-13).
 - ⚠️ [Phase 12] `exitAfterLogFlush` in `processHandlers.ts` calls `logger.end()` and then waits for the flush; a log call in that window (two uncaught exceptions in one tick, or other logging while stdout is slow) hits Winston's unhandled "write after end" error and the process exits 7 instead of 1, sometimes losing the crash reason (reproduced; see `12-VERIFICATION.md`). Still non-zero, so a supervisor restarts it. Fix is a few lines plus a test that fires the handler twice: attach an error listener before `logger.end()`, or skip `logger.end()` and wait only for stdout.
 - ⚠️ [Phase 10] CR-02's fix (dropping vehicles with malformed `loc.time` instead of crashing the request) has no committed regression test — production code is correct and independently spot-checked by both the code fixer and the phase verifier, but a future refactor could silently reintroduce the crash with nothing to catch it. Flagged as an info-level gap in `10-VERIFICATION.md`; recommend adding the 3 spot-check cases to the committed `VehicleService.test.ts` suite.
+- [Phase 13-05] Bun 1.0.31 'bunx' does not forward SIGTERM/SIGINT to its child: signalling a 'bunx tsx' wrapper orphans the server. Smokes ran ./node_modules/.bin/tsx directly. Check how production is supervised (start-server uses ts-node via bun run, untested).
 
 ### Quick Tasks Completed
 
@@ -177,8 +181,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-01T14:24:35.319Z
-Stopped at: Completed 13-04-PLAN.md
+Last session: 2026-10-01T14:33:19.684Z
+Stopped at: Completed 13-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
