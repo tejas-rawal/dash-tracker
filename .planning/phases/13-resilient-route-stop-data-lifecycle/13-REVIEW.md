@@ -1,166 +1,152 @@
 ---
 phase: 13-resilient-route-stop-data-lifecycle
-reviewed: 2026-10-01T14:37:21Z
+reviewed: 2026-10-01T19:04:35Z
 depth: standard
-files_reviewed: 33
+files_reviewed: 10
 files_reviewed_list:
-  - src/server/api/controllers/BusRouteController.test.ts
-  - src/server/api/controllers/BusRouteController.ts
-  - src/server/api/controllers/FavoritesController.test.ts
-  - src/server/api/controllers/FavoritesController.ts
-  - src/server/api/controllers/NearbyPredictionController.test.ts
-  - src/server/api/controllers/NearbyPredictionController.ts
-  - src/server/api/controllers/PredictionController.test.ts
-  - src/server/api/controllers/PredictionController.ts
+  - .claude/CLAUDE.md
+  - AGENTS.md
+  - src/server/api/controllers/PredictionStreamController.test.ts
   - src/server/api/controllers/PredictionStreamController.ts
-  - src/server/api/controllers/RecentsController.test.ts
-  - src/server/api/controllers/RecentsController.ts
-  - src/server/api/controllers/StopController.test.ts
-  - src/server/api/controllers/StopController.ts
-  - src/server/api/controllers/VehicleController.test.ts
-  - src/server/api/controllers/VehicleController.ts
-  - src/server/api/controllers/errorResponse.test.ts
-  - src/server/api/controllers/errorResponse.ts
-  - src/server/api/errors/index.ts
   - src/server/api/repositories/BusDataRepository.test.ts
   - src/server/api/repositories/BusDataRepository.ts
-  - src/server/api/routes/busRoutes.test.ts
-  - src/server/api/routes/dataBootRetry.test.ts
-  - src/server/api/routes/dataNotReady.test.ts
   - src/server/api/routes/dataReload.test.ts
-  - src/server/api/routes/predictionRoutes.test.ts
-  - src/server/api/routes/upstreamTimeout.test.ts
-  - src/server/api/services/BusDataRefreshService.test.ts
-  - src/server/api/services/BusDataRefreshService.ts
-  - src/server/api/services/FavoritesService.test.ts
-  - src/server/api/services/RecentsService.test.ts
-  - src/server/api/services/ServiceAlertPollService.test.ts
-  - src/server/api/services/ServiceAlertPollService.ts
-  - src/server/app.ts
+  - src/server/api/routes/dataReloadStream.test.ts
+  - src/server/api/services/PredictionStreamService.test.ts
+  - src/server/api/services/PredictionStreamService.ts
 findings:
   critical: 0
-  warning: 4
-  info: 5
-  total: 9
+  warning: 2
+  info: 4
+  total: 6
 status: issues_found
 ---
 
-# Phase 13: Code Review Report
+# Phase 13: Code Review Report (incremental, gap-closure plans 13-06 and 13-07)
 
-**Reviewed:** 2026-10-01T14:37:21Z
+**Reviewed:** 2026-10-01T19:04:35Z
 **Depth:** standard
-**Files Reviewed:** 33
+**Files Reviewed:** 10
 **Status:** issues_found
 
 ## Narrative Findings (AI reviewer)
 
 ## Summary
 
-I reviewed the phase-13 diff (`b6e3b75..HEAD`): the shared `sendErrorResponse` helper and `DataNotReadyError`, the atomic `BusDataRepository.load()` with load-state tracking, the `BusDataRefreshService` boot-retry/hourly-refresh loop, `ServiceAlertPollService.stop()`, and the listen-first boot and shutdown order in `app.ts`. I also traced the callers the change affects (`PredictionService`, `PredictionStreamService`, `FavoritesService`, `RecentsService`, `VehicleService`, `config/axios.ts`, `config/processHandlers.ts`). The full suite passes (43 files, 630 tests, no type errors).
+This is an incremental review of the diff `f9d1d12..HEAD`. It covers the two gap-closure plans:
+- **13-06:** validation of malformed upstream fields in `BusDataRepository`, via `parseDashNumber`, `requireId` and finiteness checks.
+- **13-07:** ending SSE streams whose stop a reload drops. This adds `StreamSubscriber { onUpdate, onEnd }`, `endLoop` in `PredictionStreamService`, and wires the controller's `cleanup` as `onEnd`.
 
-The core mechanics are sound:
-- The three maps swap in one synchronous step.
-- A failed or empty load never replaces live data.
-- Error objects carrying the API key are reduced to a message before they are stored or logged.
-- The loader chains attempts, so they never overlap, and `stop()` reliably prevents re-arming.
-- A second shutdown signal is harmless because `close()` is idempotent.
+It also covers the matching updates to `CLAUDE.md` and `AGENTS.md`. The five affected test files pass (118 tests, no type errors).
 
-The remaining problems come from what the new hourly refresh now exposes, plus gaps in visibility and validation:
-- SSE loops for stops removed by a refresh keep polling forever.
-- Malformed stops with missing fields still get past `createStop` validation.
-- The server now reports itself up with no readiness signal and no error-level log while it 503s every data endpoint.
+**Stream teardown (13-07) is correct.** I traced the races:
+- **Stale tick from a replaced loop:** `endLoop` uses an identity guard (`loops.get(stopId) !== entry`), so the stale tick cannot tear down the newer loop.
+- **Unsubscribe during teardown:** the loop is deleted before any `onEnd` runs, so the controller's `unsubscribe()` inside `cleanup` is a no-op.
+- **Overlapping ticks:** these are possible when `DASH_API_TIMEOUT_MS` is above 30 s. They cannot write after the response ends, because `endLoop` clears `entry.subscribers` before calling `onEnd`.
+- **Error source:** `NotFoundError` comes only from `getValidatedStop`. Upstream failures are mapped to `UpstreamApiError` by the axios interceptor, so a transient DASH failure cannot end a stream.
+- **Double close:** the socket `close` after `res.end()` is absorbed by the `cleanedUp` guard.
 
-I found no critical issues.
+**Field validation (13-06) closes the original gap.** Absent, `null`, boolean and non-string ids now fail the whole load. The remaining weaknesses are:
+- Numeric parsing still accepts strings it should reject, such as `"12abc"` or `"101.7"` for a code, and out-of-range coordinates.
+- The string fields (`name`, `title`, `type`, `shortName`) are still unvalidated and typed as if they were trusted.
+
+## Status of prior findings
+
+| Prior ID | Status | Notes |
+|----------|--------|-------|
+| WR-01 (SSE streams stranded when a refresh drops a stop) | **Resolved** | `PredictionStreamService.ts:30-54,77-80` ends every subscriber once, clears the interval, and logs a single warn instead of an error every 30 s. The controller ends the response through its single cleanup path (`PredictionStreamController.ts:54`). Coverage is at service, controller and end-to-end level (`dataReloadStream.test.ts`), including the stale-tick and leave-while-in-flight races. |
+| WR-02 (missing or null code/lat/lon and missing ids slip through) | **Resolved as scoped** | `BusDataRepository.ts:33-50,219-233` rejects absent, null, non-numeric and non-finite code/lat/lon, and missing, empty, whitespace-only or non-string route/direction/stop ids. The residual leniency is tracked as new WR-01 and WR-02 below. |
+| IN-05 (CLAUDE.md contradicts code) | **Resolved** | The Architecture section in both `CLAUDE.md` and `AGENTS.md` now matches `app.ts` and the repository lifecycle. Residual staleness is in IN-04 below. |
+| WR-03, WR-04, IN-01, IN-02, IN-04 | **Still open (not in this diff)** | Readiness signal, warn-only permanent load failure, favorites/recents 200-vs-503 inconsistency, non-idempotent `ServiceAlertPollService.start()`, and unclamped `computeRetryDelayMs`. None of these files changed. They are not re-counted here. |
+| IN-03 (no in-flight guard on `load()`) | **Still open** | `BusDataRepository.ts:87-100` was modified but still has no in-flight dedupe or a "callers must serialize" note. Not re-counted. |
 
 ## Warnings
 
-### WR-01: Hourly refresh strands SSE streams for stops that the new dataset drops
+### WR-01: Numeric validation still accepts partially parsed strings, non-integer codes and out-of-range coordinates
 
-**File:** `src/server/api/services/BusDataRefreshService.ts:57` (trigger); `src/server/api/services/PredictionStreamService.ts:32-46` (effect)
-**Issue:** Before this phase, route/stop data never changed after boot. Now `runAttempt()` swaps in a fresh dataset every hour. If DASH removes or renumbers a stop, every open `/predictions/stream?stop=X` loop for that stop keeps its `setInterval`. Each 30 s tick calls `getPredictionsForStop`, which throws `NotFoundError` from `getValidatedStop` (`PredictionService.ts:33-35`). `poll()` catches it and logs at **error** level, and subscribers stay connected but never get another frame. This repeats every 30 s per stranded stop for as long as any client stays connected. Riders silently see predictions that stop updating, and the logs fill with error lines for a condition the system created itself. No test covers a refresh removing a stop that has live subscribers.
-**Fix:** Treat `NotFoundError` in the poll loop as terminal for that stop: notify subscribers and tear down the loop.
+**File:** `src/server/api/repositories/BusDataRepository.ts:33-41, 220-231`
+**Issue:** `parseDashNumber` passes strings to `Number.parseInt`/`Number.parseFloat`. Both parse only a leading prefix, and the result then needs only to be finite. As a result:
+- `code: "12abc"` loads as `12` (confirmed: `parseInt("12abc", 10) === 12`).
+- `code: "101.7"` loads silently as `101`, while the numeric `101.7` loads unchanged as `101.7`. The same logical value gives different results depending on its JSON type, and `BusStop.code` is no longer reliably an integer.
+- `lat: "38.8xyz"` loads as `38.8`.
+- `lat: 999` or `lon: -500` load unchanged. These are not real coordinates, and they feed straight into the nearby-stop distance maths in `services/distance.ts`.
+
+The 13-06 contract is that a malformed upstream field fails the whole load, so the last good copy keeps serving. These inputs are malformed but still commit. The code also hand-rolls a validator, even though the project already ships Zod for exactly this purpose. CLAUDE.md says to "Lean on the dependencies already in the project", and the prior review's fix suggested Zod.
+**Fix:** Parse the whole string, and check that the value is an integer and within range:
 ```ts
-} catch (error) {
-    if (error instanceof NotFoundError) {
-        clearInterval(entry.timer);
-        loops.delete(stopId);
-        for (const subscriber of entry.subscribers) onGone(subscriber); // e.g. send `event: gone` and end the response
-        return;
-    }
-    ...
+function parseDashNumber(value: unknown): number {
+    if (typeof value === "number") return value;
+    if (typeof value === "string" && value.trim() !== "") return Number(value); // whole-string parse: "12abc" -> NaN
+    return Number.NaN;
+}
+// in createStop
+if (!Number.isInteger(code)) throw new Error(`Invalid stop code for stop '${id}': '${String(stopData.code)}'`);
+if (!(Number.isFinite(lat) && Math.abs(lat) <= 90 && Number.isFinite(lon) && Math.abs(lon) <= 180)) {
+    throw new Error(/* existing coordinates message */);
 }
 ```
-Alternatively, have the stream controller close the response when the service signals that the stop is gone. Either way, add a test that drives a reload which drops a subscribed stop.
+An alternative is a Zod schema for `StopData`, for example `z.union([z.number(), z.string().trim().min(1)]).pipe(z.coerce.number().int())` for `code` and `.finite().min(-90).max(90)` for `lat`. Add table rows for `"12abc"`, `"101.7"`, `"38.8xyz"` and `lat: 91`.
 
-### WR-02: `createStop` validation lets missing or null code/lat/lon through, and the refresh now re-applies bad stops every hour
+### WR-02: String fields stay unvalidated while their interfaces still claim `string`, so a bad shortName is listed but cannot be looked up
 
-**File:** `src/server/api/repositories/BusDataRepository.ts:190-204`
-**Issue:** The checks rely on `Number.isNaN`, which is `true` only for an actual `NaN`:
-- If `code`, `lat` or `lon` is missing, `typeof` is `"undefined"`, so the value is used as-is (`undefined`), and `Number.isNaN(undefined) === false`.
-- If a value is `null`, `typeof null === "object"`, so `null` passes the same way.
+**File:** `src/server/api/repositories/BusDataRepository.ts:7-29, 154-156, 203-209, 233, 248-252`
+**Issue:** 13-06 widened only `id`, `code`, `lat` and `lon` to `unknown`. `RouteData.shortName`, `longName`, `name`, `type`, `DirectionData.title` and `StopData.name` still claim to be trusted strings, and they are copied unchecked into models typed `string`. Concrete failures:
+- **Numeric `shortName`, for example `42`:** `routeData.shortName || ""` keeps the number. `if (route.shortName)` is truthy, so the route is stored in `routesByShortName` under the **number** key `42`. `getRouteByShortName("42")` (`:278-281`) uses a string key, so `GET /api/v1/routes/42` returns 404 while `GET /api/v1/routes/all` lists the route. Prediction recents resolution (`resolveRouteIdForRecent`) silently misses it too.
+- **`StopData.name` absent or `null`:** the stop commits with `name: undefined`/`null`. The `stop.name` field in `StopPredictionsResponse` is then dropped or nulled in every prediction and stream frame, which breaks the response contract without any error.
+- **`type`:** stored as whatever DASH sent, with no check against `RouteType`.
 
-So a DASH stop with no `code` or no coordinates is committed as a `BusStop` with `code: undefined` or `lat: null`, even though the model declares `number`. In nearby-stop distance maths, `null` coerces to `0`, which puts the stop at (0, 0). `routeData.id` and `directionData.id` are not validated at all, so a route without an id is stored under the key `undefined`. This predates the phase, but phase 13 made `load()` the single all-or-nothing gate and pinned "one malformed stop fails the whole load". The gate therefore fails closed only for *unparseable strings* and fails open for *absent* values. The hourly refresh also now re-applies such data on its own, with no restart.
-**Fix:** Validate finiteness rather than "not NaN". Better, parse the payload with the Zod dependency the project already has:
+This is the same "fails open for absent or wrong-typed values" pattern that the prior WR-02 flagged, now confined to the string fields.
+**Fix:** Type every upstream field as `unknown` (or parse the payload with a Zod schema), and normalise explicitly:
 ```ts
-const toFinite = (value: unknown): number =>
-    typeof value === "string" ? Number.parseFloat(value) : typeof value === "number" ? value : Number.NaN;
-const code = typeof stopData.code === "string" ? Number.parseInt(stopData.code, 10) : toFinite(stopData.code);
-if (!Number.isFinite(code)) throw new Error(`Invalid stop code for stop '${stopData.id}': '${stopData.code}'`);
-if (!Number.isFinite(lat) || !Number.isFinite(lon)) throw new Error(/* ... */);
+const optionalText = (value: unknown): string => (typeof value === "string" ? value : "");
+const requireText = (value: unknown, what: string): string => {
+    if (typeof value === "string") return value;
+    throw new Error(`Invalid ${what}: '${String(value)}'`);
+};
+// createRoute: shortName: optionalText(routeData.shortName), ...
+// createStop:  name: requireText(stopData.name, `stop name for stop '${id}'`)
 ```
-Also reject routes and directions whose `id` is not a non-empty string.
-
-### WR-03: The server now listens before it can serve, with no readiness signal, and `getLoadState()` has no production consumer
-
-**File:** `src/server/app.ts:39-46`; `src/server/api/repositories/BusDataRepository.ts:81-88`
-**Issue:** Before this phase, the process only bound the port after route/stop data loaded, so a TCP or `GET /` health check implied the server could serve data. Now `app.listen()` runs as soon as SQLite opens, `GET /` returns 200, and every data endpoint (routes, stops, predictions, the stream, vehicles with a route filter, favorites, recents) answers 503 until DASH responds. If DASH is down or the API key is wrong, this can last indefinitely. During a rolling deploy, an orchestrator using the existing liveness signal will move traffic onto instances that cannot serve. Nothing in this phase exposes `getLoadState()`: its only callers are tests, and the comment defers readiness to "Phase 14". This trades a working deployment signal for unfinished work, which goes against the project's "never trade a working product for unfinished complexity" principle.
-**Fix:** Ship a minimal readiness endpoint in this phase (for example `GET /ready`, returning 200 when `getLoadState().lastLoadedAt` is set and 503 otherwise). Alternatively, keep `getLoadState()` out until Phase 14 needs it, and document in the deploy notes that health checks must not target `/` or the TCP port.
-
-### WR-04: A permanent load failure (for example a bad `DASH_API_KEY`, which gets a 401) is logged only at warn, forever
-
-**File:** `src/server/api/services/BusDataRefreshService.ts:58-65`
-**Issue:** The loader deliberately never logs above warn (D-08) and never gives up (D-06). The axios interceptor maps every failure, including a 401 or 403 auth rejection, to an `UpstreamApiError` that the loader treats like a transient blip. With a misconfigured key, the process:
-- stays up and reports itself running,
-- answers 503 on every data endpoint indefinitely,
-- emits only a warn line about once a minute.
-
-Combined with WR-03, operators who alert on error level get no signal at all. The project convention lists "error conditions" as a logging category, and a startup config failure was previously fatal and loud.
-**Fix:** Escalate once the failure is clearly not transient. For example, log at error on the first failure whose upstream status is 401 or 403, or once `consecutiveFailures` crosses a threshold (such as 10 attempts, roughly 5 minutes at the cap). Keep warn for ordinary retries. Update the "nothing is logged at error level" test assertions to match.
+Validate `type` against the `RouteType` union. Add test rows for a numeric `shortName` and a missing stop `name`.
 
 ## Info
 
-### IN-01: `listFavorites` / `listRecents` answer 200 `[]` before the first load for devices with no records, and 503 for everyone else
+### IN-01: Structural malformations surface as raw TypeError messages in `lastError`
 
-**File:** `src/server/api/services/FavoritesService.ts:34-41`; `src/server/api/services/RecentsService.ts:19-27`
-**Issue:** The repository is only touched while hydrating records. A device with no rows gets `200 []` during the not-ready window, while a device with rows gets `503 Retry-After: 5`. Clients cannot rely on 503 meaning "data not ready" for these endpoints. This is harmless today, but the endpoint contract is inconsistent and the tests don't pin it.
-**Fix:** Either accept and document it, or add an explicit readiness check (for example `busDataRepository.getLoadState()` or a dedicated `assertReady()`) before reading the SQLite rows.
+**File:** `src/server/api/repositories/BusDataRepository.ts:148-151, 172-174`
+**Issue:** A `null` route or stop entry, or a non-array `directions`/`stops`, fails closed. That is correct, and the `structuralRows` tests cover it. However, the stored and logged message is the engine's text, for example `Cannot read properties of null (reading 'id')` or `(routeData.directions || []).map is not a function`. `getLoadState().lastError` is the field that the planned Phase 14 readiness endpoint serializes, and operators will see these messages instead of a domain message that names the bad item. The tests deliberately assert only `typeof lastError === "string"`, so this behaviour is unpinned.
+**Fix:** Before reading fields or calling `.map`, check `typeof x === "object" && x !== null` and `Array.isArray(...)` (or use a Zod schema), and throw `Invalid route entry at index N` or `Invalid stops for direction '<id>'`.
 
-### IN-02: `ServiceAlertPollService.start()` is not idempotent, unlike the new loader
+### IN-02: Stream teardown sends no terminal frame, so clients cannot tell a removed stop from a dropped connection
 
-**File:** `src/server/api/services/ServiceAlertPollService.ts:31-36`
-**Issue:** A second `start()` overwrites `interval` and leaks the first timer, which `stop()` can then never clear. `stop()` followed by `start()` also restarts polling. `BusDataRefreshService` guards both cases with `started`/`stopped` flags, so the two loops that `app.ts` stops "together" have different lifecycle semantics.
-**Fix:** Add the same `started`/`stopped` guards: `if (interval !== undefined || stopped) return;`.
+**File:** `src/server/api/controllers/PredictionStreamController.ts:32-40, 54`
+**Issue:** `onEnd` maps to `cleanup`, which calls `res.end()` without writing a final event. An `EventSource` client sees an ordinary disconnect. It waits for its reconnect delay, then reconnects, gets the 404, and closes with a generic `error` event. That works, as the comment at `PredictionStreamService.ts:74-76` intends. However, it costs an extra round trip per rider, and the client has no reason it can show to the user. The prior review suggested an explicit `event: gone`.
+**Fix (optional):** In the controller's `onEnd`, write `event: end\ndata: {"reason":"stop_removed"}\n\n` before `cleanup()`. Pin the frame in the controller test and in `dataReloadStream.test.ts`.
 
-### IN-03: `BusDataRepository.load()` has no in-flight guard
+### IN-03: The `dataReloadStream.test.ts` watchdog timer is never cleared, and its rejection can go unhandled
 
-**File:** `src/server/api/repositories/BusDataRepository.ts:66-79`
-**Issue:** The old `initializationPromise` dedupe was removed. Two concurrent `load()` calls can finish out of order, so an older dataset can overwrite a newer one. A slower failing call can also set `lastFailedAt`/`lastError` after a newer success. Today the chained loader is the only production caller, so this cannot happen, but a planned admin reload or a Phase 14 trigger would reintroduce it silently.
-**Fix:** Either share the in-flight promise (`this.inFlight ??= this.doLoad().finally(() => (this.inFlight = undefined))`), or document on `load()` that callers must serialize.
+**File:** `src/server/api/routes/dataReloadStream.test.ts:147-153`
+**Issue:**
+- The real 2000 ms `setTimeout` inside the `Promise.race` is never cleared, so it outlives a passing test.
+- `endedInTime` gets no rejection handler until line 173. If steps 2 to 4 take more than 2 s (for example on a loaded CI runner doing real HTTP plus `repository.load()`), the race rejects before anyone awaits it. Vitest then reports an "Unhandled Rejection" in addition to, or instead of, the assertion failure. This makes failures noisy and hard to read.
 
-### IN-04: `computeRetryDelayMs` is exported but accepts invalid attempt numbers
+**Fix:** Keep the timer handle and `clearTimeout` it in a `finally`, or attach a no-op `endedInTime.catch(() => {})` right after creating it, so the later `await expect(endedInTime)` still asserts.
 
-**File:** `src/server/api/services/BusDataRefreshService.ts:14-17`
-**Issue:** `attempt <= 0` gives sub-second ceilings, and `NaN` gives `NaN`, which `setTimeout` coerces to 1 ms, creating a hot retry loop. The only internal caller always passes a value of 1 or more, but the function is part of the module's public surface.
-**Fix:** Clamp the input (`const n = Math.max(1, Math.floor(attempt) || 1)`), or stop exporting the function and test it through the service.
+### IN-04: Project docs still miss the stream lifecycle, list only three endpoints, and pin the wrong Vitest version
 
-### IN-05: Project guidance in `CLAUDE.md` now contradicts the code
+**File:** `.claude/CLAUDE.md:30, 72-74`; `AGENTS.md:19, 47-50`
+**Issue:**
+- The updated Architecture bullets describe the reload lifecycle, but not its new consequence: live prediction streams end when a reload drops their stop.
+- The Endpoints line still lists only `/routes/all`, `/routes/:shortName` and `/predictions`. It omits `/predictions/stream` and the other phase-era endpoints.
+- The Tech Stack section says "Vitest 2.1.5", but `package.json` pins `vitest` at `3.2.6`. `@vitest/coverage-v8` is still at `2.1.5`.
 
-**File:** `.claude/CLAUDE.md:70-73`
-**Issue:** The file still says the repository is "populated once via `initialize()` before `app.ts` starts accepting requests; in-memory maps are read-only afterward (no cache invalidation)". It also lists error mapping without 503 and gives the entry-point order as "init repository → start Express". After this phase, all of these statements are false. Agents and contributors read this file as ground truth.
-**Fix:** Update the Architecture section to describe the listen-first boot, the `load()`/`BusDataRefreshService` lifecycle (backoff, then hourly), `DataNotReadyError` → 503 with `Retry-After`, and the generic 500 body.
+Agents treat these files as ground truth.
+**Fix:**
+- Add a clause to the repository bullet: "a reload that drops a stop ends that stop's SSE streams; reconnects get 404".
+- Complete the Endpoints list.
+- Correct the Vitest version.
 
 ---
 
-_Reviewed: 2026-10-01T14:37:21Z_
+_Reviewed: 2026-10-01T19:04:35Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
