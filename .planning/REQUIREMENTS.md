@@ -22,7 +22,7 @@ Milestone v0.6 — Solidifying the backend. Reliability first, then operational 
 
 - [ ] **BOOT-01**: The server starts listening even when DASH is unreachable at boot
 - [ ] **BOOT-02**: The initial route/stop load retries with backoff in the background until it succeeds
-- [ ] **BOOT-03**: Until the first successful load, endpoints that depend on route/stop data return 503 (not 500)
+- [x] **BOOT-03**: Until the first successful load, endpoints that depend on route/stop data return 503 (not 500)
 
 ### Error Handling
 
@@ -76,7 +76,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DATA-03 | Phase 13 | Complete |
 | BOOT-01 | Phase 13 | Pending |
 | BOOT-02 | Phase 13 | Pending |
-| BOOT-03 | Phase 13 | Pending |
+| BOOT-03 | Phase 13 | Complete |
 | ERR-01 | Phase 12 | Complete |
 | ERR-02 | Phase 12 | Complete |
 | HLTH-01 | Phase 14 | Pending |

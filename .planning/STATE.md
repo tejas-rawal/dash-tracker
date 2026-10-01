@@ -5,17 +5,17 @@ milestone_name: Solidifying the backend
 current_phase: 13
 current_phase_name: Resilient Route/Stop Data Lifecycle
 status: executing
-stopped_at: Completed 13-03-PLAN.md
-last_updated: "2026-10-01T14:20:18.991Z"
+stopped_at: Completed 13-04-PLAN.md
+last_updated: "2026-10-01T14:24:44.155Z"
 last_activity: 2026-10-01
 last_activity_desc: Phase 13 execution started
-state_head: c4430afe655af69836e0fdbbb183742ed44bd1e6
+state_head: 5ae0e1b10ba44eba97a19a418f1e5f6c6533ec1a
 progress:
   total_phases: 4
   completed_phases: 12
   total_plans: 9
-  completed_plans: 7
-  percent: 78
+  completed_plans: 8
+  percent: 89
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-30)
 ## Current Position
 
 Phase: 13 (Resilient Route/Stop Data Lifecycle) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-10-01 — Phase 13 execution started
 
@@ -84,6 +84,7 @@ Progress (v0.6): [██░░░░░░░░] 1/4 phases (25%)
 | Phase 13 P01 | 3min | 3 tasks | 9 files |
 | Phase 13 P02 | 2min | 3 tasks | 9 files |
 | Phase 13 P03 | 3 min | 2 tasks | 5 files |
+| Phase 13 P04 | 2min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -131,6 +132,8 @@ Recent decisions affecting current work:
 - [Phase 13]: 13-02: BusRoute, Stop and REST Prediction controllers use only sendErrorResponse; 404/502/400 bodies unchanged, 500 is the generic 'An unexpected error occurred'
 - [Phase 13]: 13-03: BusDataRepository.load() is the single atomic load path; failures store/rethrow only error.message and change no data; readiness derives from lastLoadedAt; the repository never logs
 - [Phase 13]: 13-03: an empty/null/missing DASH routes list is a failed load ('DASH API returned no routes'), never applied
+- [Phase 13]: 13-04: All 8 controllers map errors only through sendErrorResponse; no controller keeps a local mapper (D-02 complete, WR-02/IN-04 closed)
+- [Phase 13]: 13-04: Favorites/recents hydration propagates DataNotReadyError as 503 rather than silently dropping entries; no service-side change was needed
 
 ### Pending Todos
 
@@ -138,7 +141,6 @@ None yet.
 
 ### Blockers/Concerns
 
-- ⚠️ [Phase 11] `NearbyPredictionController` 500 path echoes `error.message` (WR-02/IN-04, accepted as T-11-16) — shared controller error-response helper across Prediction/Vehicle/Nearby controllers recommended as a follow-up quick task.
 - ⚠️ [Phase 1, v0.1] `lint:fix` uses Biome's deprecated `--apply-unsafe` flag (should become `--write --unsafe` per Biome 1.9.4); non-blocking, not yet addressed.
 - ⚠️ [Phase 3] Code review (archived: `.planning/milestones/v0.2-phases/03-stop-discovery/03-REVIEW.md`) flagged 2 non-blocking edge cases: empty-string `lat`/`lng` query params coerce to `0` instead of 400ing in `StopController`; `StopService.getNearbyStops` doesn't lower-bound `count` if called directly (not reachable via the controller today). Neither blocks Phase 3 completion. Relevant to Phase 11: the new nearby-predictions validation must not copy this empty-string coercion bug (NEAR-08).
 - ⚠️ [v0.2] An unrelated, pre-existing uncommitted fix to `BusDataRepository.ts` (dedupe `initialize()`/`refreshData()` load paths) was swept into the v0.2 execution history by the automated code-review-fix pipeline (commit `b52c130`) — correct fix, but out of Phase 3/4 scope and not explicitly approved before landing. Flagged to the user; left in place.
@@ -175,8 +177,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-01T14:20:18.954Z
-Stopped at: Completed 13-03-PLAN.md
+Last session: 2026-10-01T14:24:35.319Z
+Stopped at: Completed 13-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
