@@ -210,6 +210,7 @@ describe("upstream deadline against a blackholed DASH", () => {
                 { timeout: 2000 },
             );
             expect(loggedText()).not.toContain("test-api-key");
+            pollService.stop();
         });
     });
 });

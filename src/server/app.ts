@@ -47,7 +47,9 @@ favoritesRecentsRepository
 
         // graceful shutdown
         const shutdown = (): void => {
+            // Both are synchronous timer clears, so no load or poll starts once shutdown begins.
             refreshService.stop();
+            serviceAlertPollService.stop();
             server.close(async (): Promise<void> => {
                 // Nothing awaits this callback, and the unhandledRejection handler deliberately keeps the
                 // process alive, so a failed close must exit here or shutdown hangs until SIGKILL.
