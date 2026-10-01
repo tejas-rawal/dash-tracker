@@ -14,7 +14,7 @@ Milestone v0.6 — Solidifying the backend. Reliability first, then operational 
 
 ### Data Freshness
 
-- [ ] **DATA-01**: Route/stop data is refreshed from DASH on a background interval for as long as the server runs (drives the currently-uncalled `BusDataRepository.refreshData()`)
+- [x] **DATA-01**: Route/stop data is refreshed from DASH on a background interval for as long as the server runs (drives the currently-uncalled `BusDataRepository.refreshData()`)
 - [x] **DATA-02**: A failed refresh is logged and the server keeps serving the last successfully loaded route/stop data
 - [x] **DATA-03**: The repository records when route/stop data was last successfully loaded, so readiness can report it
 
@@ -71,7 +71,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | UPST-01 | Phase 12 | Complete |
 | UPST-02 | Phase 12 | Complete |
-| DATA-01 | Phase 13 | Gaps Found |
+| DATA-01 | Phase 13 | Complete |
 | DATA-02 | Phase 13 | Complete |
 | DATA-03 | Phase 13 | Complete |
 | BOOT-01 | Phase 13 | Gaps Found |

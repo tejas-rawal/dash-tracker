@@ -4,18 +4,18 @@ milestone: v0.6
 milestone_name: Solidifying the backend
 current_phase: 13
 current_phase_name: Resilient Route/Stop Data Lifecycle
-status: executing
-stopped_at: Completed 13-06-PLAN.md
-last_updated: "2026-10-01T18:37:31.672Z"
+status: verifying
+stopped_at: Completed 13-07-PLAN.md
+last_updated: "2026-10-01T18:44:22.074Z"
 last_activity: 2026-10-01
 last_activity_desc: Phase 13 execution started
-state_head: ee19d895e985773f3135ec3b1ff9f699390f89a4
+state_head: 3abd4e4a34bbc3ca418ff4dac12c646d5b4e870b
 progress:
   total_phases: 4
   completed_phases: 12
   total_plans: 11
-  completed_plans: 10
-  percent: 91
+  completed_plans: 11
+  percent: 100
 ---
 
 # Project State
@@ -31,8 +31,8 @@ See: .planning/PROJECT.md (updated 2026-09-30)
 
 Phase: 13 (Resilient Route/Stop Data Lifecycle) — EXECUTING
 Plan: 7 of 7
-Status: Ready to execute
-Last activity: 2026-10-01 — Completed 13-06 (malformed upstream field validation)
+Status: Phase complete — ready for verification
+Last activity: 2026-10-01 — Completed 13-07 (reload-dropped-stop stream teardown)
 
 Progress (v0.6): [██░░░░░░░░] 1/4 phases (25%)
 
@@ -87,6 +87,7 @@ Progress (v0.6): [██░░░░░░░░] 1/4 phases (25%)
 | Phase 13 P04 | 2min | 3 tasks | 9 files |
 | Phase 13 P05 | 6min | 3 tasks | 7 files |
 | Phase 13 P06 | 5min | 3 tasks | 5 files |
+| Phase 13 P07 | 5min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -139,6 +140,9 @@ Recent decisions affecting current work:
 - [Phase 13]: 13-05: Route/stop data loads in the background via BusDataRefreshService (chained setTimeout): equal-jitter backoff 1 s base / 60 s cap until first success, then hourly; one warn/info per attempt; stop() also blocks in-flight rescheduling
 - [Phase 13]: 13-05: app.ts boot order is process handlers -> SQLite initialize (fatal) -> listen -> start loader + alert poll; shutdown stops both loops before server.close
 - [Phase 13]: 13-06: Malformed DASH routes payloads (absent/null/non-finite stop code/lat/lon, missing/empty/non-string ids) are rejected inside load() with hand-rolled checks, not a Zod schema, so only the five fields the gap names are validated
+- [Phase 13]: 13-07: a stop dropped by a reload ends its SSE streams on the next poll tick with no farewell event; the reconnect gets the existing 404 (D-13)
+- [Phase 13]: 13-07: only NotFoundError is terminal for a stream loop; UpstreamApiError and other tick failures stay transient so a DASH blip never ends a rider's stream
+- [Phase 13]: 13-07: PredictionStreamService.subscribe takes a StreamSubscriber { onUpdate, onEnd }; the controller wires onEnd to its single cleanup path so the response ends exactly once
 
 ### Pending Todos
 
@@ -183,8 +187,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-01T18:37:31.637Z
-Stopped at: Completed 13-06-PLAN.md
+Last session: 2026-10-01T18:44:16.132Z
+Stopped at: Completed 13-07-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
