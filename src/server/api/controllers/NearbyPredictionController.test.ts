@@ -259,10 +259,10 @@ describe("NearbyPredictionController", () => {
                 expect(res.json).toHaveBeenCalledWith({ error: "Bad Gateway", details: "boom" });
             });
 
-            it("responds with 500 Request Failed when the service throws a generic Error", async () => {
+            it("responds with 500 and a generic Request Failed body that does not echo the thrown message", async () => {
                 // Arrange
                 const mockService = makeMockService();
-                mockService.getNearbyPredictions.mockRejectedValue(new Error("x"));
+                mockService.getNearbyPredictions.mockRejectedValue(new Error("nearby merge crashed"));
                 const { getNearbyPredictions } = createNearbyPredictionController(mockService);
                 const res = makeMockRes();
 
@@ -271,13 +271,17 @@ describe("NearbyPredictionController", () => {
 
                 // Assert
                 expect(res.status).toHaveBeenCalledWith(500);
-                expect(res.json).toHaveBeenCalledWith({ error: "Request Failed", details: "x" });
+                expect(res.json).toHaveBeenCalledWith({
+                    error: "Request Failed",
+                    details: "An unexpected error occurred",
+                });
+                expect(JSON.stringify(vi.mocked(res.json).mock.calls[0][0])).not.toContain("nearby merge crashed");
             });
 
-            it("responds with 500 and 'Unknown error' when the service throws a non-Error value", async () => {
+            it("responds with 500 and a generic Request Failed body that does not echo a thrown non-Error value", async () => {
                 // Arrange
                 const mockService = makeMockService();
-                mockService.getNearbyPredictions.mockRejectedValue("x");
+                mockService.getNearbyPredictions.mockRejectedValue("nearby raw failure");
                 const { getNearbyPredictions } = createNearbyPredictionController(mockService);
                 const res = makeMockRes();
 
@@ -286,7 +290,11 @@ describe("NearbyPredictionController", () => {
 
                 // Assert
                 expect(res.status).toHaveBeenCalledWith(500);
-                expect(res.json).toHaveBeenCalledWith({ error: "Request Failed", details: "Unknown error" });
+                expect(res.json).toHaveBeenCalledWith({
+                    error: "Request Failed",
+                    details: "An unexpected error occurred",
+                });
+                expect(JSON.stringify(vi.mocked(res.json).mock.calls[0][0])).not.toContain("nearby raw failure");
             });
         });
     });
