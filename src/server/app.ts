@@ -1,11 +1,12 @@
 import express from "express";
 import { BusDataRepository, FavoritesRecentsRepository, ServiceAlertRepository } from "./api/repositories";
 import router from "./api/routes";
+import { createBusDataRefreshService } from "./api/services/BusDataRefreshService";
 import { createServiceAlertPollService } from "./api/services/ServiceAlertPollService";
 import { createServiceAlertService } from "./api/services/ServiceAlertService";
 import { environment, logger, registerProcessErrorHandlers } from "./config";
 
-// Registered before the alert poll and repository init start, so rejections during boot are caught too.
+// Registered before anything else starts, so rejections during boot are caught too.
 registerProcessErrorHandlers();
 
 const app = express();
@@ -23,26 +24,30 @@ app.use("/api/v1", router);
 
 const SHUTDOWN_GRACE_MS = 10_000;
 
-// Initialize repository data before accepting requests
-const repository = BusDataRepository.getInstance();
 const favoritesRecentsRepository = FavoritesRecentsRepository.getInstance();
 
-// Service alerts poll is boot-triggered and fully independent of BusDataRepository's
-// startup-blocking init chain below (D-06/D-07) — it never awaits or gates app.listen().
+// Both background loops are built here but only started once the server is listening. DASH being
+// unreachable must never keep the server down: route/stop data loads in the background and
+// data-dependent endpoints answer 503 until it lands.
+const refreshService = createBusDataRefreshService(BusDataRepository.getInstance());
 const serviceAlertPollService = createServiceAlertPollService(
     createServiceAlertService(),
     ServiceAlertRepository.getInstance(),
 );
-serviceAlertPollService.start();
 
-Promise.all([repository.load(), favoritesRecentsRepository.initialize()])
+// SQLite is local and backs favorites/recents, so failing to open it is fatal. DASH is not (D-18).
+favoritesRecentsRepository
+    .initialize()
     .then(() => {
         const server = app.listen(port, () => {
             logger.info(`Server is running on port ${port}`);
         });
+        refreshService.start();
+        serviceAlertPollService.start();
 
         // graceful shutdown
         const shutdown = (): void => {
+            refreshService.stop();
             server.close(async (): Promise<void> => {
                 // Nothing awaits this callback, and the unhandledRejection handler deliberately keeps the
                 // process alive, so a failed close must exit here or shutdown hangs until SIGKILL.
@@ -67,6 +72,6 @@ Promise.all([repository.load(), favoritesRecentsRepository.initialize()])
     })
     .catch((error: unknown) => {
         const message = error instanceof Error ? error.message : "Unknown error";
-        logger.error(`Failed to initialize application data: ${message}`);
+        logger.error(`Failed to initialize the favorites/recents database: ${message}`);
         process.exit(1);
     });

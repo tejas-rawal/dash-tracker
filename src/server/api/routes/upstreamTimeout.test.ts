@@ -6,6 +6,7 @@ import { axios, logger } from "../../config";
 import app from "../../test/app";
 import { BusStop } from "../models";
 import { BusDataRepository, ServiceAlertRepository } from "../repositories";
+import { createBusDataRefreshService } from "../services/BusDataRefreshService";
 import { createServiceAlertPollService } from "../services/ServiceAlertPollService";
 import { createServiceAlertService } from "../services/ServiceAlertService";
 
@@ -161,6 +162,31 @@ describe("upstream deadline against a blackholed DASH", () => {
             expect(state.lastError).toBe("DASH API request timed out after 200ms");
             expect(JSON.stringify(state)).not.toContain("test-api-key");
             expect(loggedText()).not.toContain("test-api-key");
+        });
+
+        it("logs exactly one warn per timed-out background load attempt, with the attempt number and next delay", async () => {
+            // Arrange
+            vi.spyOn(Math, "random").mockReturnValue(0);
+            const refreshService = createBusDataRefreshService(BusDataRepository.getInstance());
+
+            try {
+                // Act
+                refreshService.start();
+                await vi.waitFor(
+                    () =>
+                        expect(warnSpy).toHaveBeenCalledWith(
+                            "Route/stop data load attempt 1 failed: DASH API request timed out after 200ms; next attempt in 500ms",
+                        ),
+                    { timeout: 2000 },
+                );
+
+                // Assert
+                expect(warnSpy).toHaveBeenCalledTimes(1);
+                expect(errorSpy).not.toHaveBeenCalled();
+                expect(loggedText()).not.toContain("test-api-key");
+            } finally {
+                refreshService.stop();
+            }
         });
 
         it("logs a timeout error from the service-alert poll instead of hanging", async () => {
