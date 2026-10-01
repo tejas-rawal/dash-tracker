@@ -23,9 +23,21 @@ interface DirectionData {
 interface StopData {
     id: string;
     name: string;
-    code: string | number;
-    lat: string | number;
-    lon: string | number;
+    code: unknown;
+    lat: unknown;
+    lon: unknown;
+}
+
+// DASH may send these fields as numbers or numeric strings. Anything else (absent, null, boolean,
+// object) becomes NaN so the caller's finite check rejects it; null used to slip through as a value.
+function parseDashNumber(value: unknown, parseText: (text: string) => number): number {
+    if (typeof value === "number") {
+        return value;
+    }
+    if (typeof value === "string") {
+        return parseText(value);
+    }
+    return Number.NaN;
 }
 
 export interface BusDataLoadState {
@@ -188,16 +200,16 @@ export class BusDataRepository {
      * @returns A new BusStop instance
      */
     private createStop(stopData: StopData): BusStop {
-        const code = typeof stopData.code === "string" ? Number.parseInt(stopData.code, 10) : stopData.code;
-        const lat = typeof stopData.lat === "string" ? Number.parseFloat(stopData.lat) : stopData.lat;
-        const lon = typeof stopData.lon === "string" ? Number.parseFloat(stopData.lon) : stopData.lon;
+        const code = parseDashNumber(stopData.code, (text) => Number.parseInt(text, 10));
+        const lat = parseDashNumber(stopData.lat, Number.parseFloat);
+        const lon = parseDashNumber(stopData.lon, Number.parseFloat);
 
-        if (Number.isNaN(code)) {
-            throw new Error(`Invalid stop code for stop '${stopData.id}': '${stopData.code}'`);
+        if (!Number.isFinite(code)) {
+            throw new Error(`Invalid stop code for stop '${stopData.id}': '${String(stopData.code)}'`);
         }
-        if (Number.isNaN(lat) || Number.isNaN(lon)) {
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
             throw new Error(
-                `Invalid coordinates for stop '${stopData.id}': lat='${stopData.lat}', lon='${stopData.lon}'`,
+                `Invalid coordinates for stop '${stopData.id}': lat='${String(stopData.lat)}', lon='${String(stopData.lon)}'`,
             );
         }
 

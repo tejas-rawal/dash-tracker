@@ -9,7 +9,7 @@ import { BusDataRepository } from "../repositories";
 let reply: { status: number; body?: unknown } = { status: 200 };
 
 // Answers the routes call with whatever `reply` currently holds, so one test can walk DASH through
-// success, failure and success again against the real bounded client.
+// success, failure, a malformed payload and success again against the real bounded client.
 function startFakeDash(): Promise<http.Server> {
     const server = http.createServer((req, res) => {
         if (req.url !== "/info/test-agency/routes?verbose=true") {
@@ -128,7 +128,48 @@ describe("route/stop data reloads against a fake DASH", () => {
         expect(unavailableState.lastError).toBe("DASH API request failed: Request failed with status code 503");
         expect(JSON.stringify(unavailableState)).not.toContain("test-api-key");
 
-        // Step 4: DASH recovers with a different route order.
+        // Step 4: DASH sends a stop with a null code and no coordinates at all.
+        // Arrange
+        reply = {
+            status: 200,
+            body: {
+                data: {
+                    routes: [
+                        makeDashRoute("route-1", "1A", "stop-1"),
+                        {
+                            id: "route-3",
+                            shortName: "3C",
+                            type: "3",
+                            directions: [
+                                {
+                                    id: "route-3-d1",
+                                    title: "Northbound",
+                                    headSigns: ["Downtown"],
+                                    stops: [{ id: "stop-3", name: "Stop stop-3", code: null }],
+                                },
+                            ],
+                        },
+                    ],
+                },
+            },
+        };
+        // Act
+        const malformedLoad = repository.load();
+        // Assert
+        await expect(malformedLoad).rejects.toThrow("Invalid stop code for stop 'stop-3': 'null'");
+        const malformedResponse = await request(app).get("/api/v1/routes/all");
+        expect(malformedResponse.status).toBe(200);
+        expect(malformedResponse.body).toEqual(goodBody);
+        const malformedRouteResponse = await request(app).get("/api/v1/routes/3C");
+        expect(malformedRouteResponse.status).toBe(404);
+        expect(malformedRouteResponse.body).toEqual({ error: "Not Found", details: "Route not found: 3C" });
+        const malformedState = repository.getLoadState();
+        expect(malformedState.lastLoadedAt?.getTime()).toBe(firstLoadedAt.getTime());
+        expect(malformedState.lastFailedAt).toBeInstanceOf(Date);
+        expect(malformedState.lastError).toBe("Invalid stop code for stop 'stop-3': 'null'");
+        expect(JSON.stringify(malformedState)).not.toContain("test-api-key");
+
+        // Step 5: DASH recovers with a different route order.
         // Arrange
         reply = routesReply([makeDashRoute("route-2", "2B", "stop-2"), makeDashRoute("route-1", "1A", "stop-1")]);
         // Act
@@ -143,7 +184,7 @@ describe("route/stop data reloads against a fake DASH", () => {
         expect(recoveredState.lastFailedAt).toBeUndefined();
         expect(recoveredState.lastError).toBeUndefined();
 
-        // Step 5: nothing on this path logs; the background loader owns the per-attempt line.
+        // Step 6: nothing on this path logs; the background loader owns the per-attempt line.
         expect(infoSpy).not.toHaveBeenCalled();
         expect(warnSpy).not.toHaveBeenCalled();
         expect(errorSpy).not.toHaveBeenCalled();
