@@ -14,15 +14,15 @@ Milestone v0.6 — Solidifying the backend. Reliability first, then operational 
 
 ### Data Freshness
 
-- [x] **DATA-01**: Route/stop data is refreshed from DASH on a background interval for as long as the server runs (drives the currently-uncalled `BusDataRepository.refreshData()`)
-- [x] **DATA-02**: A failed refresh is logged and the server keeps serving the last successfully loaded route/stop data
-- [x] **DATA-03**: The repository records when route/stop data was last successfully loaded, so readiness can report it
+- [ ] **DATA-01**: Route/stop data is refreshed from DASH on a background interval for as long as the server runs (drives the currently-uncalled `BusDataRepository.refreshData()`)
+- [ ] **DATA-02**: A failed refresh is logged and the server keeps serving the last successfully loaded route/stop data
+- [ ] **DATA-03**: The repository records when route/stop data was last successfully loaded, so readiness can report it
 
 ### Startup
 
-- [x] **BOOT-01**: The server starts listening even when DASH is unreachable at boot
-- [x] **BOOT-02**: The initial route/stop load retries with backoff in the background until it succeeds
-- [x] **BOOT-03**: Until the first successful load, endpoints that depend on route/stop data return 503 (not 500)
+- [ ] **BOOT-01**: The server starts listening even when DASH is unreachable at boot
+- [ ] **BOOT-02**: The initial route/stop load retries with backoff in the background until it succeeds
+- [ ] **BOOT-03**: Until the first successful load, endpoints that depend on route/stop data return 503 (not 500)
 
 ### Error Handling
 
@@ -71,12 +71,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | UPST-01 | Phase 12 | Complete |
 | UPST-02 | Phase 12 | Complete |
-| DATA-01 | Phase 13 | Complete |
-| DATA-02 | Phase 13 | Complete |
-| DATA-03 | Phase 13 | Complete |
-| BOOT-01 | Phase 13 | Complete |
-| BOOT-02 | Phase 13 | Complete |
-| BOOT-03 | Phase 13 | Complete |
+| DATA-01 | Phase 13 | Gaps Found |
+| DATA-02 | Phase 13 | Gaps Found |
+| DATA-03 | Phase 13 | Gaps Found |
+| BOOT-01 | Phase 13 | Gaps Found |
+| BOOT-02 | Phase 13 | Gaps Found |
+| BOOT-03 | Phase 13 | Gaps Found |
 | ERR-01 | Phase 12 | Complete |
 | ERR-02 | Phase 12 | Complete |
 | HLTH-01 | Phase 14 | Pending |
