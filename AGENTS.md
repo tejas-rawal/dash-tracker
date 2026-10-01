@@ -44,10 +44,10 @@ Layered, strict top-down flow, no skipping: **Routes → Controllers → Service
 | **Models** | Domain types (`BusRoute`, `BusStop`, `RouteDirection`, `Prediction`) | `src/server/api/models/` |
 | **Config** | Env validation (Zod), axios client, Winston logger | `src/server/config/` |
 
-- `BusDataRepository` is a singleton (`getInstance()`), populated once via `initialize()` before `app.ts` starts accepting requests; in-memory maps are read-only afterward (no cache invalidation); predictions are fetched live from DASH API on every request (uncached)
-- Error mapping: `NotFoundError` → 404, `UpstreamApiError` → 502, unknown → 500 (controllers catch and translate; services throw)
+- `BusDataRepository` is a singleton (`getInstance()`) whose only fetch path is `load()`: it validates the whole DASH routes payload and then swaps routes, short names and stops in one synchronous step, or rejects and changes nothing, so the last good copy keeps serving; `getLoadState()` records `lastLoadedAt`, `lastFailedAt` and a message-only `lastError`; `BusDataRefreshService` drives `load()` in the background with chained, never-overlapping `setTimeout` attempts (capped exponential backoff with jitter until the first success, then hourly); predictions are fetched live from DASH API on every request (uncached)
+- Error mapping: every controller maps errors through one helper, `sendErrorResponse` (`src/server/api/controllers/errorResponse.ts`): `NotFoundError` → 404, `DataNotReadyError` → 503 with `Retry-After: 5`, `UpstreamApiError` → 502, anything else → 500 with the fixed details "An unexpected error occurred" (logged, never echoed); services throw and controllers translate
 - DASH-shaped API types (`Dash*`) are kept separate from service response types (`StopPredictionsResponse`, etc.) — mapping happens explicitly in `PredictionService`
-- Entry point `src/server/app.ts`: init repository → start Express → graceful shutdown on SIGTERM/SIGINT
+- Entry point `src/server/app.ts`: registers process error handlers → opens SQLite (fatal on failure) → listens → starts the route/stop loader and the alert poll in the background, so DASH never blocks listen and data-dependent endpoints answer 503 until the first load; SIGTERM/SIGINT stop both loops before the server closes
 - Endpoints: `GET /api/v1/routes/all`, `GET /api/v1/routes/:shortName`, `GET /api/v1/predictions?stop&route&number`
 
 ## Engineering Principles
