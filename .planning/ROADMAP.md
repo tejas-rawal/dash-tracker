@@ -116,7 +116,7 @@ Plans:
   4. A failed refresh is logged and every endpoint keeps serving the last successfully loaded route/stop data, with no 5xx and no partially swapped data.
   5. The repository records when route/stop data was last loaded successfully, advancing that timestamp on each successful load or refresh and leaving it unchanged on a failed one. Background load and refresh timers stop cleanly on SIGTERM/SIGINT.
 
-**Plans**: 2/5 plans executed
+**Plans**: 3/5 plans executed
 
 Plans:
 **Wave 1**
@@ -126,7 +126,7 @@ Plans:
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [x] 13-02-PLAN.md — BusRoute, Stop and Prediction controllers on the shared helper; 503 before load for `/routes/all`, `/routes/:shortName`, `/routes/:shortName/stops`, `/stops/nearby`, `/predictions` (wave 2)
-- [ ] 13-03-PLAN.md — Single atomic `BusDataRepository.load()` with `getLoadState()` (`lastLoadedAt`/`lastFailedAt`/`lastError`), zero routes = failure, no repository logging; failed reloads keep the last good data (wave 2)
+- [x] 13-03-PLAN.md — Single atomic `BusDataRepository.load()` with `getLoadState()` (`lastLoadedAt`/`lastFailedAt`/`lastError`), zero routes = failure, no repository logging; failed reloads keep the last good data (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -180,7 +180,7 @@ Phases execute in numeric order: 12 → 13 → 14 → 15
 | 10. Solidify vehicle position work | standalone | 1/1 | Complete | 2026-09-22 |
 | 11. Nearby Stop Predictions | v0.5 | 3/3 | Complete | 2026-09-24 |
 | 12. Bounded Upstream Calls & Error Safety Nets | v0.6 | 4/4 | Complete    | 2026-09-29 |
-| 13. Resilient Route/Stop Data Lifecycle | v0.6 | 2/5 | In Progress|  |
+| 13. Resilient Route/Stop Data Lifecycle | v0.6 | 3/5 | In Progress|  |
 | 14. Health Checks & Rate Limiting | v0.6 | 0/TBD | Not started | - |
 | 15. Alert & Nearby Data Hygiene | v0.6 | 0/TBD | Not started | - |
 
