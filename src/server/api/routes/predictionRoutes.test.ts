@@ -166,10 +166,11 @@ describe("GET /api/v1/predictions", () => {
 
         // Assert
         expect(response.status).toBe(500);
-        expect(response.body).toMatchObject({
+        expect(response.body).toEqual({
             error: "Request Failed",
-            details: "upstream failure",
+            details: "An unexpected error occurred",
         });
+        expect(JSON.stringify(response.body)).not.toContain("upstream failure");
     });
 
     it("responds with 502 when the service throws an UpstreamApiError", async () => {

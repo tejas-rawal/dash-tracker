@@ -282,7 +282,7 @@ describe("PredictionController", () => {
             expect(res.status).toHaveBeenCalledWith(500);
         });
 
-        it("responds with a Request Failed error body when the service throws a generic error", async () => {
+        it("responds with a generic Request Failed body that does not echo the thrown message", async () => {
             // Arrange
             const mockService = makeMockService();
             mockService.getPredictionsForStop.mockRejectedValue(new Error("upstream failure"));
@@ -296,8 +296,9 @@ describe("PredictionController", () => {
             // Assert
             expect(res.json).toHaveBeenCalledWith({
                 error: "Request Failed",
-                details: "upstream failure",
+                details: "An unexpected error occurred",
             });
+            expect(JSON.stringify(vi.mocked(res.json).mock.calls[0][0])).not.toContain("upstream failure");
         });
 
         it("responds with 502 when the service throws an UpstreamApiError", async () => {
@@ -337,7 +338,7 @@ describe("PredictionController", () => {
             });
         });
 
-        it("responds with unknown error details when a non-Error is thrown", async () => {
+        it("responds with the generic Request Failed body when a non-Error is thrown", async () => {
             // Arrange
             const mockService = makeMockService();
             mockService.getPredictionsForStop.mockRejectedValue("string error");
@@ -349,7 +350,11 @@ describe("PredictionController", () => {
             await getPredictions(req, res, vi.fn());
 
             // Assert
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ details: "Unknown error" }));
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith({
+                error: "Request Failed",
+                details: "An unexpected error occurred",
+            });
         });
     });
 });
