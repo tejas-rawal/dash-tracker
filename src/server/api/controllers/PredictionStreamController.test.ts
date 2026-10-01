@@ -9,7 +9,7 @@ import { logger } from "../../config";
 import { NotFoundError, UpstreamApiError } from "../errors";
 import type { StopPredictionsResponse } from "../models/Prediction";
 import type { PredictionService } from "../services/PredictionService";
-import { createPredictionStreamService } from "../services/PredictionStreamService";
+import { type StreamSubscriber, createPredictionStreamService } from "../services/PredictionStreamService";
 import { createPredictionStreamController } from "./PredictionStreamController";
 
 const makeMockRes = () => {
@@ -318,6 +318,80 @@ describe("PredictionStreamController", () => {
             expect(logger.warn).toHaveBeenCalledWith("SSE response error for stop stop-1: read ECONNRESET");
         });
 
+        it("subscribes with a subscriber object carrying onUpdate and onEnd", async () => {
+            // Arrange
+            const mockStreamService = makeMockStreamService();
+            mockStreamService.subscribe.mockResolvedValue({
+                initialPayload: makeStopPredictionsResponse("stop-1"),
+                unsubscribe: vi.fn(),
+            });
+            const { getPredictionsStream } = createPredictionStreamController(mockStreamService);
+            const req = makeMockReq({ stop: "stop-1" });
+            const res = makeMockRes();
+
+            // Act
+            await getPredictionsStream(req, res, vi.fn());
+
+            // Assert
+            expect(mockStreamService.subscribe).toHaveBeenCalledWith("stop-1", {
+                onUpdate: expect.any(Function),
+                onEnd: expect.any(Function),
+            });
+        });
+
+        it("ends the response once through the cleanup path when the service ends the stream, even if the connection then closes", async () => {
+            // Arrange
+            const mockStreamService = makeMockStreamService();
+            const unsubscribe = vi.fn();
+            mockStreamService.subscribe.mockResolvedValue({
+                initialPayload: makeStopPredictionsResponse("stop-1"),
+                unsubscribe,
+            });
+            const { getPredictionsStream } = createPredictionStreamController(mockStreamService);
+            const req = makeMockReq({ stop: "stop-1" });
+            const res = makeMockRes();
+            await getPredictionsStream(req, res, vi.fn());
+            const subscriber = mockStreamService.subscribe.mock.calls[0][1] as StreamSubscriber;
+
+            // Act
+            subscriber.onEnd();
+
+            // Assert
+            expect(res.end).toHaveBeenCalledTimes(1);
+            expect(unsubscribe).toHaveBeenCalledTimes(1);
+
+            // Act: the socket then closes
+            emitResponseClose(res);
+
+            // Assert: nothing runs twice
+            expect(res.end).toHaveBeenCalledTimes(1);
+            expect(unsubscribe).toHaveBeenCalledTimes(1);
+        });
+
+        it("writes one more prediction frame when the service delivers an update", async () => {
+            // Arrange
+            const mockStreamService = makeMockStreamService();
+            mockStreamService.subscribe.mockResolvedValue({
+                initialPayload: makeStopPredictionsResponse("stop-1"),
+                unsubscribe: vi.fn(),
+            });
+            const { getPredictionsStream } = createPredictionStreamController(mockStreamService);
+            const req = makeMockReq({ stop: "stop-1" });
+            const res = makeMockRes();
+            await getPredictionsStream(req, res, vi.fn());
+            const subscriber = mockStreamService.subscribe.mock.calls[0][1] as StreamSubscriber;
+            const update = makeStopPredictionsResponse("stop-1");
+
+            // Act
+            subscriber.onUpdate(update);
+
+            // Assert
+            const writes = (res.write as ReturnType<typeof vi.fn>).mock.calls;
+            expect(writes).toHaveLength(2);
+            expect(writes[1]?.[0] as string).toMatch(/^event: prediction\ndata:/);
+            expect(writes[1]?.[0] as string).toContain(JSON.stringify(update));
+        });
+
         describe("with the real PredictionStreamService", () => {
             beforeEach(() => {
                 vi.useFakeTimers();
@@ -359,6 +433,44 @@ describe("PredictionStreamController", () => {
                 // Assert 2: the per-stop poll has stopped
                 expect(mockPredictionService.getPredictionsForStop).toHaveBeenCalledTimes(2);
                 expect(resB.end).toHaveBeenCalledTimes(1);
+            });
+
+            it("ends every response on the stop once when a reload removes it, and stops polling", async () => {
+                // Arrange
+                const mockPredictionService = {
+                    getPredictionsForStop: vi
+                        .fn()
+                        .mockResolvedValueOnce(makeStopPredictionsResponse("stop-1"))
+                        .mockRejectedValue(new NotFoundError("Stop not found: stop-1")),
+                };
+                const { getPredictionsStream } = createPredictionStreamController(
+                    createPredictionStreamService(mockPredictionService as unknown as PredictionService),
+                );
+                const resA = makeMockRes();
+                const resB = makeMockRes();
+                await getPredictionsStream(makeMockReq({ stop: "stop-1" }), resA, vi.fn());
+                await getPredictionsStream(makeMockReq({ stop: "stop-1" }), resB, vi.fn());
+
+                // Act: the next tick finds the stop gone
+                await vi.advanceTimersByTimeAsync(30_000);
+
+                // Assert: both responses ended after only their initial frame
+                expect(resA.end).toHaveBeenCalledTimes(1);
+                expect(resB.end).toHaveBeenCalledTimes(1);
+                expect(resA.write).toHaveBeenCalledTimes(1);
+                expect(resB.write).toHaveBeenCalledTimes(1);
+
+                // Act: more time passes
+                await vi.advanceTimersByTimeAsync(60_000);
+
+                // Assert: the loop is gone
+                expect(mockPredictionService.getPredictionsForStop).toHaveBeenCalledTimes(2);
+
+                // Act: the socket close that follows the server ending the response
+                emitResponseClose(resA);
+
+                // Assert: the response is not ended twice
+                expect(resA.end).toHaveBeenCalledTimes(1);
             });
         });
     });

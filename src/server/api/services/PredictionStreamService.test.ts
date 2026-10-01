@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { NotFoundError } from "../errors";
+import { NotFoundError, UpstreamApiError } from "../errors";
 import type { StopPredictionsResponse } from "../models/Prediction";
 
 vi.mock("../../config", () => ({
@@ -30,6 +30,7 @@ const makeResponse = (stopId = "stop-1", suffix = "a"): StopPredictionsResponse 
 
 describe("PredictionStreamService", () => {
     beforeEach(() => {
+        vi.clearAllMocks();
         vi.useFakeTimers();
     });
 
@@ -159,6 +160,7 @@ describe("PredictionStreamService", () => {
 
         // Assert: failure logged, subscriber not called with failed-tick data, interval still alive
         expect(subscriber.onUpdate).not.toHaveBeenCalled();
+        expect(subscriber.onEnd).not.toHaveBeenCalled();
         expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("stop-1"));
 
         // Act: second tick succeeds
@@ -167,6 +169,34 @@ describe("PredictionStreamService", () => {
         // Assert: recovery fans out fresh data
         expect(subscriber.onUpdate).toHaveBeenCalledWith(recoveredPayload);
         expect(mockPredictionService.getPredictionsForStop).toHaveBeenCalledTimes(3);
+    });
+
+    it("keeps the stream open when a poll tick times out upstream, then fans out the next good tick", async () => {
+        // Arrange
+        const mockPredictionService = makeMockPredictionService();
+        const recoveredPayload = makeResponse("stop-1", "c");
+        mockPredictionService.getPredictionsForStop
+            .mockResolvedValueOnce(makeResponse("stop-1", "a"))
+            .mockRejectedValueOnce(new UpstreamApiError("DASH API request timed out after 200ms"))
+            .mockResolvedValueOnce(recoveredPayload);
+        const { subscribe } = createPredictionStreamService(mockPredictionService as never);
+        const subscriber = makeSubscriber();
+        await subscribe("stop-1", subscriber);
+
+        // Act: the tick times out upstream
+        await vi.advanceTimersByTimeAsync(30_000);
+
+        // Assert: logged as a transient failure, the stream is not ended
+        expect(subscriber.onEnd).not.toHaveBeenCalled();
+        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("stop-1"));
+        expect(logger.warn).not.toHaveBeenCalled();
+
+        // Act: the next tick succeeds
+        await vi.advanceTimersByTimeAsync(30_000);
+
+        // Assert
+        expect(subscriber.onUpdate).toHaveBeenCalledWith(recoveredPayload);
+        expect(subscriber.onEnd).not.toHaveBeenCalled();
     });
 
     it("two subscribes for the same brand-new stop issued without awaiting the first share one fetch and one loop", async () => {
@@ -245,5 +275,217 @@ describe("PredictionStreamService", () => {
 
         // Assert
         expect(mockPredictionService.getPredictionsForStop).toHaveBeenCalledTimes(2);
+    });
+
+    describe("when a reload removes the stop", () => {
+        it("ends every subscriber of the stop once with one warn and no error, and stops polling", async () => {
+            // Arrange
+            const mockPredictionService = makeMockPredictionService();
+            mockPredictionService.getPredictionsForStop
+                .mockResolvedValueOnce(makeResponse())
+                .mockRejectedValue(new NotFoundError("Stop not found: stop-1"));
+            const { subscribe } = createPredictionStreamService(mockPredictionService as never);
+            const subscriberA = makeSubscriber();
+            const subscriberB = makeSubscriber();
+            await subscribe("stop-1", subscriberA);
+            await subscribe("stop-1", subscriberB);
+
+            // Act
+            await vi.advanceTimersByTimeAsync(30_000);
+
+            // Assert
+            expect(subscriberA.onEnd).toHaveBeenCalledTimes(1);
+            expect(subscriberB.onEnd).toHaveBeenCalledTimes(1);
+            expect(subscriberA.onUpdate).not.toHaveBeenCalled();
+            expect(subscriberB.onUpdate).not.toHaveBeenCalled();
+            expect(logger.warn).toHaveBeenCalledTimes(1);
+            expect(logger.warn).toHaveBeenCalledWith(
+                "Ending 2 prediction stream(s) for stop stop-1: Stop not found: stop-1",
+            );
+            expect(logger.error).not.toHaveBeenCalled();
+
+            // Act: further ticks would have fired here
+            await vi.advanceTimersByTimeAsync(90_000);
+
+            // Assert: the loop is gone, so nothing polls again
+            expect(mockPredictionService.getPredictionsForStop).toHaveBeenCalledTimes(2);
+        });
+
+        it("ends only the removed stop's streams while a stop still in the dataset keeps streaming", async () => {
+            // Arrange
+            const mockPredictionService = makeMockPredictionService();
+            const stopTwoPayload = makeResponse("stop-2", "b");
+            let stopOneFetches = 0;
+            mockPredictionService.getPredictionsForStop.mockImplementation(async (stopId: string) => {
+                if (stopId === "stop-2") {
+                    return stopTwoPayload;
+                }
+                stopOneFetches += 1;
+                if (stopOneFetches > 1) {
+                    throw new NotFoundError("Stop not found: stop-1");
+                }
+                return makeResponse("stop-1");
+            });
+            const { subscribe } = createPredictionStreamService(mockPredictionService as never);
+            const subscriberA = makeSubscriber();
+            const subscriberC = makeSubscriber();
+            await subscribe("stop-1", subscriberA);
+            await subscribe("stop-2", subscriberC);
+            const fetchesFor = (stopId: string): number =>
+                mockPredictionService.getPredictionsForStop.mock.calls.filter(([id]) => id === stopId).length;
+
+            // Act: one tick removes stop-1 and refreshes stop-2
+            await vi.advanceTimersByTimeAsync(30_000);
+
+            // Assert
+            expect(subscriberA.onEnd).toHaveBeenCalledTimes(1);
+            expect(subscriberC.onUpdate).toHaveBeenCalledWith(stopTwoPayload);
+            expect(subscriberC.onEnd).not.toHaveBeenCalled();
+            expect(fetchesFor("stop-1")).toBe(2);
+            expect(fetchesFor("stop-2")).toBe(2);
+
+            // Act: the next tick
+            await vi.advanceTimersByTimeAsync(30_000);
+
+            // Assert: stop-2 is polled again, stop-1 is not
+            expect(fetchesFor("stop-2")).toBe(3);
+            expect(fetchesFor("stop-1")).toBe(2);
+            expect(subscriberC.onUpdate).toHaveBeenCalledTimes(2);
+        });
+
+        it("isolates a throwing onEnd so every other subscriber of the stop is still ended", async () => {
+            // Arrange
+            const mockPredictionService = makeMockPredictionService();
+            mockPredictionService.getPredictionsForStop
+                .mockResolvedValueOnce(makeResponse())
+                .mockRejectedValue(new NotFoundError("Stop not found: stop-1"));
+            const { subscribe } = createPredictionStreamService(mockPredictionService as never);
+            const subscriberA = {
+                onUpdate: vi.fn(),
+                onEnd: vi.fn(() => {
+                    throw new Error("socket gone");
+                }),
+            };
+            const subscriberB = makeSubscriber();
+            await subscribe("stop-1", subscriberA);
+            await subscribe("stop-1", subscriberB);
+
+            // Act
+            await vi.advanceTimersByTimeAsync(30_000);
+
+            // Assert
+            expect(subscriberA.onEnd).toHaveBeenCalledTimes(1);
+            expect(subscriberB.onEnd).toHaveBeenCalledTimes(1);
+            expect(logger.error).toHaveBeenCalledTimes(1);
+            expect(logger.error).toHaveBeenCalledWith("Failed to end prediction stream for stop stop-1: socket gone");
+            expect(logger.warn).toHaveBeenCalledTimes(1);
+            expect(logger.warn).toHaveBeenCalledWith(
+                "Ending 2 prediction stream(s) for stop stop-1: Stop not found: stop-1",
+            );
+        });
+
+        it("treats an unsubscribe after teardown as a harmless no-op", async () => {
+            // Arrange
+            const mockPredictionService = makeMockPredictionService();
+            mockPredictionService.getPredictionsForStop
+                .mockResolvedValueOnce(makeResponse())
+                .mockRejectedValue(new NotFoundError("Stop not found: stop-1"));
+            const { subscribe } = createPredictionStreamService(mockPredictionService as never);
+            const subscriberA = makeSubscriber();
+            const { unsubscribe } = await subscribe("stop-1", subscriberA);
+            await vi.advanceTimersByTimeAsync(30_000);
+
+            // Act
+            const act = () => unsubscribe();
+
+            // Assert
+            expect(act).not.toThrow();
+            expect(subscriberA.onUpdate).not.toHaveBeenCalled();
+            expect(subscriberA.onEnd).toHaveBeenCalledTimes(1);
+        });
+
+        it("rejects a re-subscribe to the removed stop with NotFoundError and leaves no zombie loop", async () => {
+            // Arrange
+            const mockPredictionService = makeMockPredictionService();
+            mockPredictionService.getPredictionsForStop
+                .mockResolvedValueOnce(makeResponse())
+                .mockRejectedValue(new NotFoundError("Stop not found: stop-1"));
+            const { subscribe } = createPredictionStreamService(mockPredictionService as never);
+            await subscribe("stop-1", makeSubscriber());
+            await vi.advanceTimersByTimeAsync(30_000);
+
+            // Act
+            const resubscribe = subscribe("stop-1", makeSubscriber());
+
+            // Assert
+            await expect(resubscribe).rejects.toThrow(NotFoundError);
+            await vi.advanceTimersByTimeAsync(30_000);
+            expect(mockPredictionService.getPredictionsForStop).toHaveBeenCalledTimes(3);
+        });
+
+        it("ends nothing and logs nothing when every subscriber left while the failing tick was in flight", async () => {
+            // Arrange
+            const mockPredictionService = makeMockPredictionService();
+            let rejectTick: (reason: unknown) => void = () => {};
+            mockPredictionService.getPredictionsForStop.mockResolvedValueOnce(makeResponse()).mockReturnValueOnce(
+                new Promise((_, reject) => {
+                    rejectTick = reject;
+                }),
+            );
+            const { subscribe } = createPredictionStreamService(mockPredictionService as never);
+            const subscriberA = makeSubscriber();
+            const { unsubscribe } = await subscribe("stop-1", subscriberA);
+            await vi.advanceTimersByTimeAsync(30_000);
+
+            // Act: the last subscriber leaves, then the in-flight tick fails
+            unsubscribe();
+            rejectTick(new NotFoundError("Stop not found: stop-1"));
+            await vi.advanceTimersByTimeAsync(0);
+
+            // Assert
+            expect(subscriberA.onEnd).not.toHaveBeenCalled();
+            expect(logger.warn).not.toHaveBeenCalled();
+            expect(logger.error).not.toHaveBeenCalled();
+        });
+
+        it("never lets a stale tick from a replaced loop tear down the newer loop for the same stop", async () => {
+            // Arrange
+            const mockPredictionService = makeMockPredictionService();
+            const freshPayload = makeResponse("stop-1", "d");
+            let rejectTick: (reason: unknown) => void = () => {};
+            mockPredictionService.getPredictionsForStop
+                .mockResolvedValueOnce(makeResponse("stop-1", "a"))
+                .mockReturnValueOnce(
+                    new Promise((_, reject) => {
+                        rejectTick = reject;
+                    }),
+                )
+                .mockResolvedValue(freshPayload);
+            const { subscribe } = createPredictionStreamService(mockPredictionService as never);
+            const subscriberA = makeSubscriber();
+            const subscriberD = makeSubscriber();
+            const { unsubscribe } = await subscribe("stop-1", subscriberA);
+            // The first tick's fetch is now pending.
+            await vi.advanceTimersByTimeAsync(30_000);
+            // A leaves, which removes the loop, and D starts a new loop with a fresh first fetch.
+            unsubscribe();
+            await subscribe("stop-1", subscriberD);
+
+            // Act: the stale tick from the removed loop fails
+            rejectTick(new NotFoundError("Stop not found: stop-1"));
+            await vi.advanceTimersByTimeAsync(0);
+
+            // Assert: the newer loop is untouched
+            expect(subscriberD.onEnd).not.toHaveBeenCalled();
+            expect(logger.warn).not.toHaveBeenCalled();
+
+            // Act: the newer loop's own tick
+            await vi.advanceTimersByTimeAsync(30_000);
+
+            // Assert: D's loop polled once more and delivered
+            expect(mockPredictionService.getPredictionsForStop).toHaveBeenCalledTimes(4);
+            expect(subscriberD.onUpdate).toHaveBeenCalledWith(freshPayload);
+            expect(subscriberD.onEnd).not.toHaveBeenCalled();
+        });
     });
 });
