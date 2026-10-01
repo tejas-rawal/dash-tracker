@@ -95,7 +95,7 @@ describe("GET /api/v1/routes/all", () => {
         expect(response.body).toEqual([]);
     });
 
-    it("responds with 500 and an error body when the service throws", async () => {
+    it("responds with 500 and a generic error body that does not echo the thrown message", async () => {
         // Arrange
         getMockService().getAgencyRoutes.mockImplementation(() => {
             throw new Error("service error");
@@ -106,10 +106,11 @@ describe("GET /api/v1/routes/all", () => {
 
         // Assert
         expect(response.status).toBe(500);
-        expect(response.body).toMatchObject({
+        expect(response.body).toEqual({
             error: "Request Failed",
-            details: "service error",
+            details: "An unexpected error occurred",
         });
+        expect(JSON.stringify(response.body)).not.toContain("service error");
     });
 });
 
@@ -147,10 +148,10 @@ describe("GET /api/v1/routes/:shortName", () => {
         });
     });
 
-    it("responds with 500 and a Request Failed error body when the service throws a generic error", async () => {
+    it("responds with 500 and a generic Request Failed body that does not echo the thrown message", async () => {
         // Arrange
         getMockService().getAgencyRoute.mockImplementation(() => {
-            throw new Error("unexpected");
+            throw new Error("route lookup exploded");
         });
 
         // Act
@@ -158,10 +159,11 @@ describe("GET /api/v1/routes/:shortName", () => {
 
         // Assert
         expect(response.status).toBe(500);
-        expect(response.body).toMatchObject({
+        expect(response.body).toEqual({
             error: "Request Failed",
-            details: "unexpected",
+            details: "An unexpected error occurred",
         });
+        expect(JSON.stringify(response.body)).not.toContain("route lookup exploded");
     });
 
     it("passes the shortName path parameter to the service", async () => {

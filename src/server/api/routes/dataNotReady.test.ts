@@ -11,6 +11,8 @@ const NOT_READY_BODY = { error: "Service Unavailable", details: "Route and stop 
 const NOT_READY_ROWS: { label: string; path: string }[] = [
     { label: "GET /api/v1/predictions/stream", path: "/api/v1/predictions/stream?stop=stop-1" },
     { label: "GET /api/v1/vehicles with a route filter", path: "/api/v1/vehicles?route=1A" },
+    { label: "GET /api/v1/routes/all", path: "/api/v1/routes/all" },
+    { label: "GET /api/v1/routes/:shortName", path: "/api/v1/routes/1A" },
 ];
 
 describe("route/stop-dependent endpoints before the first successful load", () => {

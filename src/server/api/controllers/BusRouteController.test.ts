@@ -86,7 +86,7 @@ describe("BusRouteController", () => {
             expect(res.status).toHaveBeenCalledWith(500);
         });
 
-        it("responds with a Request Failed error body when the service throws a generic error", () => {
+        it("responds with a generic Request Failed body that does not echo the thrown message", () => {
             // Arrange
             const mockService = makeMockService();
             mockService.getAgencyRoutes.mockImplementation(() => {
@@ -102,8 +102,9 @@ describe("BusRouteController", () => {
             // Assert
             expect(res.json).toHaveBeenCalledWith({
                 error: "Request Failed",
-                details: "DB failure",
+                details: "An unexpected error occurred",
             });
+            expect(JSON.stringify(vi.mocked(res.json).mock.calls[0][0])).not.toContain("DB failure");
         });
 
         it("responds with status 404 when the service throws a NotFoundError", () => {
@@ -143,7 +144,7 @@ describe("BusRouteController", () => {
             });
         });
 
-        it("responds with unknown error details when a non-Error is thrown", () => {
+        it("responds with the generic Request Failed body when a non-Error is thrown", () => {
             // Arrange
             const mockService = makeMockService();
             // biome-ignore lint/style/useThrowOnlyError: intentionally testing non-Error throw path
@@ -158,7 +159,11 @@ describe("BusRouteController", () => {
             getAllRoutes(req, res, vi.fn());
 
             // Assert
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ details: "Unknown error" }));
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith({
+                error: "Request Failed",
+                details: "An unexpected error occurred",
+            });
         });
     });
 
@@ -234,7 +239,28 @@ describe("BusRouteController", () => {
             expect(res.status).toHaveBeenCalledWith(500);
         });
 
-        it("responds with unknown error details when a non-Error is thrown", () => {
+        it("responds with a generic Request Failed body that does not echo the thrown message", () => {
+            // Arrange
+            const mockService = makeMockService();
+            mockService.getAgencyRoute.mockImplementation(() => {
+                throw new Error("route index corrupted");
+            });
+            const { getRoute } = createBusRouteController(mockService);
+            const req = makeMockReq({ shortName: "1A" });
+            const res = makeMockRes();
+
+            // Act
+            getRoute(req, res, vi.fn());
+
+            // Assert
+            expect(res.json).toHaveBeenCalledWith({
+                error: "Request Failed",
+                details: "An unexpected error occurred",
+            });
+            expect(JSON.stringify(vi.mocked(res.json).mock.calls[0][0])).not.toContain("route index corrupted");
+        });
+
+        it("responds with the generic Request Failed body when a non-Error is thrown", () => {
             // Arrange
             const mockService = makeMockService();
             // biome-ignore lint/style/useThrowOnlyError: intentionally testing non-Error throw path
@@ -249,7 +275,11 @@ describe("BusRouteController", () => {
             getRoute(req, res, vi.fn());
 
             // Assert
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ details: "Unknown error" }));
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith({
+                error: "Request Failed",
+                details: "An unexpected error occurred",
+            });
         });
     });
 });

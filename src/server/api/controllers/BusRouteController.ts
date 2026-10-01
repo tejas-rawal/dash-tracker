@@ -1,6 +1,6 @@
 import type { Request, RequestHandler, Response } from "express";
-import { NotFoundError } from "../errors";
 import type { BusRouteService } from "../services/BusRouteService";
+import { sendErrorResponse } from "./errorResponse";
 
 export interface BusRouteController {
     getAllRoutes: RequestHandler;
@@ -13,10 +13,7 @@ export function createBusRouteController(service: BusRouteService): BusRouteCont
             const routes = service.getAgencyRoutes();
             res.json(routes);
         } catch (error: unknown) {
-            res.status(error instanceof NotFoundError ? 404 : 500).json({
-                error: error instanceof NotFoundError ? "Not Found" : "Request Failed",
-                details: error instanceof Error ? error.message : "Unknown error",
-            });
+            sendErrorResponse(res, error);
         }
     };
 
@@ -26,10 +23,7 @@ export function createBusRouteController(service: BusRouteService): BusRouteCont
             const route = service.getAgencyRoute(Array.isArray(shortName) ? shortName[0] : shortName);
             res.json(route);
         } catch (error: unknown) {
-            res.status(error instanceof NotFoundError ? 404 : 500).json({
-                error: error instanceof NotFoundError ? "Not Found" : "Request Failed",
-                details: error instanceof Error ? error.message : "Unknown error",
-            });
+            sendErrorResponse(res, error);
         }
     };
 
