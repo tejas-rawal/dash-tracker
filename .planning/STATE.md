@@ -3,19 +3,19 @@ gsd_state_version: "1.0"
 milestone: v0.6
 milestone_name: Solidifying the backend
 current_phase: 13
-current_phase_name: resilient-route-stop-data-lifecycle
+current_phase_name: Resilient Route/Stop Data Lifecycle
 status: executing
-stopped_at: Completed 13-05-PLAN.md
-last_updated: "2026-10-01T15:05:00.944Z"
+stopped_at: Completed 13-06-PLAN.md
+last_updated: "2026-10-01T18:37:31.672Z"
 last_activity: 2026-10-01
 last_activity_desc: Phase 13 execution started
-state_head: 091ae05043de942026f1d7df50bbf922f6abf36d
+state_head: ee19d895e985773f3135ec3b1ff9f699390f89a4
 progress:
   total_phases: 4
   completed_phases: 12
   total_plans: 11
-  completed_plans: 9
-  percent: 82
+  completed_plans: 10
+  percent: 91
 ---
 
 # Project State
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-30)
 
 ## Current Position
 
-Phase: 13 (resilient-route-stop-data-lifecycle) — READY TO EXECUTE
-Plan: 5 of 5
+Phase: 13 (Resilient Route/Stop Data Lifecycle) — EXECUTING
+Plan: 7 of 7
 Status: Ready to execute
-Last activity: 2026-10-01 — Phase 13 execution started
+Last activity: 2026-10-01 — Completed 13-06 (malformed upstream field validation)
 
 Progress (v0.6): [██░░░░░░░░] 1/4 phases (25%)
 
@@ -86,6 +86,7 @@ Progress (v0.6): [██░░░░░░░░] 1/4 phases (25%)
 | Phase 13 P03 | 3 min | 2 tasks | 5 files |
 | Phase 13 P04 | 2min | 3 tasks | 9 files |
 | Phase 13 P05 | 6min | 3 tasks | 7 files |
+| Phase 13 P06 | 5min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -137,6 +138,7 @@ Recent decisions affecting current work:
 - [Phase 13]: 13-04: Favorites/recents hydration propagates DataNotReadyError as 503 rather than silently dropping entries; no service-side change was needed
 - [Phase 13]: 13-05: Route/stop data loads in the background via BusDataRefreshService (chained setTimeout): equal-jitter backoff 1 s base / 60 s cap until first success, then hourly; one warn/info per attempt; stop() also blocks in-flight rescheduling
 - [Phase 13]: 13-05: app.ts boot order is process handlers -> SQLite initialize (fatal) -> listen -> start loader + alert poll; shutdown stops both loops before server.close
+- [Phase 13]: 13-06: Malformed DASH routes payloads (absent/null/non-finite stop code/lat/lon, missing/empty/non-string ids) are rejected inside load() with hand-rolled checks, not a Zod schema, so only the five fields the gap names are validated
 
 ### Pending Todos
 
@@ -181,8 +183,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-01T14:33:19.684Z
-Stopped at: Completed 13-05-PLAN.md
+Last session: 2026-10-01T18:37:31.637Z
+Stopped at: Completed 13-06-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

@@ -116,7 +116,7 @@ Plans:
   4. A failed refresh is logged and every endpoint keeps serving the last successfully loaded route/stop data, with no 5xx and no partially swapped data.
   5. The repository records when route/stop data was last loaded successfully, advancing that timestamp on each successful load or refresh and leaving it unchanged on a failed one. Background load and refresh timers stop cleanly on SIGTERM/SIGINT.
 
-**Plans**: 5/7 plans executed (2 gap-closure plans pending)
+**Plans**: 6/7 plans executed (2 gap-closure plans pending)
 
 Plans:
 **Wave 1**
@@ -135,7 +135,7 @@ Plans:
 
 **Wave 4** *(gap closure from 13-VERIFICATION.md; 13-06 and 13-07 run in parallel)*
 
-- [ ] 13-06-PLAN.md — Close gap truth 6 (review WR-02): `load()` rejects a stop with an absent, null or non-finite code/lat/lon and any route/direction/stop id that is not a non-empty string, keeping the last good data (E2E row in `dataReload.test.ts` + malformed-field matrix); refresh the stale Architecture section in `.claude/CLAUDE.md` and `AGENTS.md` (IN-05) (wave 4)
+- [x] 13-06-PLAN.md — Close gap truth 6 (review WR-02): `load()` rejects a stop with an absent, null or non-finite code/lat/lon and any route/direction/stop id that is not a non-empty string, keeping the last good data (E2E row in `dataReload.test.ts` + malformed-field matrix); refresh the stale Architecture section in `.claude/CLAUDE.md` and `AGENTS.md` (IN-05) (wave 4)
 - [ ] 13-07-PLAN.md — Review WR-01: a reload that drops a subscribed stop ends its SSE streams on the next poll (terminal `NotFoundError`, `StreamSubscriber.onEnd`), reconnects get the existing 404; real-HTTP E2E `dataReloadStream.test.ts` (wave 4)
 
 ### Phase 14: Health Checks & Rate Limiting
@@ -185,7 +185,7 @@ Phases execute in numeric order: 12 → 13 → 14 → 15
 | 10. Solidify vehicle position work | standalone | 1/1 | Complete | 2026-09-22 |
 | 11. Nearby Stop Predictions | v0.5 | 3/3 | Complete | 2026-09-24 |
 | 12. Bounded Upstream Calls & Error Safety Nets | v0.6 | 4/4 | Complete    | 2026-09-29 |
-| 13. Resilient Route/Stop Data Lifecycle | v0.6 | 5/5 | In Progress|  |
+| 13. Resilient Route/Stop Data Lifecycle | v0.6 | 6/7 | In Progress|  |
 | 14. Health Checks & Rate Limiting | v0.6 | 0/TBD | Not started | - |
 | 15. Alert & Nearby Data Hygiene | v0.6 | 0/TBD | Not started | - |
 
