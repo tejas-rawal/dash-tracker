@@ -5,17 +5,17 @@ milestone_name: Solidifying the backend
 current_phase: 13
 current_phase_name: Resilient Route/Stop Data Lifecycle
 status: executing
-stopped_at: Completed 13-01-PLAN.md
-last_updated: "2026-10-01T14:11:31.068Z"
+stopped_at: Completed 13-02-PLAN.md
+last_updated: "2026-10-01T14:15:30.385Z"
 last_activity: 2026-10-01
 last_activity_desc: Phase 13 execution started
-state_head: a288beb4548d5ee9920f8298be20ca7b1afcbf69
+state_head: 463c33c6b2d4321a2b05a0c194458b825124a282
 progress:
   total_phases: 4
   completed_phases: 12
   total_plans: 9
-  completed_plans: 5
-  percent: 56
+  completed_plans: 6
+  percent: 67
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-30)
 ## Current Position
 
 Phase: 13 (Resilient Route/Stop Data Lifecycle) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-10-01 — Phase 13 execution started
 
@@ -82,6 +82,7 @@ Progress (v0.6): [██░░░░░░░░] 1/4 phases (25%)
 | Phase 12 P04 | 3min | 2 tasks | 4 files |
 | Phase 12 P02 | 3min | 2 tasks | 4 files |
 | Phase 13 P01 | 3min | 3 tasks | 9 files |
+| Phase 13 P02 | 2min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -126,6 +127,7 @@ Recent decisions affecting current work:
 - [Phase 12]: [Phase 12-02] BusDataRepository.fetchAndProcessData catch/rethrow left unchanged: it already rethrows message-only, and the E2E shows a startup timeout is logged as a Failed to initialize bus data error with the timeout text
 - [Phase 13]: 13-01: not-ready is DataNotReadyError from the repository guard; sendErrorResponse maps it to 503 { error: 'Service Unavailable', details } + Retry-After: 5
 - [Phase 13]: 13-01: 500 responses use fixed details 'An unexpected error occurred' and log one string (stack or String(value)); closes WR-02/IN-04 for migrated controllers
+- [Phase 13]: 13-02: BusRoute, Stop and REST Prediction controllers use only sendErrorResponse; 404/502/400 bodies unchanged, 500 is the generic 'An unexpected error occurred'
 
 ### Pending Todos
 
@@ -170,8 +172,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-01T14:11:31.031Z
-Stopped at: Completed 13-01-PLAN.md
+Last session: 2026-10-01T14:15:30.352Z
+Stopped at: Completed 13-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
