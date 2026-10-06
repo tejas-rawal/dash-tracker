@@ -31,8 +31,8 @@ Milestone v0.6 — Solidifying the backend. Reliability first, then operational 
 
 ### Health
 
-- [ ] **HLTH-01**: A liveness endpoint returns 200 whenever the process is up, without touching DASH or data state
-- [ ] **HLTH-02**: A readiness endpoint returns 200 when route/stop data is loaded and fresher than a staleness threshold, and 503 otherwise, reporting the data's age in both cases
+- [x] **HLTH-01**: A liveness endpoint returns 200 whenever the process is up, without touching DASH or data state
+- [x] **HLTH-02**: A readiness endpoint returns 200 when route/stop data is loaded and fresher than a staleness threshold, and 503 otherwise, reporting the data's age in both cases
 
 ### Rate Limiting
 
@@ -79,8 +79,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BOOT-03 | Phase 13 | Complete |
 | ERR-01 | Phase 12 | Complete |
 | ERR-02 | Phase 12 | Complete |
-| HLTH-01 | Phase 14 | Pending |
-| HLTH-02 | Phase 14 | Pending |
+| HLTH-01 | Phase 14 | Complete |
+| HLTH-02 | Phase 14 | Complete |
 | RATE-01 | Phase 14 | Pending |
 | RATE-02 | Phase 14 | Pending |
 | ALRT-12 | Phase 15 | Pending |
