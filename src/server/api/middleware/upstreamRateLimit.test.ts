@@ -1,3 +1,4 @@
+import type { Server } from "node:http";
 import express from "express";
 import request from "supertest";
 import { type MockInstance, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -11,8 +12,13 @@ const RATE_LIMITED_BODY = {
     details: "Too many live requests from this client; retry after the Retry-After interval",
 };
 
-// A fresh limiter per app keeps every test's bucket its own.
-function makeApp(options: { trustProxyHops?: number } = {}): express.Express {
+const servers: Server[] = [];
+
+// A fresh limiter per app keeps every test's bucket its own. The app is served from one server that stays up
+// until afterEach. Handing supertest the bare app would start a throwaway server per request, and Node 20's
+// keep-alive agent can then reuse a pooled socket to an earlier, closed server that the OS gave the same port,
+// so the request lands on a different app and limiter.
+async function makeApp(options: { trustProxyHops?: number } = {}): Promise<Server> {
     const app = express();
     if (options.trustProxyHops !== undefined) {
         app.set("trust proxy", options.trustProxyHops);
@@ -20,11 +26,14 @@ function makeApp(options: { trustProxyHops?: number } = {}): express.Express {
     app.get(PATH, createUpstreamRateLimiter(), (_req, res) => {
         res.json({ ok: true });
     });
-    return app;
+    const server = app.listen(0);
+    servers.push(server);
+    await new Promise<void>((resolve) => server.once("listening", () => resolve()));
+    return server;
 }
 
 async function sendSequential(
-    app: express.Express,
+    app: Server,
     count: number,
     url: string = PATH,
     headers: Record<string, string> = {},
@@ -60,14 +69,18 @@ describe("createUpstreamRateLimiter", () => {
         errorSpy = vi.spyOn(logger, "error").mockImplementation(() => logger);
     });
 
-    afterEach(() => {
+    afterEach(async () => {
         vi.useRealTimers();
         vi.restoreAllMocks();
+        for (const server of servers.splice(0)) {
+            server.closeAllConnections();
+            await new Promise<void>((resolve) => server.close(() => resolve()));
+        }
     });
 
     it("allows the 59th and 60th requests and rejects the 61st and 62nd", async () => {
         // Arrange
-        const app = makeApp();
+        const app = await makeApp();
 
         // Act
         const responses = await sendSequential(app, 62);
@@ -83,7 +96,7 @@ describe("createUpstreamRateLimiter", () => {
 
     it("window boundary and Retry-After precision", async () => {
         // Arrange
-        const app = makeApp();
+        const app = await makeApp();
         await sendSequential(app, 60);
 
         // Act
@@ -109,7 +122,7 @@ describe("createUpstreamRateLimiter", () => {
 
     it("logs one warn per window and again in the next window", async () => {
         // Arrange
-        const app = makeApp();
+        const app = await makeApp();
 
         // Act
         await sendSequential(app, 62);
@@ -124,7 +137,7 @@ describe("createUpstreamRateLimiter", () => {
 
     it("logs the first rejection once without any of the query string", async () => {
         // Arrange
-        const app = makeApp();
+        const app = await makeApp();
 
         // Act
         const responses = await sendSequential(app, 62, `${PATH}?lat=38.8048&lng=-77.0469`);
@@ -144,7 +157,7 @@ describe("createUpstreamRateLimiter", () => {
 
     it("keys each client IP separately behind one trusted proxy", async () => {
         // Arrange
-        const app = makeApp({ trustProxyHops: 1 });
+        const app = await makeApp({ trustProxyHops: 1 });
         await sendSequential(app, 60, PATH, { "X-Forwarded-For": "203.0.113.10" });
 
         // Act
@@ -163,7 +176,7 @@ describe("createUpstreamRateLimiter", () => {
 
     it("counts concurrent requests exactly", async () => {
         // Arrange
-        const app = makeApp();
+        const app = await makeApp();
 
         // Act
         const responses = await Promise.all(Array.from({ length: 70 }, () => request(app).get(PATH)));
@@ -176,7 +189,7 @@ describe("createUpstreamRateLimiter", () => {
 
     it("counts each request exactly once", async () => {
         // Arrange
-        const app = makeApp();
+        const app = await makeApp();
 
         // Act
         const responses = await sendSequential(app, 5);
@@ -188,7 +201,7 @@ describe("createUpstreamRateLimiter", () => {
 
     it("sends draft-8 headers, no legacy headers, and the error body on rejection", async () => {
         // Arrange
-        const app = makeApp();
+        const app = await makeApp();
 
         // Act
         const responses = await sendSequential(app, 61);
@@ -214,7 +227,7 @@ describe("createUpstreamRateLimiter", () => {
         // Arrange
         // trust proxy stays unset (Express defaults it to false), so an X-Forwarded-For header trips the
         // library's ERR_ERL_UNEXPECTED_X_FORWARDED_FOR validation.
-        const app = makeApp();
+        const app = await makeApp();
 
         // Act
         await request(app).get(PATH).set("X-Forwarded-For", "203.0.113.10");
@@ -231,8 +244,8 @@ describe("createUpstreamRateLimiter", () => {
 
     it("keeps independent buckets for separate instances", async () => {
         // Arrange
-        const exhausted = makeApp();
-        const fresh = makeApp();
+        const exhausted = await makeApp();
+        const fresh = await makeApp();
         await sendSequential(exhausted, 60);
 
         // Act

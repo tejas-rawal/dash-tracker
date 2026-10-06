@@ -1,5 +1,6 @@
+import type { Server } from "node:http";
 import request from "supertest";
-import { type MockInstance, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { type MockInstance, afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { axios, logger } from "../../config";
 import app from "../../test/app";
 import { upstreamRateLimiter } from "../middleware/upstreamRateLimit";
@@ -30,6 +31,10 @@ function remainingOf(response: request.Response): number {
 }
 
 describe("upstream rate limit on the live DASH routes", () => {
+    // One server for the whole file. Handing supertest the bare app would start a throwaway server per request,
+    // and Node 20's keep-alive agent can then reuse a pooled socket to an earlier, closed server that the OS gave
+    // the same port, so a request could be answered by a server this test never meant to hit.
+    let server: Server;
     let getSpy: MockInstance;
     let warnSpy: MockInstance;
     let errorSpy: MockInstance;
@@ -39,6 +44,16 @@ describe("upstream rate limit on the live DASH routes", () => {
             ([message]) => typeof message === "string" && message.startsWith("Rate limit exceeded for "),
         );
     }
+
+    beforeAll(async () => {
+        server = app.listen(0);
+        await new Promise<void>((resolve) => server.once("listening", () => resolve()));
+    });
+
+    afterAll(async () => {
+        server.closeAllConnections();
+        await new Promise<void>((resolve) => server.close(() => resolve()));
+    });
 
     beforeEach(() => {
         // supertest connects from ::ffff:127.0.0.1, which the default key generator normalizes to 127.0.0.1.
@@ -54,7 +69,7 @@ describe("upstream rate limit on the live DASH routes", () => {
 
     it("GET /api/v1/predictions answers 429 with Retry-After and the error body on the 61st request in a minute", async () => {
         // Arrange
-        const client = request(app);
+        const client = request(server);
         const path = "/api/v1/predictions?stop=stop-1";
 
         // Act
@@ -95,7 +110,7 @@ describe("upstream rate limit on the live DASH routes", () => {
         "%s carries the shared draft-8 RateLimit headers",
         async (_label, path) => {
             // Arrange
-            const client = request(app);
+            const client = request(server);
 
             // Act
             const response = await client.get(path);
@@ -110,7 +125,7 @@ describe("upstream rate limit on the live DASH routes", () => {
 
     it("the four live routes draw from one bucket: 15 requests to each leave the next request on any of them at 429", async () => {
         // Arrange
-        const client = request(app);
+        const client = request(server);
 
         // Act
         const remaining: number[] = [];
@@ -138,7 +153,7 @@ describe("upstream rate limit on the live DASH routes", () => {
 
     it("the first rejected /predictions/nearby request logs one warn with the path and none of the query string", async () => {
         // Arrange
-        const client = request(app);
+        const client = request(server);
         for (let i = 0; i < 60; i++) {
             await client.get("/api/v1/predictions?stop=stop-1");
         }

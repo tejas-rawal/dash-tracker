@@ -18,7 +18,9 @@ const nearbyController = createNearbyPredictionController(nearbyService);
 const router = Router();
 
 router.get("/", upstreamRateLimiter, controller.getPredictions);
-router.get("/stream", streamController.getPredictionsStream);
-router.get("/nearby", nearbyController.getNearbyPredictions);
+// One shared bucket, attached per handler (D-10, D-16). An SSE connect is counted once when it opens; the
+// limiter never touches a stream that is already open (D-11).
+router.get("/stream", upstreamRateLimiter, streamController.getPredictionsStream);
+router.get("/nearby", upstreamRateLimiter, nearbyController.getNearbyPredictions);
 
 export default router;
