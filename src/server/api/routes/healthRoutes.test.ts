@@ -64,6 +64,32 @@ describe("health probes before the first successful route/stop load", () => {
         expect(getSpy).not.toHaveBeenCalled();
     });
 
+    it("GET /api/v1/health/live answers 200 ok before any route/stop load and makes no DASH call", async () => {
+        // Arrange
+        const client = request(app);
+
+        // Act
+        const response = await client.get("/api/v1/health/live");
+
+        // Assert
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual({ status: "ok" });
+        expect(response.headers["cache-control"]).toBe("no-store");
+        expect(getSpy).not.toHaveBeenCalled();
+    });
+
+    it("HEAD /api/v1/health/live answers 200", async () => {
+        // Arrange
+        const client = request(app);
+
+        // Act
+        const response = await client.head("/api/v1/health/live");
+
+        // Assert
+        expect(response.status).toBe(200);
+        expect(response.headers["cache-control"]).toBe("no-store");
+    });
+
     it("GET /api/v1/health/ready stays never_loaded and reports lastFailedAt after a failed first load", async () => {
         // Arrange
         vi.useFakeTimers({ toFake: ["Date"] });
@@ -85,6 +111,21 @@ describe("health probes before the first successful route/stop load", () => {
         });
         expect(JSON.stringify(response.body)).not.toContain("ECONNREFUSED");
         expect(response.body).not.toHaveProperty("lastError");
+    });
+
+    it("GET /api/v1/health/live still answers 200 ok after a failed first load while DASH is down", async () => {
+        // Arrange
+        getSpy.mockRejectedValueOnce(new Error("DASH API request failed: connect ECONNREFUSED"));
+        await expect(BusDataRepository.getInstance().load()).rejects.toThrow();
+        const callsAfterFailure = getSpy.mock.calls.length;
+
+        // Act
+        const response = await request(app).get("/api/v1/health/live");
+
+        // Assert
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual({ status: "ok" });
+        expect(getSpy.mock.calls.length).toBe(callsAfterFailure);
     });
 });
 
@@ -168,5 +209,20 @@ describe("health probes after a successful route/stop load", () => {
             lastFailedAt: new Date(T0.getTime() + 3_600_000).toISOString(),
         });
         expect(JSON.stringify(response.body)).not.toContain("timed out");
+    });
+
+    it("20 concurrent GET /api/v1/health/live requests all answer 200 ok without calling DASH", async () => {
+        // Arrange
+        const callsAfterLoad = getSpy.mock.calls.length;
+
+        // Act
+        const responses = await Promise.all(Array.from({ length: 20 }, () => request(app).get("/api/v1/health/live")));
+
+        // Assert
+        for (const response of responses) {
+            expect(response.status).toBe(200);
+            expect(response.body).toEqual({ status: "ok" });
+        }
+        expect(getSpy.mock.calls.length).toBe(callsAfterLoad);
     });
 });

@@ -8,6 +8,7 @@ const controller = createHealthController(service);
 
 const router = Router();
 
+router.get("/live", controller.getLiveness);
 router.get("/ready", controller.getReadiness);
 
 export default router;

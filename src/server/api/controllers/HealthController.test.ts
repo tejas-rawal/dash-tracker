@@ -99,7 +99,10 @@ describe("HealthController", () => {
         });
 
         it.each([
-            ["never_loaded", makeReadinessReport({ status: "not_ready", reason: "never_loaded", dataAgeSeconds: null })],
+            [
+                "never_loaded",
+                makeReadinessReport({ status: "not_ready", reason: "never_loaded", dataAgeSeconds: null }),
+            ],
             ["stale", makeReadinessReport({ status: "not_ready", reason: "stale", dataAgeSeconds: 11_101 })],
         ])("answers 503 with the %s report unchanged and no Retry-After", (_reason, report) => {
             // Arrange
