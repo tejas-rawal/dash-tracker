@@ -4,6 +4,8 @@
 **Domain:** Express 4 liveness/readiness probes, per-IP rate limiting (express-rate-limit 8.x), trust-proxy configuration
 **Confidence:** HIGH (library behavior was probed against the real package under the project's tsconfig and Node 20; in-repo values were read this session)
 
+> **Resolution note (2026-10-06, plan-phase):** CONTEXT.md is authoritative. All three Open Questions are RESOLVED: D-06 and D-07 were revised and D-19 was added. The staleness threshold is `STALE_AFTER_MS = 3 * REFRESH_INTERVAL_MS + 5 * 60_000` (11_100_000 ms, 3h5m), not a bare 3h. `REFRESH_INTERVAL_MS` is exported, and that export is the only edit to `BusDataRefreshService.ts`. Both probes send `Cache-Control: no-store`, and the readiness 503 sends no `Retry-After`. Any statement below that predates the revision (a bare `3 * REFRESH_INTERVAL_MS`, a 3h / 10800 s boundary, or "needs user confirmation") is superseded. Each one is marked where it appears.
+
 <user_constraints>
 ## User Constraints (from CONTEXT.md)
 
@@ -25,9 +27,11 @@
 - **D-05:** Readiness gates **only on route/stop data**. It does not consider alert-poll freshness or SQLite. A failed SQLite open already exits at boot (13 D-18), and alerts are only an enrichment. Readiness never makes an upstream call.
 
 #### Staleness
-- **D-06:** The staleness threshold is **3 hours**. Data is stale when `now - lastLoadedAt` exceeds 3h. With hourly refreshes, the instance goes unready only after three refreshes in a row have failed, so one DASH blip never pulls it from rotation.
-- **D-07:** The threshold is a **named module constant**, not an env var, following 13 D-07. Its comment should tie it to `REFRESH_INTERVAL_MS`, which equals 3 missed refreshes.
-- **D-08:** `BusDataRefreshService` is **not changed**. A failed refresh still waits the full hour before retrying (13 D-09/D-10). The user accepted that after the third failure in a row, the instance can stay unready for up to an hour, until the next attempt succeeds.
+*(Synced with CONTEXT.md after the 2026-10-06 plan-phase revision of D-06/D-07/D-08 and the addition of D-19.)*
+- **D-06:** The staleness threshold is **3 × `REFRESH_INTERVAL_MS` plus a 5-minute grace margin** (3h5m). Data is stale when `now - lastLoadedAt` exceeds it. *(Revised 2026-10-06 at plan-phase after research: each refresh is scheduled one interval after the previous attempt **finishes**, so a bare 3h threshold trips after only two failed refreshes, milliseconds to ~20s before the third attempt starts. The grace margin makes "unready only after three refreshes in a row have failed" literally true, so one DASH blip never pulls the instance from rotation.)*
+- **D-07:** The threshold is a **named module constant**, not an env var, following 13 D-07. It is **derived from `REFRESH_INTERVAL_MS`**, which `BusDataRefreshService` now **exports** (export only, no behavior change), so the two cannot drift. Its comment explains the 3 missed refreshes + grace reasoning. *(Revised 2026-10-06 at plan-phase.)*
+- **D-08:** `BusDataRefreshService`'s **scheduling behavior is not changed** (the only edit is exporting `REFRESH_INTERVAL_MS`, per D-07). A failed refresh still waits the full hour before retrying (13 D-09/D-10). The user accepted that after the third failure in a row, the instance can stay unready for up to an hour, until the next attempt succeeds.
+- **D-19:** Both probes send **`Cache-Control: no-store`**. The readiness 503 does **not** send `Retry-After`: staleness and never-loaded are not short transients, unlike the API-level `DataNotReadyError` 503. *(Decided 2026-10-06 at plan-phase.)*
 
 #### Rate limiting
 - **D-09:** Use the **`express-rate-limit`** package with its default in-memory store, per the "prefer established libraries" principle. A Redis or shared store is out of scope (REQUIREMENTS Out of Scope). The planner checks which version is compatible with Express 4.21 / Node 20 / Bun 1.0.31 and reads its types before relying on any option.
@@ -50,7 +54,7 @@
 ### Claude's Discretion
 - The shared limiter's module name and location (e.g. `src/server/api/middleware/upstreamRateLimit.ts`). Prefer a `createUpstreamRateLimiter()` factory, with one shared instance wired into both `predictionRoutes.ts` and `vehicleRoutes.ts`, so tests can build fresh instances without bucket bleed.
 - How to detect "first rejection in the window" for D-15. For example, inside the custom handler, `req.rateLimit.current === limit + 1`.
-- Whether the readiness 503 also sends `Retry-After`, and whether either probe sets `Cache-Control: no-store`.
+- ~~Whether the readiness 503 also sends `Retry-After`, and whether either probe sets `Cache-Control: no-store`.~~ No longer discretion: decided by D-19.
 - How `dataAgeSeconds` is rounded (floor to whole seconds is fine), and whether the health service takes an injected clock or the tests use `vi.useFakeTimers()`.
 - How the readiness logic is split between the health service and the controller. Factory DI still applies: inject `BusDataRepository` and never import the singleton inside the service.
 
@@ -65,7 +69,7 @@
 | ID | Description | Research Support |
 |----|-------------|------------------|
 | HLTH-01 | A liveness endpoint returns 200 whenever the process is up, without touching DASH or data state | Controller-local constant response, no service/repository call (Pattern 2). Verified by an E2E test that runs with the repository in its pre-load state and asserts `axios.get` is never called. |
-| HLTH-02 | A readiness endpoint returns 200 when route/stop data is loaded and fresher than a staleness threshold, and 503 otherwise, reporting the data's age in both cases | `getLoadState()` snapshot → `HealthService.getReadiness()` (Pattern 3). Staleness uses a strict `>` against `STALE_AFTER_MS = 3 * REFRESH_INTERVAL_MS`. See Pitfall 1 for an off-by-one in the D-06 rationale that needs user confirmation. |
+| HLTH-02 | A readiness endpoint returns 200 when route/stop data is loaded and fresher than a staleness threshold, and 503 otherwise, reporting the data's age in both cases | `getLoadState()` snapshot → `HealthService.getReadiness()` (Pattern 3). Staleness uses a strict `>` against `STALE_AFTER_MS = 3 * REFRESH_INTERVAL_MS + 5 * 60_000` (revised D-06). Pitfall 1 explains why the grace margin is needed; the user confirmed it at plan-phase. |
 | RATE-01 | Live-upstream endpoints (`/predictions`, `/predictions/nearby`, `/vehicles`) are rate-limited per client IP, returning 429 with a `Retry-After` header when exceeded | `express-rate-limit@8.7.0`, a single shared instance, `standardHeaders: "draft-8"`, `legacyHeaders: false`, and a custom `handler` (Pattern 1). Retry-After is set by the library only when standard or legacy headers are enabled (verified in source). |
 | RATE-02 | In-memory endpoints (routes, stops, favorites/recents, health) are not rate-limited | The limiter is attached per route in `predictionRoutes.ts` and `vehicleRoutes.ts` only (Pattern 4). An E2E test sends more than 60 requests to each unlimited endpoint and asserts no 429 and no `ratelimit` header. |
 </phase_requirements>
@@ -86,7 +90,7 @@ This phase is small and has no unknowns in the library itself. The work splits i
 
 Three findings change what the planner writes:
 1. **`req.rateLimit.current` is not typed in v8.** The field is `used`. At runtime `current` is only a non-enumerable deprecated alias, so the CONTEXT example would fail `tsc`. Detect the first rejection with `info.used === UPSTREAM_RATE_LIMIT + 1`.
-2. **Off-by-one in the D-06 rationale.** Refreshes are chained (each one is scheduled an hour after the previous attempt *settles*), so a 3-hour threshold measured from `lastLoadedAt` expires *before* the third post-load refresh attempt starts. The instance goes unready after **two** consecutive failed refreshes, a few milliseconds to about 20 seconds before the third attempt. The locked number (3h) can stay, but the code comment must not claim "three failed refreshes" unless the user agrees to add a small grace margin. See Pitfall 1 and Open Question 1.
+2. **Off-by-one in the D-06 rationale.** Refreshes are chained (each one is scheduled an hour after the previous attempt *settles*), so a 3-hour threshold measured from `lastLoadedAt` expires *before* the third post-load refresh attempt starts. The instance goes unready after **two** consecutive failed refreshes, a few milliseconds to about 20 seconds before the third attempt. The locked number (3h) can stay, but the code comment must not claim "three failed refreshes" unless the user agrees to add a small grace margin. See Pitfall 1 and Open Question 1. **RESOLVED (revised D-06):** the user approved a 5-minute grace margin, so `STALE_AFTER_MS = 3 * REFRESH_INTERVAL_MS + 5 * 60_000` and the "three failed refreshes" comment is true.
 3. **Lockfile tooling.** The tracked lockfile is the text `bun.lock`. The pinned `bun@1.0.31` ignores it and writes the git-ignored `bun.lockb`, so a plain `bun install` would leave the committed lockfile without the new dependency. Use the proto-installed Bun 1.3.14 with `--minimum-release-age` (exact command below).
 
 **Primary recommendation:** Add `express-rate-limit@8.7.0` (exact pin) with `~/.proto/tools/bun/1.3.14/bun add express-rate-limit@8.7.0 --minimum-release-age=604800`. Build one `createUpstreamRateLimiter()` instance with `windowMs: 60_000`, `limit: 60`, `standardHeaders: "draft-8"`, `legacyHeaders: false`, a custom `handler` that warns once (on `used === limit + 1`) and sends `{ error, details }`, and a Winston `logger` adapter. Place that instance in front of the four D-11 handlers. Build readiness as a pure function of `getLoadState()` plus `Date.now()`, with no upstream I/O.
@@ -169,7 +173,7 @@ Three findings change what the planner writes:
      └─ /ready ──► HealthController.getReadiness ──► HealthService.getReadiness()
                                                     └─► BusDataRepository.getLoadState() (in-memory snapshot)
                                                          lastLoadedAt undefined ──► 503 not_ready/never_loaded
-                                                         now-lastLoadedAt > 3h ──► 503 not_ready/stale
+                                                         now-lastLoadedAt > STALE_AFTER_MS (3h5m, revised D-06) ──► 503 not_ready/stale
                                                          else ─────────────────► 200 ready
 ```
 
@@ -261,14 +265,17 @@ const getLiveness: RequestHandler = (_req: Request, res: Response): void => {
 No service call is needed. Layering means never *skipping down* a layer, and liveness has nothing below it to call. Express `router.get` also answers `HEAD`, which some LBs use. [CITED: expressjs.com/en/4x/api.html#app.METHOD — `app.get` also matches HEAD]
 
 ### Pattern 3: Readiness — pure function of the load-state snapshot
+*(Constant and comment updated after the plan-phase revision: revised D-06/D-07. The bare `3 * REFRESH_INTERVAL_MS` first proposed here is superseded.)*
 ```typescript
 // HealthService.ts
 import type { BusDataRepository } from "../repositories";
-import { REFRESH_INTERVAL_MS } from "./BusDataRefreshService"; // requires adding `export` (behavior-neutral; see Open Question 2)
+import { REFRESH_INTERVAL_MS } from "./BusDataRefreshService"; // requires adding `export` (behavior-neutral; D-07, Open Question 2 RESOLVED)
 
-// 3 hourly refresh intervals. See Pitfall 1: chained scheduling means this expires a few seconds before the
-// third post-load refresh attempt starts.
-const STALE_AFTER_MS = 3 * REFRESH_INTERVAL_MS;
+// Each refresh is scheduled one REFRESH_INTERVAL_MS after the previous attempt settles, so three bare intervals
+// expire just before the third failed refresh starts. The grace absorbs those attempt durations, so readiness
+// drops only after three consecutive failed refreshes (revised D-06 / D-07).
+const STALE_GRACE_MS = 5 * 60_000;
+export const STALE_AFTER_MS = 3 * REFRESH_INTERVAL_MS + STALE_GRACE_MS;
 
 export interface ReadinessReport {
     status: "ready" | "not_ready";
@@ -366,6 +373,8 @@ Probe results: `undefined→0`, `"0"→0`, `"1"→1`, and `""`, `" 1"`, `"-1"`, 
 ## Common Pitfalls
 
 ### Pitfall 1: The 3h threshold fires after TWO failed refreshes, not three
+> **RESOLVED by revised D-06 (2026-10-06):** the user chose option (b) below. The threshold is `STALE_AFTER_MS = 3 * REFRESH_INTERVAL_MS + 5 * 60_000` (11_100_000 ms, 3h5m). Data aged exactly 11_100_000 ms is ready and data aged 11_100_001 ms is stale. The analysis below explains why a bare 3h threshold is wrong. Do **not** implement the bare 3h boundary, or a comment saying it expires after two failed refreshes.
+
 **What goes wrong:** D-06/D-07 say "unready only after three refreshes in a row have failed". With the existing scheduler that isn't true.
 **Why it happens:** `lastLoadedAt` is stamped inside the successful attempt (`applyData`), and the next attempt is scheduled `REFRESH_INTERVAL_MS` after the current one *settles*. With a success at T0 followed by failures of durations d1 and d2: attempt 1 runs at T0+1h and fails at T0+1h+d1. Attempt 2 runs at T0+2h+d1 and fails at T0+2h+d1+d2. Attempt 3 *starts* at T0+3h+d1+d2. The data turns stale at T0+3h, which is d1+d2 (milliseconds up to about 2×`DASH_API_TIMEOUT_MS` = 20s) **before** the third attempt. If that attempt succeeds, readiness flips back after a short not_ready blip. A probe every 5–10s could catch the blip.
 Verified source [VERIFIED: src/server/api/services/BusDataRefreshService.ts:6, 57, 61; BusDataRepository.ts:123-125]:
@@ -379,7 +388,7 @@ const REFRESH_INTERVAL_MS = 60 * 60_000; // hourly once loaded: DASH route/stop 
         this.lastFailedAt = undefined;
         this.lastError = undefined;
 ```
-**How to avoid:** Either (a) keep exactly `3 * REFRESH_INTERVAL_MS` (locked) and write the comment truthfully ("two consecutive failed refreshes; expires just before the third attempt"), or (b) with user approval, add a grace margin (e.g. `+ 5 * 60_000`), which covers three attempts at up to 100s each so that the third failure is what flips readiness. This needs user confirmation (Open Question 1). The "one DASH blip never pulls it from rotation" property holds either way.
+**How to avoid:** Either (a) keep exactly `3 * REFRESH_INTERVAL_MS` (locked) and write the comment truthfully ("two consecutive failed refreshes; expires just before the third attempt"), or (b) with user approval, add a grace margin (e.g. `+ 5 * 60_000`), which covers three attempts at up to 100s each so that the third failure is what flips readiness. The user chose (b) with exactly `+ 5 * 60_000` (revised D-06; Open Question 1 RESOLVED). The "one DASH blip never pulls it from rotation" property holds either way.
 **Warning signs:** A test that simulates "two failures then success" sees a 503 between them.
 
 ### Pitfall 2: `req.rateLimit.current` does not typecheck
@@ -438,8 +447,8 @@ const live = await request(app).get("/api/v1/health/live");        // 200 { stat
 const ready = await request(app).get("/api/v1/health/ready");      // 503 { status: "not_ready", reason: "never_loaded", dataAgeSeconds: null, lastLoadedAt: null, lastFailedAt: null }
 // Load via a spied axios.get (or the fake-DASH server in dataReload.test.ts) + BusDataRepository.getInstance().load(), then:
 vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(T0); await repo.load();
-vi.setSystemTime(T0 + 3 * 3_600_000);      // exactly 3h → 200 ready, dataAgeSeconds 10800
-vi.setSystemTime(T0 + 3 * 3_600_000 + 1);  // → 503 stale, dataAgeSeconds 10800, lastLoadedAt ISO
+vi.setSystemTime(T0 + 11_100_000);      // exactly STALE_AFTER_MS (3h5m, revised D-06) → 200 ready, dataAgeSeconds 11100
+vi.setSystemTime(T0 + 11_100_000 + 1);  // → 503 stale, dataAgeSeconds 11100, lastLoadedAt ISO
 // Assert axios.get was never called by either probe (spy call count unchanged across probe requests).
 ```
 
@@ -461,16 +470,21 @@ vi.setSystemTime(T0 + 3 * 3_600_000 + 1);  // → 503 stale, dataAgeSeconds 1080
 | A2 | Express `router.get` handlers also answer `HEAD` probes | Pattern 2 | An LB using HEAD would get 404. Low risk; Express 4 has done this for a long time. [ASSUMED from training; cited doc not fetched this session] |
 | A3 | Bun 1.3.14 installing `node_modules` (hoisted linker, since `bun.lock` has `configVersion: 0`) leaves the test suite green | Install | If the linker layout differs, run `bun run test` right after install. [ASSUMED] |
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+All three were decided at plan-phase on 2026-10-06 and recorded in CONTEXT.md. None is open.
 
 1. **Should the stale threshold get a grace margin so it matches the "three failed refreshes" rationale?** (Pitfall 1)
+   - **RESOLVED (revised D-06):** yes. `STALE_AFTER_MS = 3 * REFRESH_INTERVAL_MS + 5 * 60_000` (11_100_000 ms, 3h5m), with a strict `>`. The scheduler is unchanged (D-08). The original recommendation below, to keep a bare 3h, is superseded.
    - What we know: `3 * REFRESH_INTERVAL_MS` expires after two consecutive failures, d1+d2 before the third attempt.
-   - What's unclear: whether the user cares about this up-to-~20s blip, or only about the locked "3 hours".
-   - Recommendation: implement the locked 3h with a truthful comment, and raise the margin option as a confirmation item in the plan (`checkpoint:decision` or an explicit note). Don't change the scheduler (D-08).
+   - What was unclear: whether the user cared about this blip of up to ~20s, or only about the locked "3 hours".
+   - Original recommendation (superseded by revised D-06): implement the locked 3h with a truthful comment, and raise the margin option as a confirmation item in the plan. Don't change the scheduler (D-08).
 2. **Export `REFRESH_INTERVAL_MS` or duplicate it?**
-   - What we know: it is a non-exported `const` today. D-07 wants the threshold "tied to" it. D-08 says the refresh service is "not changed" (behavior).
-   - Recommendation: add `export` (no behavior change) and derive `STALE_AFTER_MS = 3 * REFRESH_INTERVAL_MS`, so the two values can't drift. If the planner reads D-08 as forbidding any edit, use `3 * 60 * 60_000` with a comment naming `REFRESH_INTERVAL_MS`.
-3. **Readiness 503 `Retry-After`?** Recommendation: omit it. Probes ignore the header, and no single value is truthful for both cases: never_loaded may recover within seconds, while stale may last up to an hour. Set `Cache-Control: no-store` on both probes.
+   - **RESOLVED (revised D-07):** export it. `BusDataRefreshService` gets the `export` keyword on `REFRESH_INTERVAL_MS` as its only edit (D-08), and `STALE_AFTER_MS` is derived from it, so the two values can't drift. The duplicate-literal fallback is not used.
+   - What we know: it is a non-exported `const` today. D-07 wants the threshold derived from it. D-08 says the refresh service's behavior is not changed.
+3. **Readiness 503 `Retry-After`?**
+   - **RESOLVED (D-19):** no `Retry-After` on the readiness 503, and both probes send `Cache-Control: no-store`.
+   - Rationale (matches the original recommendation): probes ignore the header, and no single value is truthful for both cases. never_loaded may recover within seconds, while stale may last up to an hour.
 
 ## Environment Availability
 
@@ -499,7 +513,7 @@ vi.setSystemTime(T0 + 3 * 3_600_000 + 1);  // → 503 stale, dataAgeSeconds 1080
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
 | HLTH-01 | `/health/live` → 200 `{status:"ok"}` before load and with DASH unreachable; zero `axios.get` calls | E2E | `bun run test -- src/server/api/routes/healthRoutes.test.ts` | ❌ new |
-| HLTH-02 | ready/never_loaded/stale bodies and status codes; boundary at exactly 3h (ready) vs 3h+1ms (stale); `lastError` never in body; no upstream call | unit + E2E | `bun run test -- src/server/api/services/HealthService.test.ts src/server/api/routes/healthRoutes.test.ts` | ❌ new |
+| HLTH-02 | ready/never_loaded/stale bodies and status codes; boundary at exactly `STALE_AFTER_MS` = 11_100_000 ms, 3h5m (ready) vs +1ms (stale), per revised D-06; `lastError` never in body; no upstream call | unit + E2E | `bun run test -- src/server/api/services/HealthService.test.ts src/server/api/routes/healthRoutes.test.ts` | ❌ new |
 | HLTH-02 | controller maps ready→200 and not_ready→503 with `Cache-Control: no-store` | unit | `bun run test -- src/server/api/controllers/HealthController.test.ts` | ❌ new |
 | RATE-01 | 60 OK then 429 with `{error,details}`, `Retry-After`, `RateLimit`/`RateLimit-Policy`, no `X-RateLimit-*`; different IP unaffected; window reset via fake Date; one warn per key per window without the query string | unit (minimal app) | `bun run test -- src/server/api/middleware/upstreamRateLimit.test.ts` | ❌ new |
 | RATE-01 | all four D-11 routes share one bucket (e.g. 30 `/predictions` + 30 `/vehicles` → next `/predictions/nearby` is 429; 61st `/stream` connect is 429) | E2E | `bun run test -- src/server/api/routes/rateLimit.test.ts` | ❌ new |
@@ -561,7 +575,7 @@ None for infrastructure. All new test files sit alongside existing patterns. The
 **Confidence breakdown:**
 - Standard stack: HIGH. Version, types, and runtime behavior were probed directly.
 - Architecture: HIGH. It mirrors existing route/controller/service/middleware patterns that were read this session.
-- Pitfalls: HIGH for 2–7 (verified in source or by probe). HIGH on the mechanics of 1, which follow from the scheduler code. The remedy for 1 needs user input.
+- Pitfalls: HIGH for 2–7 (verified in source or by probe). HIGH on the mechanics of 1, which follow from the scheduler code. The remedy for 1 was decided by revised D-06 (a 5-minute grace margin).
 
 **Research date:** 2026-10-06
 **Valid until:** 2026-11-05 (re-check the express-rate-limit and ip-address release ages at install time)
