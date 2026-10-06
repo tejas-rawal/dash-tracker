@@ -19,6 +19,15 @@ const environmentSchema = z.object({
     PORT: z.coerce.number().int().positive().default(3000),
     // biome-ignore lint/style/useNamingConvention: env vars use SCREAMING_SNAKE_CASE by convention
     DB_PATH: z.string().min(1).default("data/dash-tracker.sqlite"),
+    // Number of trusted reverse proxies in front of the server. 0 ignores X-Forwarded-For, so the rate limit keys
+    // on the socket address and a forged header cannot dodge it. Digits only: coercion would turn an empty value
+    // into 0 instead of failing startup (D-17).
+    // biome-ignore lint/style/useNamingConvention: env vars use SCREAMING_SNAKE_CASE by convention
+    TRUST_PROXY_HOPS: z
+        .string()
+        .regex(/^\d+$/, "TRUST_PROXY_HOPS must be a non-negative integer")
+        .default("0")
+        .transform(Number),
 });
 
 const parsed = environmentSchema.safeParse(process.env);
@@ -39,6 +48,7 @@ export const environment = {
     },
     server: {
         port: parsed.data.PORT,
+        trustProxyHops: parsed.data.TRUST_PROXY_HOPS,
     },
     database: {
         path: parsed.data.DB_PATH,

@@ -11,6 +11,10 @@ registerProcessErrorHandlers();
 
 const app = express();
 const port = environment.server.port;
+// An integer hop count, so req.ip (and with it the rate-limit key) is the client address the trusted proxies saw.
+// Never `true`, which trusts every hop and lets any client pick its own key. Works alike behind any LB or PaaS
+// (D-17, D-18).
+app.set("trust proxy", environment.server.trustProxyHops);
 
 // Middleware to parse JSON
 app.use(express.json());
