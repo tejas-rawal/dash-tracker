@@ -1,4 +1,13 @@
 import type { BusDataRepository } from "../repositories";
+import { REFRESH_INTERVAL_MS } from "./BusDataRefreshService";
+
+// Readiness drops only after three consecutive refreshes have failed, so one DASH blip never pulls the
+// instance from rotation (D-06/D-07). Each refresh is scheduled one REFRESH_INTERVAL_MS after the previous
+// attempt settles, so three bare intervals would expire just before the third failed refresh even starts.
+// The grace absorbs those attempt durations, each bounded by the DASH timeout. A module constant, not an
+// env var, derived from the refresh interval so the two cannot drift (13 D-07).
+const STALE_GRACE_MS = 5 * 60_000;
+export const STALE_AFTER_MS = 3 * REFRESH_INTERVAL_MS + STALE_GRACE_MS;
 
 export interface ReadinessReport {
     status: "ready" | "not_ready";
@@ -31,12 +40,17 @@ export function createHealthService(repository: BusDataRepository): HealthServic
 
         // A clock stepped backwards must not report a negative age.
         const ageMs = Math.max(0, Date.now() - lastLoadedAt.getTime());
-        return {
-            status: "ready",
+        const fields = {
             dataAgeSeconds: Math.floor(ageMs / 1000),
             lastLoadedAt: lastLoadedAt.toISOString(),
             lastFailedAt: failedAt,
         };
+
+        // Strict: data aged exactly STALE_AFTER_MS is still ready.
+        if (ageMs > STALE_AFTER_MS) {
+            return { status: "not_ready", reason: "stale", ...fields };
+        }
+        return { status: "ready", ...fields };
     }
 
     return { getReadiness };

@@ -3,7 +3,7 @@ import type { BusDataRepository } from "../repositories";
 
 const INITIAL_RETRY_DELAY_MS = 1_000; // first boot retry ceiling, doubling per consecutive failure
 const MAX_RETRY_DELAY_MS = 60_000; // a long DASH outage is still retried about once a minute
-const REFRESH_INTERVAL_MS = 60 * 60_000; // hourly once loaded: DASH route/stop data changes rarely (D-09)
+export const REFRESH_INTERVAL_MS = 60 * 60_000; // hourly once loaded: DASH route/stop data changes rarely (D-09)
 
 /**
  * Equal jitter: every delay is at least half its ceiling, so below the cap consecutive logged delays never

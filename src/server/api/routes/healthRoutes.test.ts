@@ -118,4 +118,55 @@ describe("health probes after a successful route/stop load", () => {
         expect(response.headers["cache-control"]).toBe("no-store");
         expect(getSpy.mock.calls.length).toBe(callsAfterLoad);
     });
+
+    it("GET /api/v1/health/ready stays 200 at exactly the staleness threshold and turns 503 stale one millisecond later", async () => {
+        // Arrange
+        const callsAfterLoad = getSpy.mock.calls.length;
+
+        // Act
+        vi.setSystemTime(T0.getTime() + 11_100_000);
+        const atThreshold = await request(app).get("/api/v1/health/ready");
+        vi.setSystemTime(T0.getTime() + 11_100_001);
+        const pastThreshold = await request(app).get("/api/v1/health/ready");
+
+        // Assert
+        expect(atThreshold.status).toBe(200);
+        expect(atThreshold.body).toEqual({
+            status: "ready",
+            dataAgeSeconds: 11100,
+            lastLoadedAt: T0.toISOString(),
+            lastFailedAt: null,
+        });
+        expect(pastThreshold.status).toBe(503);
+        expect(pastThreshold.body).toEqual({
+            status: "not_ready",
+            reason: "stale",
+            dataAgeSeconds: 11100,
+            lastLoadedAt: T0.toISOString(),
+            lastFailedAt: null,
+        });
+        expect(pastThreshold.headers["retry-after"]).toBeUndefined();
+        expect(pastThreshold.headers["cache-control"]).toBe("no-store");
+        expect(getSpy.mock.calls.length).toBe(callsAfterLoad);
+    });
+
+    it("GET /api/v1/health/ready stays 200 ready with the original lastLoadedAt after a failed refresh", async () => {
+        // Arrange
+        vi.setSystemTime(T0.getTime() + 3_600_000);
+        getSpy.mockRejectedValueOnce(new Error("DASH API request timed out after 200ms"));
+        await expect(BusDataRepository.getInstance().load()).rejects.toThrow();
+
+        // Act
+        const response = await request(app).get("/api/v1/health/ready");
+
+        // Assert
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual({
+            status: "ready",
+            dataAgeSeconds: 3600,
+            lastLoadedAt: T0.toISOString(),
+            lastFailedAt: new Date(T0.getTime() + 3_600_000).toISOString(),
+        });
+        expect(JSON.stringify(response.body)).not.toContain("timed out");
+    });
 });
