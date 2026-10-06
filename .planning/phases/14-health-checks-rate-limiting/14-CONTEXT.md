@@ -37,9 +37,10 @@ The phase only reads Phase 13's load state. It does not change the refresh sched
 - **D-05:** Readiness gates **only on route/stop data**. It does not consider alert-poll freshness or SQLite. A failed SQLite open already exits at boot (13 D-18), and alerts are only an enrichment. Readiness never makes an upstream call.
 
 ### Staleness
-- **D-06:** The staleness threshold is **3 hours**. Data is stale when `now - lastLoadedAt` exceeds 3h. With hourly refreshes, the instance goes unready only after three refreshes in a row have failed, so one DASH blip never pulls it from rotation.
-- **D-07:** The threshold is a **named module constant**, not an env var, following 13 D-07. Its comment should tie it to `REFRESH_INTERVAL_MS`, which equals 3 missed refreshes.
-- **D-08:** `BusDataRefreshService` is **not changed**. A failed refresh still waits the full hour before retrying (13 D-09/D-10). The user accepted that after the third failure in a row, the instance can stay unready for up to an hour, until the next attempt succeeds.
+- **D-06:** The staleness threshold is **3 × `REFRESH_INTERVAL_MS` plus a 5-minute grace margin** (3h5m). Data is stale when `now - lastLoadedAt` exceeds it. *(Revised 2026-10-06 at plan-phase after research: each refresh is scheduled one interval after the previous attempt **finishes**, so a bare 3h threshold trips after only two failed refreshes, milliseconds to ~20s before the third attempt starts. The grace margin makes "unready only after three refreshes in a row have failed" literally true, so one DASH blip never pulls the instance from rotation.)*
+- **D-07:** The threshold is a **named module constant**, not an env var, following 13 D-07. It is **derived from `REFRESH_INTERVAL_MS`**, which `BusDataRefreshService` now **exports** (export only, no behavior change), so the two cannot drift. Its comment explains the 3 missed refreshes + grace reasoning. *(Revised 2026-10-06 at plan-phase.)*
+- **D-08:** `BusDataRefreshService`'s **scheduling behavior is not changed** (the only edit is exporting `REFRESH_INTERVAL_MS`, per D-07). A failed refresh still waits the full hour before retrying (13 D-09/D-10). The user accepted that after the third failure in a row, the instance can stay unready for up to an hour, until the next attempt succeeds.
+- **D-19:** Both probes send **`Cache-Control: no-store`**. The readiness 503 does **not** send `Retry-After`: staleness and never-loaded are not short transients, unlike the API-level `DataNotReadyError` 503. *(Decided 2026-10-06 at plan-phase.)*
 
 ### Rate limiting
 - **D-09:** Use the **`express-rate-limit`** package with its default in-memory store, per the "prefer established libraries" principle. A Redis or shared store is out of scope (REQUIREMENTS Out of Scope). The planner checks which version is compatible with Express 4.21 / Node 20 / Bun 1.0.31 and reads its types before relying on any option.
@@ -62,7 +63,6 @@ The phase only reads Phase 13's load state. It does not change the refresh sched
 ### Claude's Discretion
 - The shared limiter's module name and location (e.g. `src/server/api/middleware/upstreamRateLimit.ts`). Prefer a `createUpstreamRateLimiter()` factory, with one shared instance wired into both `predictionRoutes.ts` and `vehicleRoutes.ts`, so tests can build fresh instances without bucket bleed.
 - How to detect "first rejection in the window" for D-15. For example, inside the custom handler, `req.rateLimit.current === limit + 1`.
-- Whether the readiness 503 also sends `Retry-After`, and whether either probe sets `Cache-Control: no-store`.
 - How `dataAgeSeconds` is rounded (floor to whole seconds is fine), and whether the health service takes an injected clock or the tests use `vi.useFakeTimers()`.
 - How the readiness logic is split between the health service and the controller. Factory DI still applies: inject `BusDataRepository` and never import the singleton inside the service.
 
