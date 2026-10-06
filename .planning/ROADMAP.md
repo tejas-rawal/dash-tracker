@@ -150,7 +150,7 @@ Plans:
   3. A single client IP that exceeds the limit on `/predictions`, `/predictions/nearby`, or `/vehicles` receives 429 with a `Retry-After` header, while a different IP is unaffected and the limited IP is served again after the window resets.
   4. Routes, stops, favorites/recents, and health endpoints never return 429 no matter how many requests one IP sends.
 
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans executed
 
 Plans:
 **Wave 1**
@@ -160,7 +160,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 14-03-PLAN.md — `TRUST_PROXY_HOPS` (Zod, default 0) applied via `app.set("trust proxy")` with a real-app per-forwarded-IP E2E and real-process smoke; RATE-02 proof that routes, stops, favorites/recents and both probes never 429; default-0 spoof resistance; env and architecture docs (wave 2, after 14-01 and 14-02)
+- [x] 14-03-PLAN.md — `TRUST_PROXY_HOPS` (Zod, default 0) applied via `app.set("trust proxy")` with a real-app per-forwarded-IP E2E and real-process smoke; RATE-02 proof that routes, stops, favorites/recents and both probes never 429; default-0 spoof resistance; env and architecture docs (wave 2, after 14-01 and 14-02)
 
 ### Phase 15: Alert & Nearby Data Hygiene
 
@@ -196,7 +196,7 @@ Phases execute in numeric order: 12 → 13 → 14 → 15
 | 11. Nearby Stop Predictions | v0.5 | 3/3 | Complete | 2026-09-24 |
 | 12. Bounded Upstream Calls & Error Safety Nets | v0.6 | 4/4 | Complete    | 2026-09-29 |
 | 13. Resilient Route/Stop Data Lifecycle | v0.6 | 7/7 | Complete    | 2026-10-01 |
-| 14. Health Checks & Rate Limiting | v0.6 | 2/3 | In Progress|  |
+| 14. Health Checks & Rate Limiting | v0.6 | 3/3 | In Progress|  |
 | 15. Alert & Nearby Data Hygiene | v0.6 | 0/TBD | Not started | - |
 
 ---
