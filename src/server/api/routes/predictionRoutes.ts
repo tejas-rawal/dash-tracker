@@ -2,6 +2,7 @@ import { Router } from "express";
 import { createNearbyPredictionController } from "../controllers/NearbyPredictionController";
 import { createPredictionController } from "../controllers/PredictionController";
 import { createPredictionStreamController } from "../controllers/PredictionStreamController";
+import { upstreamRateLimiter } from "../middleware/upstreamRateLimit";
 import { BusDataRepository, FavoritesRecentsRepository, ServiceAlertRepository } from "../repositories";
 import { createNearbyPredictionService } from "../services/NearbyPredictionService";
 import { createPredictionService } from "../services/PredictionService";
@@ -16,7 +17,7 @@ const nearbyController = createNearbyPredictionController(nearbyService);
 
 const router = Router();
 
-router.get("/", controller.getPredictions);
+router.get("/", upstreamRateLimiter, controller.getPredictions);
 router.get("/stream", streamController.getPredictionsStream);
 router.get("/nearby", nearbyController.getNearbyPredictions);
 
