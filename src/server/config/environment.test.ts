@@ -52,3 +52,57 @@ describe("DASH_API_TIMEOUT_MS", () => {
         await expect(loading).rejects.toThrow(/Invalid environment configuration[\s\S]*DASH_API_TIMEOUT_MS/);
     });
 });
+
+describe("TRUST_PROXY_HOPS", () => {
+    beforeEach(() => {
+        vi.resetModules();
+    });
+
+    afterEach(() => {
+        vi.unstubAllEnvs();
+    });
+
+    it("defaults server.trustProxyHops to 0 when TRUST_PROXY_HOPS is unset", async () => {
+        // Arrange
+        vi.stubEnv("TRUST_PROXY_HOPS", undefined);
+
+        // Act
+        const { environment } = await import("./environment");
+
+        // Assert
+        expect(environment.server.trustProxyHops).toBe(0);
+    });
+
+    it.each([
+        { value: "0", expected: 0 },
+        { value: "1", expected: 1 },
+        { value: "2", expected: 2 },
+    ])("reads TRUST_PROXY_HOPS=$value as $expected trusted hops", async ({ value, expected }) => {
+        // Arrange
+        vi.stubEnv("TRUST_PROXY_HOPS", value);
+
+        // Act
+        const { environment } = await import("./environment");
+
+        // Assert
+        expect(environment.server.trustProxyHops).toBe(expected);
+    });
+
+    it.each([
+        { label: "empty", value: "" },
+        { label: "padded with a space", value: " 1" },
+        { label: "negative", value: "-1" },
+        { label: "fractional", value: "1.5" },
+        { label: "non-numeric", value: "abc" },
+        { label: "a boolean word", value: "true" },
+    ])("fails startup when TRUST_PROXY_HOPS is $label", async ({ value }) => {
+        // Arrange
+        vi.stubEnv("TRUST_PROXY_HOPS", value);
+
+        // Act
+        const loading = import("./environment");
+
+        // Assert
+        await expect(loading).rejects.toThrow(/Invalid environment configuration[\s\S]*TRUST_PROXY_HOPS/);
+    });
+});
