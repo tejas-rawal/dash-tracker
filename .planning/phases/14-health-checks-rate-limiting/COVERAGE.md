@@ -1,0 +1,1 @@
+No external API integration: the phase adds the server's own liveness/readiness probes (reading in-memory load state) and a local per-IP rate limiter (express-rate-limit, an in-process library) in front of the already-integrated DASH routes; no DASH capability is added, changed, or newly called.
