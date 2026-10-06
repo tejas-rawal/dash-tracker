@@ -150,13 +150,13 @@ Plans:
   3. A single client IP that exceeds the limit on `/predictions`, `/predictions/nearby`, or `/vehicles` receives 429 with a `Retry-After` header, while a different IP is unaffected and the limited IP is served again after the window resets.
   4. Routes, stops, favorites/recents, and health endpoints never return 429 no matter how many requests one IP sends.
 
-**Plans**: 3 plans
+**Plans**: 2/3 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 14-01-PLAN.md — Health probes: `GET /api/v1/health/live` (constant 200) and `GET /api/v1/health/ready` (503 never_loaded / stale at 3 refresh intervals + 5-min grace, 200 ready with data age), `Cache-Control: no-store`, `REFRESH_INTERVAL_MS` exported; tracer on readiness (wave 1)
-- [ ] 14-02-PLAN.md — Shared upstream limiter: blocking-human legitimacy checkpoint, then `express-rate-limit@8.7.0` (exact pin, tracked `bun.lock`), one 60/min per-IP bucket on `/predictions`, `/predictions/nearby`, `/predictions/stream`, `/vehicles`, 429 `{ error, details }` + `Retry-After`, draft-8 headers, one coordinate-free warn per IP per window; tracer on `/predictions` (wave 1, has checkpoint)
+- [x] 14-01-PLAN.md — Health probes: `GET /api/v1/health/live` (constant 200) and `GET /api/v1/health/ready` (503 never_loaded / stale at 3 refresh intervals + 5-min grace, 200 ready with data age), `Cache-Control: no-store`, `REFRESH_INTERVAL_MS` exported; tracer on readiness (wave 1)
+- [x] 14-02-PLAN.md — Shared upstream limiter: blocking-human legitimacy checkpoint, then `express-rate-limit@8.7.0` (exact pin, tracked `bun.lock`), one 60/min per-IP bucket on `/predictions`, `/predictions/nearby`, `/predictions/stream`, `/vehicles`, 429 `{ error, details }` + `Retry-After`, draft-8 headers, one coordinate-free warn per IP per window; tracer on `/predictions` (wave 1, has checkpoint)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -196,7 +196,7 @@ Phases execute in numeric order: 12 → 13 → 14 → 15
 | 11. Nearby Stop Predictions | v0.5 | 3/3 | Complete | 2026-09-24 |
 | 12. Bounded Upstream Calls & Error Safety Nets | v0.6 | 4/4 | Complete    | 2026-09-29 |
 | 13. Resilient Route/Stop Data Lifecycle | v0.6 | 7/7 | Complete    | 2026-10-01 |
-| 14. Health Checks & Rate Limiting | v0.6 | 0/3 | Planned | - |
+| 14. Health Checks & Rate Limiting | v0.6 | 2/3 | In Progress|  |
 | 15. Alert & Nearby Data Hygiene | v0.6 | 0/TBD | Not started | - |
 
 ---
