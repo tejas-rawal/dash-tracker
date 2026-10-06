@@ -25,6 +25,36 @@ const LIMITED_ROWS: { label: string; path: string }[] = [
     { label: "GET /api/v1/vehicles", path: "/api/v1/vehicles?route=1A" },
 ];
 
+// A live route that answers 503 before any load: it spends the shared bucket without calling DASH.
+const LIVE_PATH = "/api/v1/predictions?stop=stop-1";
+
+type UnlimitedRow = { label: string; method: "get" | "post" | "delete"; path: string; deviceId: boolean };
+
+// D-16 / RATE-02: every endpoint that never calls DASH. Before any route/stop load (and with SQLite never opened in
+// route tests) they answer 503, 500 or 200 depending on the row; only the absence of 429 and quota headers matters.
+const UNLIMITED_ROWS: UnlimitedRow[] = [
+    { label: "GET /api/v1/routes/all", method: "get", path: "/api/v1/routes/all", deviceId: false },
+    { label: "GET /api/v1/routes/1A", method: "get", path: "/api/v1/routes/1A", deviceId: false },
+    { label: "GET /api/v1/routes/1A/stops", method: "get", path: "/api/v1/routes/1A/stops", deviceId: false },
+    {
+        label: "GET /api/v1/stops/nearby",
+        method: "get",
+        path: "/api/v1/stops/nearby?lat=38.8&lng=-77.1",
+        deviceId: false,
+    },
+    { label: "GET /api/v1/favorites", method: "get", path: "/api/v1/favorites", deviceId: true },
+    { label: "POST /api/v1/favorites", method: "post", path: "/api/v1/favorites", deviceId: true },
+    {
+        label: "DELETE /api/v1/favorites/route/route-1",
+        method: "delete",
+        path: "/api/v1/favorites/route/route-1",
+        deviceId: true,
+    },
+    { label: "GET /api/v1/recents", method: "get", path: "/api/v1/recents", deviceId: true },
+    { label: "GET /api/v1/health/live", method: "get", path: "/api/v1/health/live", deviceId: false },
+    { label: "GET /api/v1/health/ready", method: "get", path: "/api/v1/health/ready", deviceId: false },
+];
+
 function remainingOf(response: request.Response): number {
     const match = /r=(\d+);/.exec(String(response.headers.ratelimit));
     return match ? Number(match[1]) : Number.NaN;
@@ -175,5 +205,90 @@ describe("upstream rate limit on the live DASH routes", () => {
             expect(logged).not.toContain(fragment);
         }
         expect(getSpy).not.toHaveBeenCalled();
+    });
+
+    // Nested so it shares the file's one server, spies and per-test bucket reset.
+    describe("endpoints that never touch DASH are never rate limited", () => {
+        async function sendUnlimited(row: UnlimitedRow): Promise<request.Response> {
+            let pending = request(server)[row.method](row.path);
+            if (row.deviceId) {
+                pending = pending.set("X-Device-Id", "device-a");
+            }
+            if (row.method === "post") {
+                pending = pending.send({ entityType: "route", entityId: "route-1" });
+            }
+            return await pending;
+        }
+
+        async function exhaustLiveBucket(): Promise<request.Response> {
+            const client = request(server);
+            let last = await client.get(LIVE_PATH);
+            for (let i = 1; i < 61; i++) {
+                last = await client.get(LIVE_PATH);
+            }
+            return last;
+        }
+
+        it.each(UNLIMITED_ROWS.map((row) => [row.label, row] as const))(
+            "%s never answers 429 or advertises a quota, even while the same IP is limited on the live routes",
+            async (_label, row) => {
+                // Arrange
+                const limited = await exhaustLiveBucket();
+                expect(limited.status).toBe(429);
+
+                // Act
+                const responses: request.Response[] = [];
+                for (let i = 0; i < 61; i++) {
+                    responses.push(await sendUnlimited(row));
+                }
+                const liveAfter = await request(server).get(LIVE_PATH);
+
+                // Assert
+                for (const response of responses) {
+                    expect(response.status).not.toBe(429);
+                    expect(response.headers.ratelimit).toBeUndefined();
+                    expect(response.headers["ratelimit-policy"]).toBeUndefined();
+                }
+                // The unlimited traffic neither refilled nor touched the live bucket.
+                expect(liveAfter.status).toBe(429);
+                expect(getSpy).not.toHaveBeenCalled();
+            },
+        );
+
+        it("concurrent bursts to unlimited endpoints never consume the shared live-route bucket", async () => {
+            // Arrange
+            const rows = Array.from({ length: 61 }, (_, i) => UNLIMITED_ROWS[i % UNLIMITED_ROWS.length]);
+
+            // Act
+            const responses = await Promise.all(rows.map((row) => sendUnlimited(row)));
+            const live = await request(server).get(LIVE_PATH);
+
+            // Assert
+            for (const response of responses) {
+                expect(response.status).not.toBe(429);
+                expect(response.headers.ratelimit).toBeUndefined();
+            }
+            expect(live.headers.ratelimit).toMatch(/r=59;/);
+        });
+
+        it("with the default TRUST_PROXY_HOPS=0 a forged X-Forwarded-For does not escape the limit", async () => {
+            // Arrange
+            const client = request(server);
+            for (let i = 0; i < 60; i++) {
+                await client.get(LIVE_PATH);
+            }
+
+            // Act
+            const forged = await client.get(LIVE_PATH).set("X-Forwarded-For", "203.0.113.99");
+            const forgedChain = await client.get(LIVE_PATH).set("X-Forwarded-For", "203.0.113.99, 198.51.100.1");
+
+            // Assert
+            expect(app.get("trust proxy")).toBe(0);
+            expect(forged.status).toBe(429);
+            expect(forgedChain.status).toBe(429);
+            // A numeric 0 is neither Express's default false nor the permissive true, so the library raises no
+            // trust-proxy validation error.
+            expect(JSON.stringify(errorSpy.mock.calls)).not.toContain("ERR_ERL_");
+        });
     });
 });
