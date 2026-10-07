@@ -489,8 +489,49 @@ describe("NearbyPredictionService", () => {
 
     describe("malformed entries", () => {
         const validEntry = () => makeDashNearbyPredictionData({ stopId: "561", distanceToStop: 58 });
+        const makeValidDestination = (overrides: Record<string, unknown> = {}): Record<string, unknown> => ({
+            directionId: "0",
+            headsign: "Van Dorn Street Station",
+            predictions: [makeDashPrediction()],
+            ...overrides,
+        });
+        const makeEntryWithDestination = (overrides: Record<string, unknown>): DashNearbyPredictionData =>
+            makeDashNearbyPredictionData({ destinations: [makeValidDestination(overrides)] });
+        const displayFieldRows = ["routeId", "routeName", "routeShortName", "stopName"].flatMap((field) => [
+            { label: `a missing ${field}`, entry: makeDashNearbyPredictionData({ [field]: undefined }) },
+            { label: `an empty ${field}`, entry: makeDashNearbyPredictionData({ [field]: "" }) },
+            { label: `a numeric ${field}`, entry: makeDashNearbyPredictionData({ [field]: 30 }) },
+            { label: `a null ${field}`, entry: makeDashNearbyPredictionData({ [field]: null }) },
+        ]);
 
         it.each([
+            ...displayFieldRows,
+            { label: "a string stopCode", entry: makeDashNearbyPredictionData({ stopCode: "4000858" }) },
+            { label: "a null stopCode", entry: makeDashNearbyPredictionData({ stopCode: null }) },
+            { label: "a NaN stopCode", entry: makeDashNearbyPredictionData({ stopCode: Number.NaN }) },
+            {
+                label: "an Infinity stopCode",
+                entry: makeDashNearbyPredictionData({ stopCode: Number.POSITIVE_INFINITY }),
+            },
+            { label: "a missing stopCode", entry: makeDashNearbyPredictionData({ stopCode: undefined }) },
+            { label: "a destination with an empty directionId", entry: makeEntryWithDestination({ directionId: "" }) },
+            {
+                label: "a destination without directionId",
+                entry: makeEntryWithDestination({ directionId: undefined }),
+            },
+            { label: "a destination with a numeric directionId", entry: makeEntryWithDestination({ directionId: 0 }) },
+            { label: "a destination with an empty headsign", entry: makeEntryWithDestination({ headsign: "" }) },
+            { label: "a destination with a numeric headsign", entry: makeEntryWithDestination({ headsign: 42 }) },
+            { label: "a destination without headsign", entry: makeEntryWithDestination({ headsign: undefined }) },
+            {
+                label: "a valid destination followed by one with an empty headsign",
+                entry: makeDashNearbyPredictionData({
+                    destinations: [
+                        { directionId: "0", headsign: "Van Dorn Street Station", predictions: [makeDashPrediction()] },
+                        { directionId: "0", headsign: "", predictions: [makeDashPrediction()] },
+                    ],
+                }),
+            },
             { label: "a numeric stopId", entry: makeDashNearbyPredictionData({ stopId: 548 }) },
             { label: "an empty stopId", entry: makeDashNearbyPredictionData({ stopId: "" }) },
             { label: "a missing stopId", entry: makeDashNearbyPredictionData({ stopId: undefined }) },
@@ -561,6 +602,57 @@ describe("NearbyPredictionService", () => {
             // Assert
             expect(result.data.stops.map((stop) => stop.id)).toEqual(["561"]);
             expect(mockLoggerWarn).toHaveBeenCalledTimes(1);
+        });
+
+        it.each([
+            { label: "0", stopCode: 0 },
+            { label: "-1", stopCode: -1 },
+            { label: "4000858.5", stopCode: 4000858.5 },
+        ])("keeps an entry whose stopCode is $label (no integer or sign rule)", async ({ stopCode }) => {
+            // Arrange
+            resolveUpstream(makeDashNearbyApiResponse([makeDashNearbyPredictionData({ stopCode })]));
+            const { getNearbyPredictions } = createNearbyPredictionService(makeMockAlertRepo() as never);
+
+            // Act
+            const result = await getNearbyPredictions(LAT, LNG);
+
+            // Assert
+            expect(result.data.stops[0].id).toBe("548");
+            expect(result.data.stops[0].code).toBe(stopCode);
+            expect(mockLoggerWarn).not.toHaveBeenCalled();
+        });
+
+        it("logs the unchanged single warn naming stop and route for a dropped display-field entry", async () => {
+            // Arrange
+            resolveUpstream(makeDashNearbyApiResponse([makeDashNearbyPredictionData({ stopName: "" })]));
+            const { getNearbyPredictions } = createNearbyPredictionService(makeMockAlertRepo() as never);
+
+            // Act
+            await getNearbyPredictions(LAT, LNG);
+
+            // Assert
+            expect(mockLoggerWarn).toHaveBeenCalledTimes(1);
+            expect(mockLoggerWarn).toHaveBeenCalledWith(
+                "Dropping malformed nearby prediction entry (stop 548, route 30)",
+            );
+            const message = String(mockLoggerWarn.mock.calls[0][0]);
+            expect(message).not.toContain(String(LAT));
+            expect(message).not.toContain(String(LNG));
+        });
+
+        it("names the route as unknown in the warn when routeShortName is missing", async () => {
+            // Arrange
+            resolveUpstream(makeDashNearbyApiResponse([makeDashNearbyPredictionData({ routeShortName: undefined })]));
+            const { getNearbyPredictions } = createNearbyPredictionService(makeMockAlertRepo() as never);
+
+            // Act
+            await getNearbyPredictions(LAT, LNG);
+
+            // Assert
+            expect(mockLoggerWarn).toHaveBeenCalledTimes(1);
+            expect(mockLoggerWarn).toHaveBeenCalledWith(
+                "Dropping malformed nearby prediction entry (stop 548, route unknown)",
+            );
         });
 
         it("resolves with no stops when every entry is malformed", async () => {
