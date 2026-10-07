@@ -43,7 +43,7 @@ Milestone v0.6 — Solidifying the backend. Reliability first, then operational 
 
 - [x] **ALRT-12**: Alerts carrying a `deletedAt` value are never surfaced on route, stop, or nearby-prediction responses
 - [x] **ALRT-13**: An alert with a malformed `activePeriod` date is excluded and logged rather than treated as active (Phase 9 WR-02)
-- [ ] **NEAR-12**: The nearby-prediction entry guard drops entries whose display fields (route/stop/destination names and IDs, `agencyKey`) are missing or mistyped (v0.5 WR-01)
+- [x] **NEAR-12**: The nearby-prediction entry guard drops entries whose display fields (route/stop/destination names and IDs, `agencyKey`) are missing or mistyped (v0.5 WR-01)
 
 ## Future Requirements
 
@@ -85,7 +85,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RATE-02 | Phase 14 | Complete |
 | ALRT-12 | Phase 15 | Complete |
 | ALRT-13 | Phase 15 | Complete |
-| NEAR-12 | Phase 15 | Pending |
+| NEAR-12 | Phase 15 | Complete |
 
 **Coverage:**
 

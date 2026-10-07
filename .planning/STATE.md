@@ -4,18 +4,18 @@ milestone: v0.6
 milestone_name: Solidifying the backend
 current_phase: 15
 current_phase_name: Alert & Nearby Data Hygiene
-status: executing
-stopped_at: Completed 15-01-PLAN.md
-last_updated: "2026-10-07T19:05:44.646Z"
+status: verifying
+stopped_at: Completed 15-02-PLAN.md
+last_updated: "2026-10-07T19:11:00.130Z"
 last_activity: 2026-10-07
 last_activity_desc: Phase 15 execution started
-state_head: aa902c8e4aa9e8ecdfcd136abf394f76f351499a
+state_head: 68dbf822806b30f40e9013305643acafad546a51
 progress:
   total_phases: 5
   completed_phases: 14
   total_plans: 16
-  completed_plans: 15
-  percent: 94
+  completed_plans: 16
+  percent: 100
 ---
 
 # Project State
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-10-07)
 
 Phase: 15 (Alert & Nearby Data Hygiene) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-07 — Phase 15 execution started
 
 Progress (v0.6): [██████░░░░] 3/5 phases (60%)
@@ -91,6 +91,7 @@ Progress (v0.6): [██████░░░░] 3/5 phases (60%)
 | Phase 13 P06 | 5min | 3 tasks | 5 files |
 | Phase 13 P07 | 5min | 2 tasks | 5 files |
 | Phase 15 P01 | 5min | 3 tasks | 4 files |
+| Phase 15 P02 | 3 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -151,6 +152,7 @@ Recent decisions affecting current work:
 - [Phase 15]: Phase 15: alert hygiene lives only in ServiceAlertService.fetchAlerts(); repository unchanged, ServiceAlert gains no deletion field (D-05, D-06)
 - [Phase 15]: Phase 15: any non-null deletedAt drops the alert silently, checked before date validation (D-08, D-09, D-10)
 - [Phase 15]: Phase 15: a malformed activePeriods bound drops only its whole alert with one id-and-bound warn; the poll applies the rest (D-01 to D-04)
+- [Phase 15]: Phase 15-02: isValidNearbyEntry guards every copied display field (route/stop names and IDs non-empty strings, finite stopCode, non-empty destination directionId/headsign); one bad field drops the whole entry, warn unchanged
 
 ### Pending Todos
 
@@ -198,8 +200,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-07T19:05:44.598Z
-Stopped at: Completed 15-01-PLAN.md
+Last session: 2026-10-07T19:10:55.396Z
+Stopped at: Completed 15-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
