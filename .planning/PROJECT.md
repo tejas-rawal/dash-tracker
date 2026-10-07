@@ -102,11 +102,12 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 - ✓ Route/stop data refreshes hourly; failed, empty or malformed refreshes keep the last good data and record `lastLoadedAt`/`lastFailedAt`/`lastError` — v0.6 Phase 13
 - ✓ Liveness (`/health/live`, constant 200) and readiness (`/health/ready`, 200 with data age, 503 before first load or once stale) probes, `Cache-Control: no-store`, no upstream I/O — v0.6 Phase 14
 - ✓ Live-upstream endpoints (`/predictions`, `/predictions/nearby`, `/predictions/stream`, `/vehicles`) share one 60/min per-IP limit returning 429 + `Retry-After`; in-memory endpoints and probes are never limited — v0.6 Phase 14
+- ✓ Soft-deleted DASH alerts (any non-null `deletedAt`) are dropped at ingestion, and an alert with a malformed date or structurally malformed `activePeriods`/`informedEntities` list is dropped on its own with one warn while the rest of the poll applies (ALRT-12, ALRT-13) — v0.6 Phase 15
+- ✓ Nearby-prediction entries with missing or mistyped display fields (route/stop names and ids, `stopCode`, destination `directionId`/`headsign`) are dropped instead of served (NEAR-12) — v0.6 Phase 15
 
 ### Active
 
 - [ ] One client IP cannot hold more than a small number of SSE prediction streams open (Phase 14 review WR-02, scheduled as Phase 16)
-- [ ] Alert and nearby-entry tech debt closed (deletedAt filter, fail-open dates, display-field guard)
 
 See `.planning/REQUIREMENTS.md` for REQ-IDs.
 
@@ -199,6 +200,9 @@ See `.planning/REQUIREMENTS.md` for REQ-IDs.
 | One shared `express-rate-limit` bucket (60/min per client IP, in-memory store) attached per handler to the four live-DASH routes; SSE connects count once | Protects the DASH quota from one client with an established library; in-memory endpoints and probes stay reachable so a flood cannot pull an instance from LB rotation | ✓ Shipped Phase 14 — open streams are not counted, so a per-IP concurrent-stream cap follows in Phase 16 |
 | Client IP for the limit honors `TRUST_PROXY_HOPS` (digits-only, default 0 = ignore `X-Forwarded-For`) | A forged forwarding header must not choose the rate-limit key unless a proxy the operator controls appended it | ✓ Shipped Phase 14 |
 | Readiness goes stale at 3 refresh intervals + 5-min grace and reports data age, never the load error text | An LB needs freshness to decide rotation; error text could leak upstream details | ✓ Shipped Phase 14 |
+| Alert hygiene lives only in `ServiceAlertService.fetchAlerts()`: deleted alerts drop silently first, then each alert is parsed (list structure, then dates) and a bad one is dropped with one id-naming warn; malformed data is never repaired | One bad DASH record must not freeze every alert update — a failed poll keeps serving the last snapshot, including alerts DASH has since deleted (CR-01) | ✓ Shipped Phase 15 (15-03 gap closure added structural checks, D-16) — a missing alert id still fails the whole poll (D-07) |
+| Upstream alert lists (`activePeriods`, `informedEntities`) are typed `unknown` on the model; only `parseAlert` reads them | The compiler then refuses any unchecked read of upstream structure | ✓ Shipped Phase 15 |
+| The nearby entry guard requires non-empty string names/ids, a finite `stopCode` and non-empty destination `directionId`/`headsign`; no trimming | A rider must never see a stop with no name or a destination with no headsign (v0.5 WR-01) | ✓ Shipped Phase 15 — whitespace-only names still pass (D-11) |
 
 ## Evolution
 
@@ -218,4 +222,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-07 after Phase 14*
+*Last updated: 2026-10-07 after Phase 15*
