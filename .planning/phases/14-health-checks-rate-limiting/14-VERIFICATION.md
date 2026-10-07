@@ -1,9 +1,10 @@
 ---
 phase: 14-health-checks-rate-limiting
 verified: 2026-10-06T20:45:55Z
-status: human_needed
+status: passed
 score: 26/27 must-haves verified
 covered_files:
+
   - ".claude/CLAUDE.md"
   - ".env.example"
   - ".planning/REQUIREMENTS.md"
@@ -34,14 +35,17 @@ covered_files:
   - "src/server/config/environment.test.ts"
   - "src/server/config/environment.ts"
   - "src/server/test/app.ts"
+
 covered_digest: "v1:sha256:1db48c1fb28d490b76668e0b7fbcae49f7ee15ae8dc9fa6e5bb4168202031855"
 behavior_unverified: 0
 overrides_applied: 0
 coincidental_reliance_items:
+
   - truth: "With the default TRUST_PROXY_HOPS=0, a forged X-Forwarded-For cannot escape the limit (rateLimit.test.ts asserts app.get('trust proxy') === 0)"
     reason: undeclared-precondition
     harden: "Pin process.env.TRUST_PROXY_HOPS = \"0\" in src/server/test/setup.ts. environment.ts calls dotenv.config(), so a developer .env that sets TRUST_PROXY_HOPS changes the test app's trust setting. environment.test.ts already mocks dotenv; rateLimit.test.ts does not (review WR-04)."
 human_verification:
+
   - test: "Open a real SSE stream: GET /api/v1/predictions/stream?stop=<loaded stop> from IP A, with route/stop data loaded and a DASH stub answering. While it stays open, send 61 or more GET /api/v1/predictions requests from the same IP A, so it gets 429. Then watch the open stream for at least one 30s poll cycle."
     expected: "The open stream keeps receiving prediction events after IP A is at 429. It is not closed, errored or written to by the limiter. Only new /stream connects from IP A get 429."
     why_human: "Covers the 14-02 backstop truth (verification: backstop) and the judgment-tier prohibition 'MUST NOT end, interrupt, or write to an already-open SSE stream'. No test opens a stream and then exceeds the limit. The code evidence is non-authoritative: express-rate-limit 8.7.0 only attaches response.once('finish'/'close'/'error') hooks when skipFailedRequests or skipSuccessfulRequests is on (dist/index.cjs:914-916), and both are off. Presence plus wiring does not qualify for a backstop truth."

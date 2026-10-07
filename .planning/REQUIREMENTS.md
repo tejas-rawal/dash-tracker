@@ -36,8 +36,8 @@ Milestone v0.6 — Solidifying the backend. Reliability first, then operational 
 
 ### Rate Limiting
 
-- [ ] **RATE-01**: Live-upstream endpoints (`/predictions`, `/predictions/nearby`, `/vehicles`) are rate-limited per client IP, returning 429 with a `Retry-After` header when exceeded
-- [ ] **RATE-02**: In-memory endpoints (routes, stops, favorites/recents, health) are not rate-limited
+- [x] **RATE-01**: Live-upstream endpoints (`/predictions`, `/predictions/nearby`, `/vehicles`) are rate-limited per client IP, returning 429 with a `Retry-After` header when exceeded
+- [x] **RATE-02**: In-memory endpoints (routes, stops, favorites/recents, health) are not rate-limited
 
 ### Tech Debt (carried forward)
 
@@ -81,8 +81,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ERR-02 | Phase 12 | Complete |
 | HLTH-01 | Phase 14 | Complete |
 | HLTH-02 | Phase 14 | Complete |
-| RATE-01 | Phase 14 | Pending |
-| RATE-02 | Phase 14 | Pending |
+| RATE-01 | Phase 14 | Complete |
+| RATE-02 | Phase 14 | Complete |
 | ALRT-12 | Phase 15 | Pending |
 | ALRT-13 | Phase 15 | Pending |
 | NEAR-12 | Phase 15 | Pending |

@@ -72,7 +72,7 @@ See `.planning/milestones/v0.5-ROADMAP.md` for full phase details.
 
 - [x] **Phase 12: Bounded Upstream Calls & Error Safety Nets** - No DASH call can hang (timeouts map to 502), and SSE socket errors and stray promise rejections are logged and cleaned up instead of escaping (completed 2026-09-29)
 - [x] **Phase 13: Resilient Route/Stop Data Lifecycle** - Server listens even when DASH is down at boot, loads route/stop data in the background with backoff (503 until ready), then keeps it fresh on an interval while holding last-good data through failures (completed 2026-10-01)
-- [ ] **Phase 14: Health Checks & Rate Limiting** - Liveness and readiness endpoints report process health and route/stop data age; live-upstream endpoints return 429 per client IP while in-memory endpoints stay unlimited
+- [x] **Phase 14: Health Checks & Rate Limiting** - Liveness and readiness endpoints report process health and route/stop data age; live-upstream endpoints return 429 per client IP while in-memory endpoints stay unlimited (completed 2026-10-07)
 - [ ] **Phase 15: Alert & Nearby Data Hygiene** - Soft-deleted and malformed-date alerts never reach riders, and nearby-prediction entries with missing or mistyped display fields are dropped
 - [ ] **Phase 16: Concurrent SSE Stream Cap per IP** - One client IP cannot hold more than a small number of prediction streams open, so held-open streams cannot multiply DASH load past the per-IP limit
 
@@ -210,7 +210,7 @@ Phases execute in numeric order: 12 → 13 → 14 → 15 → 16
 | 11. Nearby Stop Predictions | v0.5 | 3/3 | Complete | 2026-09-24 |
 | 12. Bounded Upstream Calls & Error Safety Nets | v0.6 | 4/4 | Complete    | 2026-09-29 |
 | 13. Resilient Route/Stop Data Lifecycle | v0.6 | 7/7 | Complete    | 2026-10-01 |
-| 14. Health Checks & Rate Limiting | v0.6 | 3/3 | In Progress|  |
+| 14. Health Checks & Rate Limiting | v0.6 | 3/3 | Complete    | 2026-10-07 |
 | 15. Alert & Nearby Data Hygiene | v0.6 | 0/TBD | Not started | - |
 | 16. Concurrent SSE Stream Cap per IP | v0.6 | 0/TBD | Not started | - |
 
