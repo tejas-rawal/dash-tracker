@@ -5,17 +5,17 @@ milestone_name: Solidifying the backend
 current_phase: 15
 current_phase_name: Alert & Nearby Data Hygiene
 status: executing
-stopped_at: Phase 15 context gathered
-last_updated: "2026-10-07T18:31:38.271Z"
+stopped_at: Completed 15-01-PLAN.md
+last_updated: "2026-10-07T19:05:44.646Z"
 last_activity: 2026-10-07
-last_activity_desc: Phase 14 complete, transitioned to Phase 15
-state_head: f3b96d41d27d9c2b32b17de7e549ac7a168fdb19
+last_activity_desc: Phase 15 execution started
+state_head: aa902c8e4aa9e8ecdfcd136abf394f76f351499a
 progress:
   total_phases: 5
   completed_phases: 14
   total_plans: 16
-  completed_plans: 14
-  percent: 88
+  completed_plans: 15
+  percent: 94
 ---
 
 # Project State
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-10-07)
 
 ## Current Position
 
-Phase: 15 (Alert & Nearby Data Hygiene) — READY TO EXECUTE
-Plan: Not started
+Phase: 15 (Alert & Nearby Data Hygiene) — EXECUTING
+Plan: 2 of 2
 Status: Ready to execute
-Last activity: 2026-10-07 — Phase 14 complete, transitioned to Phase 15
+Last activity: 2026-10-07 — Phase 15 execution started
 
 Progress (v0.6): [██████░░░░] 3/5 phases (60%)
 
@@ -90,6 +90,7 @@ Progress (v0.6): [██████░░░░] 3/5 phases (60%)
 | Phase 13 P05 | 6min | 3 tasks | 7 files |
 | Phase 13 P06 | 5min | 3 tasks | 5 files |
 | Phase 13 P07 | 5min | 2 tasks | 5 files |
+| Phase 15 P01 | 5min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -147,6 +148,9 @@ Recent decisions affecting current work:
 - [Phase 13]: 13-07: a stop dropped by a reload ends its SSE streams on the next poll tick with no farewell event; the reconnect gets the existing 404 (D-13)
 - [Phase 13]: 13-07: only NotFoundError is terminal for a stream loop; UpstreamApiError and other tick failures stay transient so a DASH blip never ends a rider's stream
 - [Phase 13]: 13-07: PredictionStreamService.subscribe takes a StreamSubscriber { onUpdate, onEnd }; the controller wires onEnd to its single cleanup path so the response ends exactly once
+- [Phase 15]: Phase 15: alert hygiene lives only in ServiceAlertService.fetchAlerts(); repository unchanged, ServiceAlert gains no deletion field (D-05, D-06)
+- [Phase 15]: Phase 15: any non-null deletedAt drops the alert silently, checked before date validation (D-08, D-09, D-10)
+- [Phase 15]: Phase 15: a malformed activePeriods bound drops only its whole alert with one id-and-bound warn; the poll applies the rest (D-01 to D-04)
 
 ### Pending Todos
 
@@ -194,9 +198,9 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-07T16:44:19.617Z
-Stopped at: Phase 15 context gathered
-Resume file: .planning/phases/15-alert-nearby-data-hygiene/15-CONTEXT.md
+Last session: 2026-10-07T19:05:44.598Z
+Stopped at: Completed 15-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
