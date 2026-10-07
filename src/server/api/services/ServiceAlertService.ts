@@ -4,6 +4,7 @@ import type {
     DashActivePeriod,
     DashAlertEntity,
     DashAlertsApiResponse,
+    DashInformedEntity,
     ServiceAlert,
     ServiceAlertActivePeriod,
 } from "../models/ServiceAlert";
@@ -122,13 +123,20 @@ export function createServiceAlertService(): ServiceAlertService {
         };
     }
 
-    function mapToServiceAlert(entity: DashAlertEntity, periods: DashActivePeriod[]): ServiceAlert {
-        const informedRouteIds = (entity.informedEntities ?? [])
+    function mapToServiceAlert(
+        entity: DashAlertEntity,
+        periods: DashActivePeriod[],
+        informedEntities: DashInformedEntity[],
+    ): ServiceAlert {
+        // The id lists only decide where an alert attaches. Null is DASH's routine "no route/stop", and
+        // any other non-string cannot match an id, so it is skipped instead of condemning the alert
+        // (Phase 15 D-16).
+        const informedRouteIds = informedEntities
             .map((ie) => ie.routeId)
-            .filter((id): id is string => id !== undefined);
-        const informedStopIds = (entity.informedEntities ?? [])
+            .filter((id): id is string => typeof id === "string");
+        const informedStopIds = informedEntities
             .map((ie) => ie.stopId)
-            .filter((id): id is string => id !== undefined);
+            .filter((id): id is string => typeof id === "string");
 
         return {
             id: entity.id,
@@ -150,11 +158,15 @@ export function createServiceAlertService(): ServiceAlertService {
         if (periods === undefined) {
             return { malformed: "activePeriods list" };
         }
+        const informedEntities = readRecordList(entity.informedEntities);
+        if (informedEntities === undefined) {
+            return { malformed: "informedEntities list" };
+        }
         const malformedBound = findMalformedBound(periods);
         if (malformedBound !== undefined) {
             return { malformed: `activePeriods ${malformedBound} date` };
         }
-        return { alert: mapToServiceAlert(entity, periods) };
+        return { alert: mapToServiceAlert(entity, periods, informedEntities) };
     }
 
     async function fetchAlerts(): Promise<ServiceAlert[]> {

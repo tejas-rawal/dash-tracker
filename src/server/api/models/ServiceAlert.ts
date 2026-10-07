@@ -22,9 +22,10 @@ export interface DashActivePeriod {
     end?: unknown;
 }
 
+// One element of a checked informedEntities list; only string ids are used (Phase 15 D-16).
 export interface DashInformedEntity {
-    routeId?: string;
-    stopId?: string;
+    routeId?: unknown;
+    stopId?: unknown;
 }
 
 // Confirmed live shape (G-05-5): a flat, custom Swiftly/Alexandria alerts format, not the
@@ -37,9 +38,10 @@ export interface DashAlertEntity {
     headerText?: string | null;
     descriptionText?: string | null;
     url?: string | null;
-    // Unknown until ServiceAlertService checks it is an array of objects; the alert is dropped otherwise (Phase 15 D-16).
+    // Both lists are unknown until ServiceAlertService checks each is an array of objects; the alert is
+    // dropped otherwise (Phase 15 D-16).
     activePeriods?: unknown;
-    informedEntities?: DashInformedEntity[];
+    informedEntities?: unknown;
     // DASH soft-deletes an alert by setting this and keeps it in the feed; never parsed, any
     // value other than null/undefined means deleted (ALRT-12).
     deletedAt?: unknown;
