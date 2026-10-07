@@ -59,6 +59,25 @@ export function createServiceAlertService(): ServiceAlertService {
         return entity.deletedAt !== null && entity.deletedAt !== undefined;
     }
 
+    function isParseableDate(value: unknown): value is string {
+        return typeof value === "string" && !Number.isNaN(new Date(value).getTime());
+    }
+
+    // A bound is malformed when present and not a parseable date string; null/undefined stay
+    // unbounded and strict ISO-8601 is not required (Phase 15 D-03). One bad bound in any period
+    // condemns the whole alert, because the collapsed window could no longer be trusted (Phase 15 D-02).
+    function findMalformedBound(periods: DashActivePeriod[] | undefined): "start" | "end" | undefined {
+        for (const period of periods ?? []) {
+            if (period.start !== null && period.start !== undefined && !isParseableDate(period.start)) {
+                return "start";
+            }
+            if (period.end !== null && period.end !== undefined && !isParseableDate(period.end)) {
+                return "end";
+            }
+        }
+        return undefined;
+    }
+
     // D-02: multiple active_period entries collapse to earliest start / latest end.
     // D-03: zero/undefined periods -> {start: null, end: null} (always-active, never expires).
     function deriveActiveWindow(periods: DashActivePeriod[] | undefined): ServiceAlertActivePeriod {
@@ -66,9 +85,11 @@ export function createServiceAlertService(): ServiceAlertService {
             return { start: null, end: null };
         }
 
-        const starts = periods.map((p) => p.start).filter((s): s is string => s != null);
+        // Periods arrive pre-validated by findMalformedBound, so every bound kept here parses and
+        // toISOString cannot throw.
+        const starts = periods.map((p) => p.start).filter(isParseableDate);
         const anyOpenEnded = periods.some((p) => p.end == null);
-        const ends = periods.map((p) => p.end).filter((e): e is string => e != null);
+        const ends = periods.map((p) => p.end).filter(isParseableDate);
 
         return {
             start:
@@ -125,10 +146,21 @@ export function createServiceAlertService(): ServiceAlertService {
 
         // Alerts are filtered here, at ingestion, so the repository only ever stores clean alerts
         // and one choke point covers every route, stop and nearby response (Phase 15 D-05).
-        // Soft-deleted alerts are a routine feed state, so dropping them is silent (Phase 15 D-09).
+        // Soft-deleted alerts are a routine feed state, so dropping them is silent (Phase 15 D-09), and
+        // the deleted check runs first so a deleted alert with a bad date never warns (Phase 15 D-10).
+        // A malformed-date alert is dropped on its own because alerts are an enrichment and must not
+        // freeze every update (Phase 15 D-01, deliberately unlike the all-or-nothing route/stop load);
+        // an entity without an id still fails the whole poll above (Phase 15 D-07).
         const alerts: ServiceAlert[] = [];
         for (const entity of response.entities) {
             if (isDeleted(entity)) {
+                continue;
+            }
+            const malformedBound = findMalformedBound(entity.activePeriods);
+            if (malformedBound !== undefined) {
+                logger.warn(
+                    `Dropping service alert ${entity.id} with a malformed activePeriods ${malformedBound} date`,
+                );
                 continue;
             }
             alerts.push(mapToServiceAlert(entity));

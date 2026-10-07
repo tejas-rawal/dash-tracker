@@ -15,9 +15,10 @@ export interface ServiceAlert {
     activePeriod: ServiceAlertActivePeriod;
 }
 
+// Upstream values are validated in ServiceAlertService before use (Phase 15 D-03).
 export interface DashActivePeriod {
-    start?: string | null;
-    end?: string | null;
+    start?: unknown;
+    end?: unknown;
 }
 
 export interface DashInformedEntity {
