@@ -38,21 +38,23 @@ function isValidPrediction(prediction: unknown): boolean {
     );
 }
 
-// Guards two failure modes of the shared mapping, which copies every prediction element field by
-// field: a non-object element throws there and turns the whole request into a 500, and an
-// incomplete element would be served to riders as an arrival with missing fields. One bad element
-// invalidates its whole entry, so the entry is dropped rather than served with fewer arrivals.
+// Covers every field the response copies: the display fields groupByStop and mapToRoutePrediction
+// serve (route and stop names and IDs, stopCode, each destination's directionId and headsign) and
+// the prediction elements. A missing or mistyped field would otherwise reach riders as a nameless
+// or garbled stop, and a non-object element would throw in the mapping and turn the request into
+// a 500. One bad field drops the whole entry; nothing is replaced or coerced.
 function isValidNearbyEntry(entry: unknown): entry is DashNearbyPredictionData {
     if (!isRecord(entry)) {
         return false;
     }
-    const { routeId, routeName, routeShortName, stopId, stopName, distanceToStop, destinations } = entry;
+    const { routeId, routeName, routeShortName, stopId, stopName, stopCode, distanceToStop, destinations } = entry;
     return (
         isNonEmptyString(routeId) &&
         isNonEmptyString(routeName) &&
         isNonEmptyString(routeShortName) &&
         isNonEmptyString(stopId) &&
         isNonEmptyString(stopName) &&
+        isFiniteNumber(stopCode) &&
         typeof distanceToStop === "number" &&
         Number.isFinite(distanceToStop) &&
         distanceToStop >= 0 &&
@@ -60,6 +62,8 @@ function isValidNearbyEntry(entry: unknown): entry is DashNearbyPredictionData {
         destinations.every(
             (destination) =>
                 isRecord(destination) &&
+                isNonEmptyString(destination.directionId) &&
+                isNonEmptyString(destination.headsign) &&
                 Array.isArray(destination.predictions) &&
                 destination.predictions.every(isValidPrediction),
         )
