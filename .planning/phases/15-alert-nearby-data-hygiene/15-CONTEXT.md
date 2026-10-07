@@ -40,6 +40,15 @@ The phase touches only `ServiceAlertService` (alert ingestion), the `DashAlertEn
 - **D-14:** The drop warn stays **exactly as it is**: one `warn` per dropped entry, `Dropping malformed nearby prediction entry (stop X, route Y)`. The guard remains a boolean type predicate and does not report which field failed. Valid entries in the same response are still returned.
 - **D-15:** `agencyKey` is **already handled**: `parseDashResponse` throws `UpstreamApiError` (502) when it is not a string, which fixed WR-01's cast. No change is needed. The planner only confirms that test coverage exists.
 
+### Structurally malformed alerts (gap closure, added 2026-10-07)
+- **D-16:** A **structurally malformed alert drops only that alert**, the same way a malformed date does (D-01). The developer rejected the "accept" option for review CR-01 / plan 15-01 assumption A1 / 15-UAT test 1, so one broken record can no longer fail the whole poll and keep the previous snapshot serving (including alerts DASH has since soft-deleted).
+  - **Malformed** means `activePeriods` or `informedEntities` is present (not `null`/`undefined`) and is not an array whose every element is a non-null, non-array object. Examples: `activePeriods: [null]`, `{}`, `5`, `"abc"`, a lone period object that is not wrapped in an array, or `informedEntities: [null]`, `{}`. A malformed list is never repaired: a lone object is not wrapped, a bad element is not skipped, and a present non-list is not treated as absent.
+  - `null`/`undefined` keep today's meaning. No periods means always active (D-03), and no informed entities means empty route and stop id lists.
+  - Each drop logs **one** stateless, message-only `warn` per poll naming the alert id and the malformed list: `Dropping service alert <id> with a malformed activePeriods list` or `... informedEntities list`. It never includes the raw value (D-04 shape). When an alert has several problems, the warn names the first one found, checking the `activePeriods` list, then the `informedEntities` list, then the `start`/`end` dates.
+  - The deleted check still runs first (D-10), so a deleted alert with a malformed list is dropped silently.
+  - Inside a well-formed informed entity, a `routeId` or `stopId` that is not a string is not an id. This includes `null`, which is DASH's routine "no route/stop" value. Such an id is skipped silently and the alert is kept for its other targets, so `informedRouteIds`/`informedStopIds` only ever hold strings.
+  - D-07 is unchanged: an entity without a string `id`, or a non-object entity, still fails the whole poll.
+
 ### Claude's Discretion
 - Exact code structure of the ingestion filter: one `partition`/`flatMap` pass vs. separate `isDeleted` / `hasValidDates` helpers, and whether `deriveActiveWindow` takes pre-validated input or validates inline. D-02/D-03/D-10 must hold either way.
 - Exact wording of the malformed-date warn, as long as it includes the alert id and is message-only.
@@ -111,3 +120,4 @@ The phase touches only `ServiceAlertService` (alert ingestion), the `DashAlertEn
 
 *Phase: 15-alert-nearby-data-hygiene*
 *Context gathered: 2026-10-07*
+*D-16 added: 2026-10-07 (gap closure for review CR-01, developer rejected accepting the whole-poll failure)*

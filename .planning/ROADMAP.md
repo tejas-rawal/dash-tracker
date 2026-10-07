@@ -175,13 +175,17 @@ Plans:
   3. A nearby-prediction upstream entry whose display fields (route/stop/destination names and IDs, `agencyKey`) are missing or the wrong type is dropped with the existing single warn, so no nearby stop is served without its name. Valid entries in the same response are still returned.
   4. Well-formed alerts and nearby entries are served exactly as before (no regression in existing route, stop, and nearby-prediction responses).
 
-**Plans**: 2/2 plans executed
+**Plans**: 2/3 plans executed (gap closure 15-03 planned)
 
 Plans:
 **Wave 1**
 
 - [x] 15-01-PLAN.md — Alert ingestion hygiene in `ServiceAlertService.fetchAlerts()`: soft-deleted alerts (any non-null `deletedAt`) dropped silently, malformed `activePeriods` dates drop only their alert with one warn naming id and bound; tracer is a fake-DASH E2E, expanded to all five alert-bearing endpoints and the real poll (ALRT-12, ALRT-13; wave 1)
 - [x] 15-02-PLAN.md — Nearby entry guard: `isValidNearbyEntry` requires non-empty route/stop names and IDs, a finite `stopCode`, and non-empty destination `directionId`/`headsign`; warn unchanged, `agencyKey` coverage confirmed; tracer is a route-level `/predictions/nearby` test (NEAR-12; wave 1)
+
+**Wave 2** *(gap closure for review CR-01 / 15-UAT test 1, decision D-16)*
+
+- [ ] 15-03-PLAN.md — A structurally malformed alert (`activePeriods`/`informedEntities` present but not an array of objects) drops only itself with one warn naming id and list instead of failing the whole poll; both lists typed `unknown` and checked in `parseAlert`; informed ids kept only when strings; tracer is a real-poll E2E where a just-deleted alert disappears (ALRT-12, ALRT-13; wave 2, after 15-01)
 
 ### Phase 16: Concurrent SSE Stream Cap per IP
 
