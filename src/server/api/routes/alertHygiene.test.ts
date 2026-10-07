@@ -251,4 +251,43 @@ describe("service alert hygiene from DASH to rider responses", () => {
             poller.stop();
         }
     });
+
+    it("keeps applying alert updates through the real poll when an alert is structurally malformed (D-16)", async () => {
+        // Arrange
+        alertsReply = [makeDashAlert("alert-old")];
+        const repository = ServiceAlertRepository.getInstance();
+        const poller = createServiceAlertPollService(createServiceAlertService(), ServiceAlertRepository.getInstance());
+        const activeIds = (): string[] => repository.getActiveAlerts().map((alert) => alert.id);
+
+        try {
+            // Step 1: a clean poll.
+            // Act
+            poller.start();
+            // Assert
+            await vi.waitFor(() => expect(activeIds()).toEqual(["alert-old"]));
+            poller.stop();
+
+            // Step 2: DASH soft-deletes alert-old in the same poll that carries a structurally broken alert.
+            // Arrange
+            alertsReply = [
+                makeDashAlert("alert-old", { deletedAt: "2020-06-01T00:00:00.000Z", deletedBy: "dash-admin" }),
+                makeDashAlert("alert-new"),
+                makeDashAlert("alert-bad-periods", { activePeriods: [null] }),
+            ];
+            // Act
+            poller.start();
+            await vi.waitFor(() => expect(activeIds()).toEqual(["alert-new"]));
+            const response = await request(app).get("/api/v1/routes/1A");
+            // Assert
+            expect(response.status).toBe(200);
+            expect(response.body.alerts.map((alert: { id: string }) => alert.id)).toEqual(["alert-new"]);
+            expect(JSON.stringify(response.body)).not.toContain("alert-old");
+            expect(errorSpy).not.toHaveBeenCalled();
+            expect(warnSpy).toHaveBeenCalledWith(
+                "Dropping service alert alert-bad-periods with a malformed activePeriods list",
+            );
+        } finally {
+            poller.stop();
+        }
+    });
 });

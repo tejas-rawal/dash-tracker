@@ -63,11 +63,30 @@ export function createServiceAlertService(): ServiceAlertService {
         return typeof value === "string" && !Number.isNaN(new Date(value).getTime());
     }
 
+    // An array is not a period or an informed entity, so a nested list can never pass as a period
+    // with no bounds, which would read as always active.
+    function isPlainRecord(value: unknown): value is Record<string, unknown> {
+        return typeof value === "object" && value !== null && !Array.isArray(value);
+    }
+
+    // An absent list keeps its old meaning (no periods: always active; no informed entities: no
+    // targets). A present list must be an array of objects and is never repaired (a lone object is not
+    // wrapped, a bad element is not skipped), because a guessed list could show a wrong alert (Phase 15 D-16).
+    function readRecordList(value: unknown): Record<string, unknown>[] | undefined {
+        if (value === null || value === undefined) {
+            return [];
+        }
+        if (Array.isArray(value) && value.every(isPlainRecord)) {
+            return value;
+        }
+        return undefined;
+    }
+
     // A bound is malformed when present and not a parseable date string; null/undefined stay
     // unbounded and strict ISO-8601 is not required (Phase 15 D-03). One bad bound in any period
     // condemns the whole alert, because the collapsed window could no longer be trusted (Phase 15 D-02).
-    function findMalformedBound(periods: DashActivePeriod[] | undefined): "start" | "end" | undefined {
-        for (const period of periods ?? []) {
+    function findMalformedBound(periods: DashActivePeriod[]): "start" | "end" | undefined {
+        for (const period of periods) {
             if (period.start !== null && period.start !== undefined && !isParseableDate(period.start)) {
                 return "start";
             }
@@ -80,12 +99,12 @@ export function createServiceAlertService(): ServiceAlertService {
 
     // D-02: multiple active_period entries collapse to earliest start / latest end.
     // D-03: zero/undefined periods -> {start: null, end: null} (always-active, never expires).
-    function deriveActiveWindow(periods: DashActivePeriod[] | undefined): ServiceAlertActivePeriod {
-        if (!periods || periods.length === 0) {
+    function deriveActiveWindow(periods: DashActivePeriod[]): ServiceAlertActivePeriod {
+        if (periods.length === 0) {
             return { start: null, end: null };
         }
 
-        // Periods arrive pre-validated by findMalformedBound, so every bound kept here parses and
+        // Periods arrive pre-validated by parseAlert, so every bound kept here parses and
         // toISOString cannot throw.
         const starts = periods.map((p) => p.start).filter(isParseableDate);
         const anyOpenEnded = periods.some((p) => p.end == null);
@@ -103,7 +122,7 @@ export function createServiceAlertService(): ServiceAlertService {
         };
     }
 
-    function mapToServiceAlert(entity: DashAlertEntity): ServiceAlert {
+    function mapToServiceAlert(entity: DashAlertEntity, periods: DashActivePeriod[]): ServiceAlert {
         const informedRouteIds = (entity.informedEntities ?? [])
             .map((ie) => ie.routeId)
             .filter((id): id is string => id !== undefined);
@@ -120,8 +139,22 @@ export function createServiceAlertService(): ServiceAlertService {
             url: entity.url ?? undefined,
             informedRouteIds,
             informedStopIds,
-            activePeriod: deriveActiveWindow(entity.activePeriods),
+            activePeriod: deriveActiveWindow(periods),
         };
+    }
+
+    // Returns the alert, or the first part that condemns it. Structure is checked before dates
+    // because the dates live inside the list (Phase 15 D-16, D-02).
+    function parseAlert(entity: DashAlertEntity): { alert: ServiceAlert } | { malformed: string } {
+        const periods = readRecordList(entity.activePeriods);
+        if (periods === undefined) {
+            return { malformed: "activePeriods list" };
+        }
+        const malformedBound = findMalformedBound(periods);
+        if (malformedBound !== undefined) {
+            return { malformed: `activePeriods ${malformedBound} date` };
+        }
+        return { alert: mapToServiceAlert(entity, periods) };
     }
 
     async function fetchAlerts(): Promise<ServiceAlert[]> {
@@ -150,20 +183,20 @@ export function createServiceAlertService(): ServiceAlertService {
         // the deleted check runs first so a deleted alert with a bad date never warns (Phase 15 D-10).
         // A malformed-date alert is dropped on its own because alerts are an enrichment and must not
         // freeze every update (Phase 15 D-01, deliberately unlike the all-or-nothing route/stop load);
-        // an entity without an id still fails the whole poll above (Phase 15 D-07).
+        // an entity without an id still fails the whole poll above (Phase 15 D-07). A structurally
+        // malformed alert is dropped the same way, on its own, so one broken record cannot fail the poll
+        // and keep a since-deleted alert serving (Phase 15 D-16).
         const alerts: ServiceAlert[] = [];
         for (const entity of response.entities) {
             if (isDeleted(entity)) {
                 continue;
             }
-            const malformedBound = findMalformedBound(entity.activePeriods);
-            if (malformedBound !== undefined) {
-                logger.warn(
-                    `Dropping service alert ${entity.id} with a malformed activePeriods ${malformedBound} date`,
-                );
+            const parsed = parseAlert(entity);
+            if ("malformed" in parsed) {
+                logger.warn(`Dropping service alert ${entity.id} with a malformed ${parsed.malformed}`);
                 continue;
             }
-            alerts.push(mapToServiceAlert(entity));
+            alerts.push(parsed.alert);
         }
         return alerts;
     }

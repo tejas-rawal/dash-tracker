@@ -15,7 +15,8 @@ export interface ServiceAlert {
     activePeriod: ServiceAlertActivePeriod;
 }
 
-// Upstream values are validated in ServiceAlertService before use (Phase 15 D-03).
+// One element of a checked activePeriods list; its bound values are validated in ServiceAlertService
+// before use (Phase 15 D-03, D-16).
 export interface DashActivePeriod {
     start?: unknown;
     end?: unknown;
@@ -36,7 +37,8 @@ export interface DashAlertEntity {
     headerText?: string | null;
     descriptionText?: string | null;
     url?: string | null;
-    activePeriods?: DashActivePeriod[];
+    // Unknown until ServiceAlertService checks it is an array of objects; the alert is dropped otherwise (Phase 15 D-16).
+    activePeriods?: unknown;
     informedEntities?: DashInformedEntity[];
     // DASH soft-deletes an alert by setting this and keeps it in the feed; never parsed, any
     // value other than null/undefined means deleted (ALRT-12).
