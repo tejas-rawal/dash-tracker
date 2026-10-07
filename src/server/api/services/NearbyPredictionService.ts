@@ -21,6 +21,10 @@ function isFiniteNumber(value: unknown): value is number {
     return typeof value === "number" && Number.isFinite(value);
 }
 
+function isNonEmptyString(value: unknown): value is string {
+    return typeof value === "string" && value !== "";
+}
+
 // Checks exactly the five fields the shared mapping copies. Values are never coerced, so a
 // wrong-typed field rejects the prediction rather than being served as a made-up arrival.
 function isValidPrediction(prediction: unknown): boolean {
@@ -42,10 +46,13 @@ function isValidNearbyEntry(entry: unknown): entry is DashNearbyPredictionData {
     if (!isRecord(entry)) {
         return false;
     }
-    const { stopId, distanceToStop, destinations } = entry;
+    const { routeId, routeName, routeShortName, stopId, stopName, distanceToStop, destinations } = entry;
     return (
-        typeof stopId === "string" &&
-        stopId !== "" &&
+        isNonEmptyString(routeId) &&
+        isNonEmptyString(routeName) &&
+        isNonEmptyString(routeShortName) &&
+        isNonEmptyString(stopId) &&
+        isNonEmptyString(stopName) &&
         typeof distanceToStop === "number" &&
         Number.isFinite(distanceToStop) &&
         distanceToStop >= 0 &&

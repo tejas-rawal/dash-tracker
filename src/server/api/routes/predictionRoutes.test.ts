@@ -643,6 +643,41 @@ describe("GET /api/v1/predictions/nearby", () => {
     });
 
     it.each([
+        { label: "no stopName", override: { stopName: undefined } },
+        { label: "an empty stopName", override: { stopName: "" } },
+        { label: "a numeric routeShortName", override: { routeShortName: 30 } },
+        { label: "a null routeName", override: { routeName: null } },
+        { label: "no routeId", override: { routeId: undefined } },
+    ])(
+        "never serves a nearby stop built from an entry with $label and still returns the valid stops",
+        async ({ override }) => {
+            // Arrange
+            // 12 m would make stop 999 the nearest, so it would be listed first if it leaked.
+            const body = makeLiveNearbyPredictionsResponse();
+            body.data.predictionsData.push({
+                ...body.data.predictionsData[2],
+                stopId: "999",
+                distanceToStop: 12,
+                ...override,
+            });
+            getSpy.mockResolvedValue({ data: body });
+
+            // Act
+            const response = await request(app).get(nearbyUrl);
+
+            // Assert
+            expect(response.status).toBe(200);
+            const stops = response.body.data.stops as (NearbyStopBody & { name: unknown })[];
+            expect(stops.map((stop) => stop.id)).toEqual(["548", "561", "949"]);
+            for (const stop of stops) {
+                expect(typeof stop.name).toBe("string");
+                expect(stop.name).not.toBe("");
+            }
+            expect(getSpy).toHaveBeenCalledTimes(1);
+        },
+    );
+
+    it.each([
         { label: "null", element: null },
         { label: "a string", element: "x" },
     ])(
