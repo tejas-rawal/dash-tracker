@@ -37,6 +37,9 @@ export interface DashAlertEntity {
     url?: string | null;
     activePeriods?: DashActivePeriod[];
     informedEntities?: DashInformedEntity[];
+    // DASH soft-deletes an alert by setting this and keeps it in the feed; never parsed, any
+    // value other than null/undefined means deleted (ALRT-12).
+    deletedAt?: unknown;
 }
 
 export interface DashAlertsApiResponse {

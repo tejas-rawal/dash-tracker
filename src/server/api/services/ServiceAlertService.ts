@@ -54,6 +54,11 @@ export function createServiceAlertService(): ServiceAlertService {
         return typeof entity === "object" && entity !== null && typeof (entity as DashAlertEntity).id === "string";
     }
 
+    // Phase 15 D-08: the value is never parsed, so a garbled timestamp still counts as deleted (fails safe).
+    function isDeleted(entity: DashAlertEntity): boolean {
+        return entity.deletedAt !== null && entity.deletedAt !== undefined;
+    }
+
     // D-02: multiple active_period entries collapse to earliest start / latest end.
     // D-03: zero/undefined periods -> {start: null, end: null} (always-active, never expires).
     function deriveActiveWindow(periods: DashActivePeriod[] | undefined): ServiceAlertActivePeriod {
@@ -118,7 +123,17 @@ export function createServiceAlertService(): ServiceAlertService {
             );
         }
 
-        return response.entities.map(mapToServiceAlert);
+        // Alerts are filtered here, at ingestion, so the repository only ever stores clean alerts
+        // and one choke point covers every route, stop and nearby response (Phase 15 D-05).
+        // Soft-deleted alerts are a routine feed state, so dropping them is silent (Phase 15 D-09).
+        const alerts: ServiceAlert[] = [];
+        for (const entity of response.entities) {
+            if (isDeleted(entity)) {
+                continue;
+            }
+            alerts.push(mapToServiceAlert(entity));
+        }
+        return alerts;
     }
 
     return { fetchAlerts };
