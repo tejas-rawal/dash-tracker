@@ -74,6 +74,7 @@ See `.planning/milestones/v0.5-ROADMAP.md` for full phase details.
 - [x] **Phase 13: Resilient Route/Stop Data Lifecycle** - Server listens even when DASH is down at boot, loads route/stop data in the background with backoff (503 until ready), then keeps it fresh on an interval while holding last-good data through failures (completed 2026-10-01)
 - [ ] **Phase 14: Health Checks & Rate Limiting** - Liveness and readiness endpoints report process health and route/stop data age; live-upstream endpoints return 429 per client IP while in-memory endpoints stay unlimited
 - [ ] **Phase 15: Alert & Nearby Data Hygiene** - Soft-deleted and malformed-date alerts never reach riders, and nearby-prediction entries with missing or mistyped display fields are dropped
+- [ ] **Phase 16: Concurrent SSE Stream Cap per IP** - One client IP cannot hold more than a small number of prediction streams open, so held-open streams cannot multiply DASH load past the per-IP limit
 
 ## Phase Details
 
@@ -176,10 +177,23 @@ Plans:
 
 **Plans**: TBD
 
+### Phase 16: Concurrent SSE Stream Cap per IP
+
+**Goal**: No single client IP can multiply live DASH load by holding many prediction streams open: the per-connect limit on `/predictions/stream` (D-11) is backed by a cap on concurrent open streams per IP (review WR-02, deferred from Phase 14 UAT).
+**Depends on**: Phase 14 (extends the shared upstream limiter and `TRUST_PROXY_HOPS` client-IP resolution)
+**Requirements**: TBD
+**Success Criteria** (what must be TRUE):
+
+  1. One client IP holding the maximum number of open `/predictions/stream` connections gets 429 with the API's `{ error, details }` body on its next stream connect, while a different IP can still open streams.
+  2. Closing a stream (client disconnect, server end, or socket error) frees its slot, so the same IP can open a new stream without waiting for a rate-limit window.
+  3. Streams already open are never closed or written to by the cap, and the existing 60/min shared bucket keeps counting stream connects as before.
+
+**Plans**: TBD
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 12 → 13 → 14 → 15
+Phases execute in numeric order: 12 → 13 → 14 → 15 → 16
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -198,6 +212,7 @@ Phases execute in numeric order: 12 → 13 → 14 → 15
 | 13. Resilient Route/Stop Data Lifecycle | v0.6 | 7/7 | Complete    | 2026-10-01 |
 | 14. Health Checks & Rate Limiting | v0.6 | 3/3 | In Progress|  |
 | 15. Alert & Nearby Data Hygiene | v0.6 | 0/TBD | Not started | - |
+| 16. Concurrent SSE Stream Cap per IP | v0.6 | 0/TBD | Not started | - |
 
 ---
 
