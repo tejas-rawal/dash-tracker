@@ -175,7 +175,7 @@ Plans:
   3. A nearby-prediction upstream entry whose display fields (route/stop/destination names and IDs, `agencyKey`) are missing or the wrong type is dropped with the existing single warn, so no nearby stop is served without its name. Valid entries in the same response are still returned.
   4. Well-formed alerts and nearby entries are served exactly as before (no regression in existing route, stop, and nearby-prediction responses).
 
-**Plans**: 2/3 plans executed (gap closure 15-03 planned)
+**Plans**: 3/3 plans executed (gap closure 15-03 planned)
 
 Plans:
 **Wave 1**
@@ -185,7 +185,7 @@ Plans:
 
 **Wave 2** *(gap closure for review CR-01 / 15-UAT test 1, decision D-16)*
 
-- [ ] 15-03-PLAN.md — A structurally malformed alert (`activePeriods`/`informedEntities` present but not an array of objects) drops only itself with one warn naming id and list instead of failing the whole poll; both lists typed `unknown` and checked in `parseAlert`; informed ids kept only when strings; tracer is a real-poll E2E where a just-deleted alert disappears (ALRT-12, ALRT-13; wave 2, after 15-01)
+- [x] 15-03-PLAN.md — A structurally malformed alert (`activePeriods`/`informedEntities` present but not an array of objects) drops only itself with one warn naming id and list instead of failing the whole poll; both lists typed `unknown` and checked in `parseAlert`; informed ids kept only when strings; tracer is a real-poll E2E where a just-deleted alert disappears (ALRT-12, ALRT-13; wave 2, after 15-01)
 
 ### Phase 16: Concurrent SSE Stream Cap per IP
 
@@ -221,7 +221,7 @@ Phases execute in numeric order: 12 → 13 → 14 → 15 → 16
 | 12. Bounded Upstream Calls & Error Safety Nets | v0.6 | 4/4 | Complete    | 2026-09-29 |
 | 13. Resilient Route/Stop Data Lifecycle | v0.6 | 7/7 | Complete    | 2026-10-01 |
 | 14. Health Checks & Rate Limiting | v0.6 | 3/3 | Complete    | 2026-10-07 |
-| 15. Alert & Nearby Data Hygiene | v0.6 | 2/2 | In Progress|  |
+| 15. Alert & Nearby Data Hygiene | v0.6 | 3/3 | In Progress|  |
 | 16. Concurrent SSE Stream Cap per IP | v0.6 | 0/TBD | Not started | - |
 
 ---

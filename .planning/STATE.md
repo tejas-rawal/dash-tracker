@@ -4,18 +4,18 @@ milestone: v0.6
 milestone_name: Solidifying the backend
 current_phase: 15
 current_phase_name: Alert & Nearby Data Hygiene
-status: executing
-stopped_at: Completed 15-02-PLAN.md
-last_updated: "2026-10-07T19:46:36.961Z"
+status: verifying
+stopped_at: Completed 15-03-PLAN.md
+last_updated: "2026-10-07T20:00:33.258Z"
 last_activity: 2026-10-07
 last_activity_desc: Phase 15 execution started
-state_head: 887874b5aeb4296fc561baf8765ed824d3cf3c9e
+state_head: e7e325173050edcc7cb0a4e81bd65f72cc824042
 progress:
   total_phases: 5
   completed_phases: 14
   total_plans: 17
-  completed_plans: 16
-  percent: 94
+  completed_plans: 17
+  percent: 100
 ---
 
 # Project State
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-10-07)
 
 Phase: 15 (Alert & Nearby Data Hygiene) — READY TO EXECUTE
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-07 — Phase 15 execution started
 
 Progress (v0.6): [██████░░░░] 3/5 phases (60%)
@@ -92,6 +92,7 @@ Progress (v0.6): [██████░░░░] 3/5 phases (60%)
 | Phase 13 P07 | 5min | 2 tasks | 5 files |
 | Phase 15 P01 | 5min | 3 tasks | 4 files |
 | Phase 15 P02 | 3 min | 2 tasks | 3 files |
+| Phase 15 P03 | 4min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -153,6 +154,8 @@ Recent decisions affecting current work:
 - [Phase 15]: Phase 15: any non-null deletedAt drops the alert silently, checked before date validation (D-08, D-09, D-10)
 - [Phase 15]: Phase 15: a malformed activePeriods bound drops only its whole alert with one id-and-bound warn; the poll applies the rest (D-01 to D-04)
 - [Phase 15]: Phase 15-02: isValidNearbyEntry guards every copied display field (route/stop names and IDs non-empty strings, finite stopCode, non-empty destination directionId/headsign); one bad field drops the whole entry, warn unchanged
+- [Phase 15]: Phase 15-03: a structurally malformed alert (activePeriods/informedEntities present but not an array of plain objects) drops only that alert with one id-and-list warn; lists are never repaired; checked activePeriods list, informedEntities list, then dates (D-16, closes CR-01)
+- [Phase 15]: Phase 15-03: informedRouteIds/informedStopIds keep only string ids; null or other non-string ids are skipped silently and the alert is kept
 
 ### Pending Todos
 
@@ -200,8 +203,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-07T19:10:55.396Z
-Stopped at: Completed 15-02-PLAN.md
+Last session: 2026-10-07T20:00:33.207Z
+Stopped at: Completed 15-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
