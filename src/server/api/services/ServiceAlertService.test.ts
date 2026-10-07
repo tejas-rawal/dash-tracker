@@ -608,5 +608,171 @@ describe("ServiceAlertService", () => {
                 }
             });
         });
+
+        describe("structurally malformed alerts (D-16)", () => {
+            const goodPeriod = { start: "2023-11-14T22:13:20.000Z", end: "2023-11-15T01:13:20.000Z" };
+
+            it.each([
+                { label: "activePeriods [null]", overrides: { activePeriods: [null] }, list: "activePeriods" },
+                {
+                    label: "one null period among good periods",
+                    overrides: { activePeriods: [goodPeriod, null] },
+                    list: "activePeriods",
+                },
+                { label: "activePeriods {}", overrides: { activePeriods: {} }, list: "activePeriods" },
+                {
+                    label: "a lone unwrapped period object",
+                    overrides: { activePeriods: { start: "2023-11-14T22:13:20.000Z", end: null } },
+                    list: "activePeriods",
+                },
+                { label: "activePeriods 5", overrides: { activePeriods: 5 }, list: "activePeriods" },
+                { label: "activePeriods 'abc'", overrides: { activePeriods: "abc" }, list: "activePeriods" },
+                {
+                    label: "a nested-array period",
+                    overrides: { activePeriods: [["2023-11-14T22:13:20.000Z", null]] },
+                    list: "activePeriods",
+                },
+                {
+                    label: "a string period",
+                    overrides: { activePeriods: ["2023-11-14T22:13:20.000Z"] },
+                    list: "activePeriods",
+                },
+                { label: "informedEntities [null]", overrides: { informedEntities: [null] }, list: "informedEntities" },
+                {
+                    label: "a number among good informed entities",
+                    overrides: { informedEntities: [{ routeId: "route-1" }, 7] },
+                    list: "informedEntities",
+                },
+                { label: "informedEntities {}", overrides: { informedEntities: {} }, list: "informedEntities" },
+                {
+                    label: "informedEntities 'route-1'",
+                    overrides: { informedEntities: "route-1" },
+                    list: "informedEntities",
+                },
+                {
+                    label: "a malformed activePeriods list and a malformed informedEntities list",
+                    overrides: { activePeriods: [null], informedEntities: {} },
+                    list: "activePeriods",
+                },
+                {
+                    label: "a malformed informedEntities list and a malformed start date",
+                    overrides: { informedEntities: {}, activePeriods: [{ start: "not-a-date", end: null }] },
+                    list: "informedEntities",
+                },
+            ])(
+                "drops only the alert with $label, keeps the others, and warns once naming the alert id and malformed list",
+                async ({ overrides, list }) => {
+                    // Arrange
+                    mockAxiosGet.mockResolvedValue({
+                        data: makeDashAlertsApiResponse([
+                            makeDashAlertEntity(overrides, "alert-1"),
+                            makeDashAlertEntity({}, "alert-2"),
+                        ]),
+                    });
+                    const { fetchAlerts } = createServiceAlertService();
+
+                    // Act
+                    const result = await fetchAlerts();
+
+                    // Assert
+                    expect(result.map((alert) => alert.id)).toEqual(["alert-2"]);
+                    expect(mockLoggerWarn).toHaveBeenCalledTimes(1);
+                    expect(mockLoggerWarn).toHaveBeenCalledWith(
+                        `Dropping service alert alert-1 with a malformed ${list} list`,
+                    );
+                },
+            );
+
+            it("keeps an alert whose activePeriods and informedEntities are null, as always active with no targets", async () => {
+                // Arrange
+                mockAxiosGet.mockResolvedValue({
+                    data: makeDashAlertsApiResponse([
+                        makeDashAlertEntity({ activePeriods: null, informedEntities: null }),
+                    ]),
+                });
+                const { fetchAlerts } = createServiceAlertService();
+
+                // Act
+                const result = await fetchAlerts();
+
+                // Assert
+                expect(result).toHaveLength(1);
+                expect(result[0].activePeriod).toEqual({ start: null, end: null });
+                expect(result[0].informedRouteIds).toEqual([]);
+                expect(result[0].informedStopIds).toEqual([]);
+                expect(mockLoggerWarn).not.toHaveBeenCalled();
+            });
+
+            it("skips informed route and stop ids that are not strings and keeps the alert for its other targets", async () => {
+                // Arrange
+                mockAxiosGet.mockResolvedValue({
+                    data: makeDashAlertsApiResponse([
+                        makeDashAlertEntity({
+                            informedEntities: [
+                                { routeId: null, stopId: "stop-1" },
+                                { routeId: "route-1", stopId: 42 },
+                                { routeId: {}, stopId: null },
+                                {},
+                            ],
+                        }),
+                    ]),
+                });
+                const { fetchAlerts } = createServiceAlertService();
+
+                // Act
+                const result = await fetchAlerts();
+
+                // Assert
+                expect(result).toHaveLength(1);
+                expect(result[0].informedRouteIds).toEqual(["route-1"]);
+                expect(result[0].informedStopIds).toEqual(["stop-1"]);
+                expect(mockLoggerWarn).not.toHaveBeenCalled();
+            });
+
+            it("drops a deleted alert with a malformed list without warning (D-10)", async () => {
+                // Arrange
+                mockAxiosGet.mockResolvedValue({
+                    data: makeDashAlertsApiResponse([
+                        makeDashAlertEntity(
+                            {
+                                deletedAt: "2020-06-01T00:00:00.000Z",
+                                activePeriods: [null],
+                                informedEntities: {},
+                            },
+                            "alert-1",
+                        ),
+                        makeDashAlertEntity({}, "alert-2"),
+                    ]),
+                });
+                const { fetchAlerts } = createServiceAlertService();
+
+                // Act
+                const result = await fetchAlerts();
+
+                // Assert
+                expect(result.map((alert) => alert.id)).toEqual(["alert-2"]);
+                expect(mockLoggerWarn).not.toHaveBeenCalled();
+            });
+
+            it("never puts the raw list value or other alert fields in the warn line", async () => {
+                // Arrange
+                const entity = makeDashAlertEntity({
+                    headerText: "Header text marker",
+                    activePeriods: "RAW-LIST-MARKER",
+                });
+                mockAxiosGet.mockResolvedValue({ data: makeDashAlertsApiResponse([entity]) });
+                const { fetchAlerts } = createServiceAlertService();
+
+                // Act
+                await fetchAlerts();
+
+                // Assert
+                expect(mockLoggerWarn).toHaveBeenCalledTimes(1);
+                const line = String(mockLoggerWarn.mock.calls[0][0]);
+                expect(line).toContain("alert-1");
+                expect(line).not.toContain("RAW-LIST-MARKER");
+                expect(line).not.toContain("Header text marker");
+            });
+        });
     });
 });

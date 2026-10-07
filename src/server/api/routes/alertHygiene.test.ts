@@ -273,6 +273,7 @@ describe("service alert hygiene from DASH to rider responses", () => {
                 makeDashAlert("alert-old", { deletedAt: "2020-06-01T00:00:00.000Z", deletedBy: "dash-admin" }),
                 makeDashAlert("alert-new"),
                 makeDashAlert("alert-bad-periods", { activePeriods: [null] }),
+                makeDashAlert("alert-bad-informed", { informedEntities: {} }),
             ];
             // Act
             poller.start();
@@ -285,6 +286,9 @@ describe("service alert hygiene from DASH to rider responses", () => {
             expect(errorSpy).not.toHaveBeenCalled();
             expect(warnSpy).toHaveBeenCalledWith(
                 "Dropping service alert alert-bad-periods with a malformed activePeriods list",
+            );
+            expect(warnSpy).toHaveBeenCalledWith(
+                "Dropping service alert alert-bad-informed with a malformed informedEntities list",
             );
         } finally {
             poller.stop();
