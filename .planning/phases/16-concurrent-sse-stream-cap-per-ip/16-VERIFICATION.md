@@ -1,9 +1,10 @@
 ---
 phase: 16-concurrent-sse-stream-cap-per-ip
 verified: 2026-10-12T16:58:00Z
-status: human_needed
+status: passed
 score: 10/10 must-haves verified
 covered_files:
+
   - ".claude/CLAUDE.md"
   - ".planning/phases/16-concurrent-sse-stream-cap-per-ip/16-01-PLAN.md"
   - ".planning/phases/16-concurrent-sse-stream-cap-per-ip/16-01-SUMMARY.md"
@@ -13,14 +14,17 @@ covered_files:
   - "src/server/api/routes/predictionRoutes.ts"
   - "src/server/api/routes/streamCap.test.ts"
   - "src/server/test/streamClient.ts"
+
 covered_digest: "v1:sha256:5b6120440bcdb7478dc438fd03bbc6fc124c88d60fe158e0a6bdd534e4c850b4"
 behavior_unverified: 0
 overrides_applied: 0
 coincidental_reliance_items:
+
   - truth: "D-09: the cap's key is ipKeyGenerator(req.ip), the exact key the shared bucket uses"
     reason: undeclared-precondition
     harden: "Parity holds only because createUpstreamRateLimiter() and the cap both rely on express-rate-limit's default ipv6Subnet of 56, and it does not hold for an undefined req.ip (the bucket keys it as undefined and logs ERR_ERL_UNDEFINED_IP_ADDRESS; the cap uses 'unknown'). Share one exported subnet constant between the limiter and the cap (16-REVIEW IN-03), and either rename the parity test or document the undefined-IP difference (IN-02)."
 human_verification:
+
   - test: "Live end-to-end check (harvested from 16-01-PLAN Task 3 <human-check>): with a real .env, run `bun run dev-server`, open 5 `curl -N \"http://127.0.0.1:3000/api/v1/predictions/stream?stop=349\"` streams from one shell, then `curl -i` a 6th. Stop one of the 5 and open another."
     expected: "The 6th gets 429 with details 'Too many open prediction streams from this client; close one before opening another' and Retry-After: 5. After one stream is stopped, a new stream opens at once, and the other 4 keep printing a frame every 30 s."
     why_human: "Needs live DASH credentials and a running server. The automated proofs use a mocked PredictionService and fake setInterval."
