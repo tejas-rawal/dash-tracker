@@ -4,18 +4,18 @@ milestone: v0.6
 milestone_name: Solidifying the backend
 current_phase: 16
 current_phase_name: Concurrent SSE Stream Cap per IP
-status: executing
-stopped_at: Phase 16 context gathered
-last_updated: "2026-10-12T16:38:35.129Z"
-last_activity: 2026-10-07
-last_activity_desc: Phase 15 complete, transitioned to Phase 16
-state_head: 884b9acfc241212767d44a4f36ef9a437ae4d720
+status: verifying
+stopped_at: Completed 16-01-PLAN.md
+last_updated: "2026-10-12T16:51:36.624Z"
+last_activity: 2026-10-12
+last_activity_desc: Phase 16 execution started
+state_head: 33f10f7974862d880d77f07c8882c48424b9b381
 progress:
   total_phases: 5
   completed_phases: 15
   total_plans: 18
-  completed_plans: 17
-  percent: 94
+  completed_plans: 18
+  percent: 100
 ---
 
 # Project State
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-10-07)
 
 ## Current Position
 
-Phase: 16 (Concurrent SSE Stream Cap per IP) — READY TO EXECUTE
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-10-07 — Phase 15 complete, transitioned to Phase 16
+Phase: 16 (Concurrent SSE Stream Cap per IP) — EXECUTING
+Plan: 1 of 1
+Status: Phase complete — ready for verification
+Last activity: 2026-10-12 — Phase 16 execution started
 
 Progress (v0.6): [████████░░] 4/5 phases (80%)
 
@@ -94,6 +94,7 @@ Progress (v0.6): [████████░░] 4/5 phases (80%)
 | Phase 15 P01 | 5min | 3 tasks | 4 files |
 | Phase 15 P02 | 3 min | 2 tasks | 3 files |
 | Phase 15 P03 | 4min | 2 tasks | 4 files |
+| Phase 16 P01 | 6min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -157,6 +158,7 @@ Recent decisions affecting current work:
 - [Phase 15]: Phase 15-02: isValidNearbyEntry guards every copied display field (route/stop names and IDs non-empty strings, finite stopCode, non-empty destination directionId/headsign); one bad field drops the whole entry, warn unchanged
 - [Phase 15]: Phase 15-03: a structurally malformed alert (activePeriods/informedEntities present but not an array of plain objects) drops only that alert with one id-and-list warn; lists are never repaired; checked activePeriods list, informedEntities list, then dates (D-16, closes CR-01)
 - [Phase 15]: Phase 15-03: informedRouteIds/informedStopIds keep only string ids; null or other non-string ids are skipped silently and the alert is kept
+- [Phase 16]: Per-IP cap of 5 concurrent /predictions/stream connections (streamConcurrencyCap.ts) runs after the shared 60/min bucket, keys on ipKeyGenerator(req.ip) like the bucket, claims synchronously, releases once on res 'close', answers 429 with Retry-After 5, and never touches open streams
 
 ### Pending Todos
 
@@ -204,9 +206,9 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-08T18:54:44.635Z
-Stopped at: Phase 16 context gathered
-Resume file: .planning/phases/16-concurrent-sse-stream-cap-per-ip/16-CONTEXT.md
+Last session: 2026-10-12T16:51:36.570Z
+Stopped at: Completed 16-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 

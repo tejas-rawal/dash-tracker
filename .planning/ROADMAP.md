@@ -198,12 +198,12 @@ Plans:
   2. Closing a stream (client disconnect, server end, or socket error) frees its slot, so the same IP can open a new stream without waiting for a rate-limit window.
   3. Streams already open are never closed or written to by the cap, and the existing 60/min shared bucket keeps counting stream connects as before.
 
-**Plans**: 1 plan
+**Plans**: 1/1 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 16-01-PLAN.md — Per-IP cap of 5 concurrent `/predictions/stream` connections: `createStreamConcurrencyCap()` middleware (synchronous claim, keyed like the shared bucket via `ipKeyGenerator(req.ip)`, 429 `{ error, details }` + `Retry-After: 5`, once-only release on res 'close'), wired after `upstreamRateLimiter` on `/stream` only; tracer is a real-app test where an IP's 6th stream gets 429 while another IP streams; middleware matrix for every release path, parallel bursts, dead connections and key parity; real-app proofs for poll frames at the cap and server-ended streams; CLAUDE.md/AGENTS.md updated (SC1-SC3, D-01..D-15)
+- [x] 16-01-PLAN.md — Per-IP cap of 5 concurrent `/predictions/stream` connections: `createStreamConcurrencyCap()` middleware (synchronous claim, keyed like the shared bucket via `ipKeyGenerator(req.ip)`, 429 `{ error, details }` + `Retry-After: 5`, once-only release on res 'close'), wired after `upstreamRateLimiter` on `/stream` only; tracer is a real-app test where an IP's 6th stream gets 429 while another IP streams; middleware matrix for every release path, parallel bursts, dead connections and key parity; real-app proofs for poll frames at the cap and server-ended streams; CLAUDE.md/AGENTS.md updated (SC1-SC3, D-01..D-15)
 
 ## Progress
 
@@ -227,7 +227,7 @@ Phases execute in numeric order: 12 → 13 → 14 → 15 → 16
 | 13. Resilient Route/Stop Data Lifecycle | v0.6 | 7/7 | Complete    | 2026-10-01 |
 | 14. Health Checks & Rate Limiting | v0.6 | 3/3 | Complete    | 2026-10-07 |
 | 15. Alert & Nearby Data Hygiene | v0.6 | 3/3 | Complete    | 2026-10-07 |
-| 16. Concurrent SSE Stream Cap per IP | v0.6 | 0/TBD | Not started | - |
+| 16. Concurrent SSE Stream Cap per IP | v0.6 | 1/1 | In Progress|  |
 
 ---
 
