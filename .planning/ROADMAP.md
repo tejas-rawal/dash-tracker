@@ -198,7 +198,12 @@ Plans:
   2. Closing a stream (client disconnect, server end, or socket error) frees its slot, so the same IP can open a new stream without waiting for a rate-limit window.
   3. Streams already open are never closed or written to by the cap, and the existing 60/min shared bucket keeps counting stream connects as before.
 
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+**Wave 1**
+
+- [ ] 16-01-PLAN.md — Per-IP cap of 5 concurrent `/predictions/stream` connections: `createStreamConcurrencyCap()` middleware (synchronous claim, keyed like the shared bucket via `ipKeyGenerator(req.ip)`, 429 `{ error, details }` + `Retry-After: 5`, once-only release on res 'close'), wired after `upstreamRateLimiter` on `/stream` only; tracer is a real-app test where an IP's 6th stream gets 429 while another IP streams; middleware matrix for every release path, parallel bursts, dead connections and key parity; real-app proofs for poll frames at the cap and server-ended streams; CLAUDE.md/AGENTS.md updated (SC1-SC3, D-01..D-15)
 
 ## Progress
 
