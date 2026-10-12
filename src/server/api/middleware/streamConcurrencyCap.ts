@@ -22,6 +22,13 @@ export function createStreamConcurrencyCap(openStreams: Map<string, number> = ne
     // Synchronous up to next(): the claim has to land before the controller's async subscribe, so parallel connects
     // cannot all pass the check (D-04).
     return (req: Request, res: Response, next: NextFunction): void => {
+        // The connection is already gone, so its 'close' has fired and a claim could never be released, which
+        // would lock this client out for good. Nobody is left to read a response, so the connect is dropped
+        // without next().
+        if (res.destroyed) {
+            return;
+        }
+
         // The shared bucket's own key, so IPv4-mapped IPv6 reads as IPv4 and an IPv6 client is one /56; req.ip
         // already honors TRUST_PROXY_HOPS (D-09, Phase 14 D-17).
         const key = req.ip === undefined ? UNKNOWN_CLIENT_KEY : ipKeyGenerator(req.ip);
