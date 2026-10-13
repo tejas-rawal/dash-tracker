@@ -62,7 +62,7 @@ created: "2026-10-12"
 |------------|---------------|--------|------|--------|
 | 2026-10-12 | 8 | 8 | 0 | Claude (gsd-secure-phase, ASVS L1 short-circuit; 20/20 cap tests pass) |
 
-Deploy-time follow-up (not a blocking threat): T-16-03's mitigation depends on production `TRUST_PROXY_HOPS` matching the real proxy hop count — tracked as UAT test 3 (skipped: not deployed yet).
+Deploy-time follow-up (not a blocking threat): T-16-03's mitigation depends on production `TRUST_PROXY_HOPS` matching the real proxy hop count — tracked in `.planning/DEPLOY-CHECKLIST.md` (moved out of 16-UAT on 2026-10-13: not deployed yet).
 
 ---
 

@@ -155,3 +155,9 @@ The goal is honestly met: one IP can no longer hold more than 5 streams, and the
 
 _Verified: 2026-10-12T16:58:00Z_
 _Verifier: Claude (gsd-verifier)_
+
+## Human Verification Outcome (2026-10-13)
+
+- Live end-to-end stream cap: passed (16-UAT test 1, run by Claude against live DASH).
+- WR-01 (a), shared-address trade-off: accepted by the user (16-UAT test 2; AR-16-02 in 16-SECURITY.md).
+- WR-01 (b), production TRUST_PROXY_HOPS: not verifiable before a production deploy. At the user's request it moved to `.planning/DEPLOY-CHECKLIST.md` instead of blocking this phase.
