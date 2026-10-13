@@ -3,16 +3,15 @@ gsd_state_version: "1.0"
 milestone: v0.6
 milestone_name: Solidifying the backend
 current_phase: 16
-current_phase_name: Concurrent SSE Stream Cap per IP
-status: verifying
-stopped_at: Completed 16-01-PLAN.md
-last_updated: "2026-10-12T16:51:36.624Z"
-last_activity: 2026-10-12
-last_activity_desc: Phase 16 execution started
-state_head: 33f10f7974862d880d77f07c8882c48424b9b381
+status: completed
+stopped_at: Phase 16 complete — all phases complete
+last_updated: "2026-10-13T19:52:20.836Z"
+last_activity: 2026-10-13
+last_activity_desc: Phase 16 complete
+state_head: 7624068f059feda4aa74c95f712d3d34805d1b84
 progress:
   total_phases: 5
-  completed_phases: 15
+  completed_phases: 16
   total_plans: 18
   completed_plans: 18
   percent: 100
@@ -22,19 +21,19 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-07)
+See: .planning/PROJECT.md (updated 2026-10-13)
 
 **Core value:** Riders can always see accurate, near-real-time arrival predictions for their stop.
-**Current focus:** Phase 16 — Concurrent SSE Stream Cap per IP
+**Current focus:** v0.6 complete — ready to close the milestone
 
 ## Current Position
 
-Phase: 16 (Concurrent SSE Stream Cap per IP) — EXECUTING
-Plan: 1 of 1
-Status: Phase complete — ready for verification
-Last activity: 2026-10-12 — Phase 16 execution started
+Phase: 16
+Plan: Not started
+Status: All phases complete
+Last activity: 2026-10-13 — Phase 16 complete
 
-Progress (v0.6): [████████░░] 4/5 phases (80%)
+Progress (v0.6): [██████████] 5/5 phases (100%)
 
 ## Performance Metrics
 
@@ -63,6 +62,7 @@ Progress (v0.6): [████████░░] 4/5 phases (80%)
 | 13 | 7 | - | - |
 | 14 | 3 | - | - |
 | 15 | 3 | - | - |
+| 16 | 1 | - | - |
 
 **Recent Trend:**
 
@@ -104,7 +104,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
 - [Phase 14]: Health probes + one shared 60/min per-IP limiter on the four live-DASH routes; `TRUST_PROXY_HOPS` (default 0) picks the client IP; UAT 2026-10-07 confirmed an open SSE stream survives its IP being limited
-- [Phase 14 UAT]: Review WR-02 (open streams not counted, so one IP can multiply DASH polls) scheduled as v0.6 Phase 16 — per-IP concurrent-stream cap
+- [Phase 14 UAT]: Review WR-02 (open streams not counted, so one IP can multiply DASH polls) scheduled as v0.6 Phase 16 — per-IP concurrent-stream cap (shipped 2026-10-13)
 - [v0.6 roadmap] v0.6 is 4 phases (12-15), ordered reliability → operational basics → tech debt: 12 bounded upstream calls + error safety nets (UPST, ERR); 13 resilient route/stop data lifecycle (BOOT, DATA); 14 health + rate limiting (HLTH, RATE); 15 alert/nearby data hygiene (ALRT-12, ALRT-13, NEAR-12)
 - [v0.6 roadmap] Timeouts come first because boot retry and periodic refresh are only meaningful if each attempt is bounded; readiness (HLTH-02) waits on Phase 13's loaded-state + last-loaded timestamp (DATA-03); Phase 15 is independent and could run earlier if needed
 - [v0.5 roadmap] v0.5 is a single phase (Phase 11) — one endpoint with no internal dependency boundary; coarse granularity. Live-payload confirmation of `predictions-near-location` is a success criterion gating DTO lock-in, not a separate phase
@@ -159,6 +159,7 @@ Recent decisions affecting current work:
 - [Phase 15]: Phase 15-03: a structurally malformed alert (activePeriods/informedEntities present but not an array of plain objects) drops only that alert with one id-and-list warn; lists are never repaired; checked activePeriods list, informedEntities list, then dates (D-16, closes CR-01)
 - [Phase 15]: Phase 15-03: informedRouteIds/informedStopIds keep only string ids; null or other non-string ids are skipped silently and the alert is kept
 - [Phase 16]: Per-IP cap of 5 concurrent /predictions/stream connections (streamConcurrencyCap.ts) runs after the shared 60/min bucket, keys on ipKeyGenerator(req.ip) like the bucket, claims synchronously, releases once on res 'close', answers 429 with Retry-After 5, and never touches open streams
+- [Phase 16 UAT]: Live cap verified against DASH; shared-address trade-off (5 streams per IPv4 / IPv6 /56, no client auto-retry on 429) accepted by the user (AR-16-02); production TRUST_PROXY_HOPS check moved out of UAT into `.planning/DEPLOY-CHECKLIST.md` at the user's request
 
 ### Pending Todos
 
@@ -179,6 +180,7 @@ None yet.
 - ⚠️ [Phase 14] Code review (`14-REVIEW.md`), all non-blocking and adjudicated in `14-VERIFICATION.md`: CR-01 (accepted per D-08) — once stale, an instance stays 503 for up to ~1h after DASH recovers because post-load retries are hourly; revisit before deploying behind an orchestrator that de-routes on readiness (WR-05: every replica de-routes together). WR-01 — `trust proxy = 0` silences express-rate-limit's XFF misconfiguration warning (map 0 → `false`). WR-02 scheduled as Phase 16. WR-03 — fixed 5-min grace breaks the 3-failure guarantee when `DASH_API_TIMEOUT_MS` > ~100s. WR-04 — `rateLimit.test.ts` reads `TRUST_PROXY_HOPS` from the local `.env` (pin it in `test/setup.ts`).
 - ⚠️ [Phase 15] Code review (`15-REVIEW.md`), all non-blocking and adjudicated in `15-VERIFICATION.md`: WR-01 — when merging an alert's periods an open start is ignored if another period has a start, so a currently active alert can be hidden (real bug, pre-existing; needs its own fix). WR-04 — `deriveActiveWindow` spreads every date into `Math.min`/`Math.max`, so one alert with ~130k periods throws `RangeError` and fails the poll (replace with a loop). WR-02 — lenient `new Date()` parsing makes alert windows depend on server TZ. WR-03 — alert text fields reach riders with no runtime type check. IN-05 — an alert whose ids are all non-strings is kept but shown nowhere, silently.
 - ⚠️ [Phase 15] `upstreamRateLimit.test.ts` ("allows the 59th and 60th requests and rejects the 61st and 62nd") hit its 5 s timeout once under full-suite coverage load; passes alone and on re-run. Raise that test's timeout if it recurs.
+- ⚠️ [Phase 16] Before the first production deploy, work through `.planning/DEPLOY-CHECKLIST.md`: with `TRUST_PROXY_HOPS` left at 0 behind a proxy, the whole service shares 5 streams and one 60/min bucket. Pairs with Phase 14 WR-01 (map 0 → `false` so express-rate-limit's XFF warning is not silenced).
 - [Phase 13-05] Bun 1.0.31 'bunx' does not forward SIGTERM/SIGINT to its child: signalling a 'bunx tsx' wrapper orphans the server. Smokes ran ./node_modules/.bin/tsx directly. Check how production is supervised (start-server uses ts-node via bun run, untested).
 
 ### Quick Tasks Completed
@@ -206,10 +208,10 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-12T16:51:36.570Z
-Stopped at: Completed 16-01-PLAN.md
+Last session: 2026-10-13
+Stopped at: Phase 16 complete (UAT + security verified); all v0.6 phases complete, ready to close milestone
 Resume file: None
 
 ## Operator Next Steps
 
-- Discuss the next v0.6 phase with /gsd-discuss-phase 15
+- Close v0.6 with /gsd-complete-milestone v0.6

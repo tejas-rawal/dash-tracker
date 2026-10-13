@@ -104,10 +104,11 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 - ✓ Live-upstream endpoints (`/predictions`, `/predictions/nearby`, `/predictions/stream`, `/vehicles`) share one 60/min per-IP limit returning 429 + `Retry-After`; in-memory endpoints and probes are never limited — v0.6 Phase 14
 - ✓ Soft-deleted DASH alerts (any non-null `deletedAt`) are dropped at ingestion, and an alert with a malformed date or structurally malformed `activePeriods`/`informedEntities` list is dropped on its own with one warn while the rest of the poll applies (ALRT-12, ALRT-13) — v0.6 Phase 15
 - ✓ Nearby-prediction entries with missing or mistyped display fields (route/stop names and ids, `stopCode`, destination `directionId`/`headsign`) are dropped instead of served (NEAR-12) — v0.6 Phase 15
+- ✓ One client IP holds at most 5 open `/predictions/stream` connections; the 6th gets 429 + `Retry-After: 5`, open streams are never touched, and a slot frees when a stream closes (Phase 14 review WR-02) — v0.6 Phase 16
 
 ### Active
 
-- [ ] One client IP cannot hold more than a small number of SSE prediction streams open (Phase 14 review WR-02, scheduled as Phase 16)
+(none — all v0.6 requirements shipped; production `TRUST_PROXY_HOPS` check tracked in `.planning/DEPLOY-CHECKLIST.md`)
 
 See `.planning/REQUIREMENTS.md` for REQ-IDs.
 
@@ -203,6 +204,7 @@ See `.planning/REQUIREMENTS.md` for REQ-IDs.
 | Alert hygiene lives only in `ServiceAlertService.fetchAlerts()`: deleted alerts drop silently first, then each alert is parsed (list structure, then dates) and a bad one is dropped with one id-naming warn; malformed data is never repaired | One bad DASH record must not freeze every alert update — a failed poll keeps serving the last snapshot, including alerts DASH has since deleted (CR-01) | ✓ Shipped Phase 15 (15-03 gap closure added structural checks, D-16) — a missing alert id still fails the whole poll (D-07) |
 | Upstream alert lists (`activePeriods`, `informedEntities`) are typed `unknown` on the model; only `parseAlert` reads them | The compiler then refuses any unchecked read of upstream structure | ✓ Shipped Phase 15 |
 | The nearby entry guard requires non-empty string names/ids, a finite `stopCode` and non-empty destination `directionId`/`headsign`; no trimming | A rider must never see a stop with no name or a destination with no headsign (v0.5 WR-01) | ✓ Shipped Phase 15 — whitespace-only names still pass (D-11) |
+| Cap concurrent `/predictions/stream` connections at 5 per client IP (IPv6 /56), keyed like the shared 60/min bucket and checked after it | Held-open streams bypassed the per-request bucket and could multiply DASH polls; 5 fits a rider app with a few stops open, and riders behind one shared address sharing 5 is an accepted trade-off (AR-16-02) | ✓ Shipped Phase 16 — live UAT against DASH passed; production proxy-hop check moved to the deploy checklist |
 
 ## Evolution
 
@@ -222,4 +224,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-07 after Phase 15*
+*Last updated: 2026-10-13 after Phase 16*

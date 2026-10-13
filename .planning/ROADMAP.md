@@ -74,7 +74,7 @@ See `.planning/milestones/v0.5-ROADMAP.md` for full phase details.
 - [x] **Phase 13: Resilient Route/Stop Data Lifecycle** - Server listens even when DASH is down at boot, loads route/stop data in the background with backoff (503 until ready), then keeps it fresh on an interval while holding last-good data through failures (completed 2026-10-01)
 - [x] **Phase 14: Health Checks & Rate Limiting** - Liveness and readiness endpoints report process health and route/stop data age; live-upstream endpoints return 429 per client IP while in-memory endpoints stay unlimited (completed 2026-10-07)
 - [x] **Phase 15: Alert & Nearby Data Hygiene** - Soft-deleted and malformed-date alerts never reach riders, and nearby-prediction entries with missing or mistyped display fields are dropped (completed 2026-10-07)
-- [ ] **Phase 16: Concurrent SSE Stream Cap per IP** - One client IP cannot hold more than a small number of prediction streams open, so held-open streams cannot multiply DASH load past the per-IP limit
+- [x] **Phase 16: Concurrent SSE Stream Cap per IP** - One client IP cannot hold more than a small number of prediction streams open, so held-open streams cannot multiply DASH load past the per-IP limit (completed 2026-10-13)
 
 ## Phase Details
 
@@ -227,7 +227,7 @@ Phases execute in numeric order: 12 → 13 → 14 → 15 → 16
 | 13. Resilient Route/Stop Data Lifecycle | v0.6 | 7/7 | Complete    | 2026-10-01 |
 | 14. Health Checks & Rate Limiting | v0.6 | 3/3 | Complete    | 2026-10-07 |
 | 15. Alert & Nearby Data Hygiene | v0.6 | 3/3 | Complete    | 2026-10-07 |
-| 16. Concurrent SSE Stream Cap per IP | v0.6 | 1/1 | In Progress|  |
+| 16. Concurrent SSE Stream Cap per IP | v0.6 | 1/1 | Complete    | 2026-10-13 |
 
 ---
 
