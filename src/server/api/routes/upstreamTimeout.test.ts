@@ -19,23 +19,32 @@ function startBlackholedDash(): Promise<http.Server> {
 }
 
 describe("upstream deadline against a blackholed DASH", () => {
-    let server: http.Server;
+    let dashServer: http.Server;
+    // One server for the file, as in rateLimit.test.ts: a per-request server plus Node 20's keep-alive agent can
+    // land a request on an earlier, closed server.
+    let appServer: http.Server;
     let originalBaseUrl: string | undefined;
     let infoSpy: MockInstance;
     let warnSpy: MockInstance;
     let errorSpy: MockInstance;
 
     beforeAll(async () => {
-        server = await startBlackholedDash();
-        const { port } = server.address() as AddressInfo;
+        dashServer = await startBlackholedDash();
+        const { port } = dashServer.address() as AddressInfo;
         originalBaseUrl = axios.defaults.baseURL;
         axios.defaults.baseURL = `http://127.0.0.1:${port}`;
+        appServer = app.listen(0);
+        await new Promise<void>((resolve) => appServer.once("listening", () => resolve()));
     });
 
     afterAll(async () => {
         axios.defaults.baseURL = originalBaseUrl;
-        server.closeAllConnections();
-        await new Promise<void>((resolve) => server.close(() => resolve()));
+        appServer.closeAllConnections();
+        dashServer.closeAllConnections();
+        await Promise.all([
+            new Promise<void>((resolve) => appServer.close(() => resolve())),
+            new Promise<void>((resolve) => dashServer.close(() => resolve())),
+        ]);
     });
 
     beforeEach(() => {
@@ -65,7 +74,7 @@ describe("upstream deadline against a blackholed DASH", () => {
         const startedAt = performance.now();
 
         // Act
-        const response = await request(app).get("/api/v1/vehicles");
+        const response = await request(appServer).get("/api/v1/vehicles");
 
         // Assert
         const elapsedMs = performance.now() - startedAt;
@@ -85,7 +94,7 @@ describe("upstream deadline against a blackholed DASH", () => {
         const secrets = ["test-api-key", "38.8048", "-77.0469"];
 
         // Act
-        const response = await request(app).get("/api/v1/predictions/nearby?lat=38.8048&lng=-77.0469");
+        const response = await request(appServer).get("/api/v1/predictions/nearby?lat=38.8048&lng=-77.0469");
 
         // Assert
         expect(response.status).toBe(502);
@@ -107,7 +116,7 @@ describe("upstream deadline against a blackholed DASH", () => {
         const startedAt = performance.now();
 
         // Act
-        const response = await request(app).get("/api/v1/predictions?stop=stop-1");
+        const response = await request(appServer).get("/api/v1/predictions?stop=stop-1");
 
         // Assert
         const elapsedMs = performance.now() - startedAt;
@@ -129,9 +138,9 @@ describe("upstream deadline against a blackholed DASH", () => {
 
         // Act
         const responses = await Promise.all([
-            request(app).get("/api/v1/predictions?stop=stop-1"),
-            request(app).get("/api/v1/predictions/nearby?lat=38.8048&lng=-77.0469"),
-            request(app).get("/api/v1/vehicles"),
+            request(appServer).get("/api/v1/predictions?stop=stop-1"),
+            request(appServer).get("/api/v1/predictions/nearby?lat=38.8048&lng=-77.0469"),
+            request(appServer).get("/api/v1/vehicles"),
         ]);
 
         // Assert

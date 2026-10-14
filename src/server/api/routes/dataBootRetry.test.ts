@@ -53,7 +53,10 @@ function startFakeDash(): Promise<http.Server> {
 }
 
 describe("background route/stop data load at boot", () => {
-    let server: http.Server;
+    let dashServer: http.Server;
+    // One server for the file, as in rateLimit.test.ts: a per-request server plus Node 20's keep-alive agent can
+    // land a request on an earlier, closed server.
+    let appServer: http.Server;
     let originalBaseUrl: string | undefined;
     let infoSpy: MockInstance;
     let warnSpy: MockInstance;
@@ -61,16 +64,22 @@ describe("background route/stop data load at boot", () => {
     let service: BusDataRefreshService | undefined;
 
     beforeAll(async () => {
-        server = await startFakeDash();
-        const { port } = server.address() as AddressInfo;
+        dashServer = await startFakeDash();
+        const { port } = dashServer.address() as AddressInfo;
         originalBaseUrl = axios.defaults.baseURL;
         axios.defaults.baseURL = `http://127.0.0.1:${port}`;
+        appServer = app.listen(0);
+        await new Promise<void>((resolve) => appServer.once("listening", () => resolve()));
     });
 
     afterAll(async () => {
         axios.defaults.baseURL = originalBaseUrl;
-        server.closeAllConnections();
-        await new Promise<void>((resolve) => server.close(() => resolve()));
+        appServer.closeAllConnections();
+        dashServer.closeAllConnections();
+        await Promise.all([
+            new Promise<void>((resolve) => appServer.close(() => resolve())),
+            new Promise<void>((resolve) => dashServer.close(() => resolve())),
+        ]);
     });
 
     beforeEach(() => {
@@ -93,7 +102,7 @@ describe("background route/stop data load at boot", () => {
 
         // Act
         service.start();
-        const loadingResponse = await request(app).get("/api/v1/routes/all");
+        const loadingResponse = await request(appServer).get("/api/v1/routes/all");
 
         // Assert
         expect(loadingResponse.status).toBe(503);
@@ -103,8 +112,8 @@ describe("background route/stop data load at boot", () => {
         await vi.waitFor(() => expect(repository.getLoadState().lastLoadedAt).toBeInstanceOf(Date), {
             timeout: 3000,
         });
-        const routesResponse = await request(app).get("/api/v1/routes/all");
-        const stopsResponse = await request(app).get("/api/v1/routes/1A/stops");
+        const routesResponse = await request(appServer).get("/api/v1/routes/all");
+        const stopsResponse = await request(appServer).get("/api/v1/routes/1A/stops");
 
         // Assert
         expect(routesResponse.status).toBe(200);

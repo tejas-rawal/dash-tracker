@@ -83,6 +83,7 @@ describe("live prediction streams across route/stop reloads against a fake DASH"
         originalBaseUrl = axios.defaults.baseURL;
         axios.defaults.baseURL = `http://127.0.0.1:${port}`;
         appServer = app.listen(0);
+        await new Promise<void>((resolve) => appServer.once("listening", () => resolve()));
         appPort = (appServer.address() as AddressInfo).port;
     });
 
@@ -179,7 +180,7 @@ describe("live prediction streams across route/stop reloads against a fake DASH"
 
         // Step 6: the reconnect gets the existing 404 contract, and no zombie loop keeps polling.
         // Act
-        const reconnect = await request(app).get("/api/v1/predictions/stream?stop=stop-1");
+        const reconnect = await request(appServer).get("/api/v1/predictions/stream?stop=stop-1");
         await vi.advanceTimersByTimeAsync(60_000);
         // Assert
         expect(reconnect.status).toBe(404);

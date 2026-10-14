@@ -49,23 +49,32 @@ const routesReply = (routes: ReturnType<typeof makeDashRoute>[]): { status: numb
 });
 
 describe("route/stop data reloads against a fake DASH", () => {
-    let server: http.Server;
+    let dashServer: http.Server;
+    // One server for the file, as in rateLimit.test.ts: a per-request server plus Node 20's keep-alive agent can
+    // land a request on an earlier, closed server.
+    let appServer: http.Server;
     let originalBaseUrl: string | undefined;
     let infoSpy: MockInstance;
     let warnSpy: MockInstance;
     let errorSpy: MockInstance;
 
     beforeAll(async () => {
-        server = await startFakeDash();
-        const { port } = server.address() as AddressInfo;
+        dashServer = await startFakeDash();
+        const { port } = dashServer.address() as AddressInfo;
         originalBaseUrl = axios.defaults.baseURL;
         axios.defaults.baseURL = `http://127.0.0.1:${port}`;
+        appServer = app.listen(0);
+        await new Promise<void>((resolve) => appServer.once("listening", () => resolve()));
     });
 
     afterAll(async () => {
         axios.defaults.baseURL = originalBaseUrl;
-        server.closeAllConnections();
-        await new Promise<void>((resolve) => server.close(() => resolve()));
+        appServer.closeAllConnections();
+        dashServer.closeAllConnections();
+        await Promise.all([
+            new Promise<void>((resolve) => appServer.close(() => resolve())),
+            new Promise<void>((resolve) => dashServer.close(() => resolve())),
+        ]);
     });
 
     beforeEach(() => {
@@ -87,7 +96,7 @@ describe("route/stop data reloads against a fake DASH", () => {
         reply = routesReply([makeDashRoute("route-1", "1A", "stop-1")]);
         // Act
         const firstSummary = await repository.load();
-        const firstResponse = await request(app).get("/api/v1/routes/all");
+        const firstResponse = await request(appServer).get("/api/v1/routes/all");
         const firstState = repository.getLoadState();
         // Assert
         expect(firstSummary).toEqual({ routeCount: 1, stopCount: 1 });
@@ -106,7 +115,7 @@ describe("route/stop data reloads against a fake DASH", () => {
         const emptyLoad = repository.load();
         // Assert
         await expect(emptyLoad).rejects.toThrow("DASH API returned no routes");
-        const emptyResponse = await request(app).get("/api/v1/routes/all");
+        const emptyResponse = await request(appServer).get("/api/v1/routes/all");
         expect(emptyResponse.status).toBe(200);
         expect(emptyResponse.body).toEqual(goodBody);
         const emptyState = repository.getLoadState();
@@ -121,7 +130,7 @@ describe("route/stop data reloads against a fake DASH", () => {
         const unavailableLoad = repository.load();
         // Assert
         await expect(unavailableLoad).rejects.toThrow("DASH API request failed: Request failed with status code 503");
-        const unavailableResponse = await request(app).get("/api/v1/routes/all");
+        const unavailableResponse = await request(appServer).get("/api/v1/routes/all");
         expect(unavailableResponse.status).toBe(200);
         expect(unavailableResponse.body).toEqual(goodBody);
         const unavailableState = repository.getLoadState();
@@ -157,10 +166,10 @@ describe("route/stop data reloads against a fake DASH", () => {
         const malformedLoad = repository.load();
         // Assert
         await expect(malformedLoad).rejects.toThrow("Invalid stop code for stop 'stop-3': 'null'");
-        const malformedResponse = await request(app).get("/api/v1/routes/all");
+        const malformedResponse = await request(appServer).get("/api/v1/routes/all");
         expect(malformedResponse.status).toBe(200);
         expect(malformedResponse.body).toEqual(goodBody);
-        const malformedRouteResponse = await request(app).get("/api/v1/routes/3C");
+        const malformedRouteResponse = await request(appServer).get("/api/v1/routes/3C");
         expect(malformedRouteResponse.status).toBe(404);
         expect(malformedRouteResponse.body).toEqual({ error: "Not Found", details: "Route not found: 3C" });
         const malformedState = repository.getLoadState();
@@ -174,7 +183,7 @@ describe("route/stop data reloads against a fake DASH", () => {
         reply = routesReply([makeDashRoute("route-2", "2B", "stop-2"), makeDashRoute("route-1", "1A", "stop-1")]);
         // Act
         const recoveredSummary = await repository.load();
-        const recoveredResponse = await request(app).get("/api/v1/routes/all");
+        const recoveredResponse = await request(appServer).get("/api/v1/routes/all");
         const recoveredState = repository.getLoadState();
         // Assert
         expect(recoveredSummary).toEqual({ routeCount: 2, stopCount: 2 });

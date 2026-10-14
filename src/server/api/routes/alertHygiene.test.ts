@@ -109,23 +109,32 @@ async function applyAlertsFromDash(): Promise<void> {
 }
 
 describe("service alert hygiene from DASH to rider responses", () => {
-    let server: http.Server;
+    let dashServer: http.Server;
+    // One server for the file, as in rateLimit.test.ts: a per-request server plus Node 20's keep-alive agent can
+    // land a request on an earlier, closed server.
+    let appServer: http.Server;
     let originalBaseUrl: string | undefined;
     let warnSpy: MockInstance;
     let errorSpy: MockInstance;
 
     beforeAll(async () => {
-        server = await startFakeDash();
-        const { port } = server.address() as AddressInfo;
+        dashServer = await startFakeDash();
+        const { port } = dashServer.address() as AddressInfo;
         originalBaseUrl = axios.defaults.baseURL;
         axios.defaults.baseURL = `http://127.0.0.1:${port}`;
         await BusDataRepository.getInstance().load();
+        appServer = app.listen(0);
+        await new Promise<void>((resolve) => appServer.once("listening", () => resolve()));
     });
 
     afterAll(async () => {
         axios.defaults.baseURL = originalBaseUrl;
-        server.closeAllConnections();
-        await new Promise<void>((resolve) => server.close(() => resolve()));
+        appServer.closeAllConnections();
+        dashServer.closeAllConnections();
+        await Promise.all([
+            new Promise<void>((resolve) => appServer.close(() => resolve())),
+            new Promise<void>((resolve) => dashServer.close(() => resolve())),
+        ]);
     });
 
     beforeEach(() => {
@@ -148,7 +157,7 @@ describe("service alert hygiene from DASH to rider responses", () => {
 
         // Act
         await applyAlertsFromDash();
-        const response = await request(app).get("/api/v1/routes/1A");
+        const response = await request(appServer).get("/api/v1/routes/1A");
 
         // Assert
         expect(response.status).toBe(200);
@@ -177,11 +186,11 @@ describe("service alert hygiene from DASH to rider responses", () => {
         // Act
         await applyAlertsFromDash();
         const warnLines = warnSpy.mock.calls.map((call) => call[0]);
-        const route = await request(app).get("/api/v1/routes/1A");
-        const routeList = await request(app).get("/api/v1/routes/all");
-        const routeStops = await request(app).get("/api/v1/routes/1A/stops");
-        const nearbyStops = await request(app).get("/api/v1/stops/nearby?lat=38.8&lng=-77.1");
-        const nearbyPredictions = await request(app).get("/api/v1/predictions/nearby?lat=38.8&lng=-77.1");
+        const route = await request(appServer).get("/api/v1/routes/1A");
+        const routeList = await request(appServer).get("/api/v1/routes/all");
+        const routeStops = await request(appServer).get("/api/v1/routes/1A/stops");
+        const nearbyStops = await request(appServer).get("/api/v1/stops/nearby?lat=38.8&lng=-77.1");
+        const nearbyPredictions = await request(appServer).get("/api/v1/predictions/nearby?lat=38.8&lng=-77.1");
 
         // Assert
         const ids = (alerts: { id: string }[]): string[] => alerts.map((alert) => alert.id);
@@ -239,7 +248,7 @@ describe("service alert hygiene from DASH to rider responses", () => {
             // Act
             poller.start();
             await vi.waitFor(() => expect(activeIds()).toEqual(["alert-new"]));
-            const response = await request(app).get("/api/v1/routes/1A");
+            const response = await request(appServer).get("/api/v1/routes/1A");
             // Assert
             expect(response.status).toBe(200);
             expect(response.body.alerts.map((alert: { id: string }) => alert.id)).toEqual(["alert-new"]);
@@ -278,7 +287,7 @@ describe("service alert hygiene from DASH to rider responses", () => {
             // Act
             poller.start();
             await vi.waitFor(() => expect(activeIds()).toEqual(["alert-new"]));
-            const response = await request(app).get("/api/v1/routes/1A");
+            const response = await request(appServer).get("/api/v1/routes/1A");
             // Assert
             expect(response.status).toBe(200);
             expect(response.body.alerts.map((alert: { id: string }) => alert.id)).toEqual(["alert-new"]);
