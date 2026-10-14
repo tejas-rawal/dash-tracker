@@ -1,5 +1,6 @@
+import type { Server } from "node:http";
 import request from "supertest";
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { NotFoundError } from "../errors";
 import { BusRoute, BusStop, RouteType } from "../models";
 import { RouteDirection } from "../models/RouteDirection";
@@ -39,6 +40,20 @@ const makeRoute = (shortName = "1A") =>
         directions: [new RouteDirection({ id: "d1", title: "Northbound", stops: [makeStop()], headSigns: [] })],
     });
 
+// One server for the file, as in rateLimit.test.ts: a per-request server plus Node 20's keep-alive agent can
+// land a request on an earlier, closed server.
+let server: Server;
+
+beforeAll(async () => {
+    server = app.listen(0);
+    await new Promise<void>((resolve) => server.once("listening", () => resolve()));
+});
+
+afterAll(async () => {
+    server.closeAllConnections();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+});
+
 describe("DI wiring", () => {
     it("invokes createBusRouteService with 2 arguments (route + service-alert repositories)", () => {
         // Assert
@@ -58,7 +73,7 @@ describe("GET /api/v1/routes/all", () => {
         getMockService().getAgencyRoutes.mockReturnValue(routes);
 
         // Act
-        const response = await request(app).get("/api/v1/routes/all");
+        const response = await request(server).get("/api/v1/routes/all");
 
         // Assert
         expect(response.status).toBe(200);
@@ -71,7 +86,7 @@ describe("GET /api/v1/routes/all", () => {
         getMockService().getAgencyRoutes.mockReturnValue([makeRoute("1A")]);
 
         // Act
-        const response = await request(app).get("/api/v1/routes/all");
+        const response = await request(server).get("/api/v1/routes/all");
 
         // Assert
         expect(response.body[0]).toMatchObject({
@@ -88,7 +103,7 @@ describe("GET /api/v1/routes/all", () => {
         getMockService().getAgencyRoutes.mockReturnValue([]);
 
         // Act
-        const response = await request(app).get("/api/v1/routes/all");
+        const response = await request(server).get("/api/v1/routes/all");
 
         // Assert
         expect(response.status).toBe(200);
@@ -102,7 +117,7 @@ describe("GET /api/v1/routes/all", () => {
         });
 
         // Act
-        const response = await request(app).get("/api/v1/routes/all");
+        const response = await request(server).get("/api/v1/routes/all");
 
         // Assert
         expect(response.status).toBe(500);
@@ -121,7 +136,7 @@ describe("GET /api/v1/routes/:shortName", () => {
         getMockService().getAgencyRoute.mockReturnValue(route);
 
         // Act
-        const response = await request(app).get("/api/v1/routes/1A");
+        const response = await request(server).get("/api/v1/routes/1A");
 
         // Assert
         expect(response.status).toBe(200);
@@ -138,7 +153,7 @@ describe("GET /api/v1/routes/:shortName", () => {
         });
 
         // Act
-        const response = await request(app).get("/api/v1/routes/UNKNOWN");
+        const response = await request(server).get("/api/v1/routes/UNKNOWN");
 
         // Assert
         expect(response.status).toBe(404);
@@ -155,7 +170,7 @@ describe("GET /api/v1/routes/:shortName", () => {
         });
 
         // Act
-        const response = await request(app).get("/api/v1/routes/1A");
+        const response = await request(server).get("/api/v1/routes/1A");
 
         // Assert
         expect(response.status).toBe(500);
@@ -172,7 +187,7 @@ describe("GET /api/v1/routes/:shortName", () => {
         getMockService().getAgencyRoute.mockReturnValue(route);
 
         // Act
-        await request(app).get("/api/v1/routes/3C");
+        await request(server).get("/api/v1/routes/3C");
 
         // Assert
         expect(getMockService().getAgencyRoute).toHaveBeenCalledWith("3C");
@@ -186,7 +201,7 @@ describe("GET /api/v1/routes/:shortName/stops", () => {
         getMockStopService().getStopsForRoute.mockReturnValue(body);
 
         // Act
-        const response = await request(app).get("/api/v1/routes/1A/stops");
+        const response = await request(server).get("/api/v1/routes/1A/stops");
 
         // Assert
         expect(response.status).toBe(200);
@@ -200,7 +215,7 @@ describe("GET /api/v1/routes/:shortName/stops", () => {
         });
 
         // Act
-        const response = await request(app).get("/api/v1/routes/UNKNOWN/stops");
+        const response = await request(server).get("/api/v1/routes/UNKNOWN/stops");
 
         // Assert
         expect(response.status).toBe(404);
@@ -215,7 +230,7 @@ describe("GET /api/v1/routes/:shortName/stops", () => {
         getMockStopService().getStopsForRoute.mockReturnValue([]);
 
         // Act
-        await request(app).get("/api/v1/routes/3C/stops");
+        await request(server).get("/api/v1/routes/3C/stops");
 
         // Assert
         expect(getMockStopService().getStopsForRoute).toHaveBeenCalledWith("3C");
@@ -230,7 +245,7 @@ describe("GET /api/v1/routes/:shortName/stops", () => {
         getMockStopService().getStopsForRoute.mockReturnValue(body);
 
         // Act
-        const response = await request(app).get("/api/v1/routes/1A/stops");
+        const response = await request(server).get("/api/v1/routes/1A/stops");
 
         // Assert
         expect(response.body).toHaveLength(2);
@@ -247,7 +262,7 @@ describe("GET /api/v1/routes/:shortName/stops", () => {
         getMockStopService().getStopsForRoute.mockReturnValue(body);
 
         // Act
-        const response = await request(app).get("/api/v1/routes/1A/stops");
+        const response = await request(server).get("/api/v1/routes/1A/stops");
 
         // Assert
         expect(response.body[0].stops).toContainEqual(sharedStop);

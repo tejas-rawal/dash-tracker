@@ -1,5 +1,6 @@
+import type { Server } from "node:http";
 import request from "supertest";
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("../services/StopService", () => ({
     createStopService: vi.fn(() => ({
@@ -16,6 +17,20 @@ import { createStopService } from "../services/StopService";
 // then stopRoutes.ts. Grab the second instance, the one wired to this router.
 const getMockService = () => vi.mocked(createStopService).mock.results[1]?.value;
 
+// One server for the file, as in rateLimit.test.ts: a per-request server plus Node 20's keep-alive agent can
+// land a request on an earlier, closed server.
+let server: Server;
+
+beforeAll(async () => {
+    server = app.listen(0);
+    await new Promise<void>((resolve) => server.once("listening", () => resolve()));
+});
+
+afterAll(async () => {
+    server.closeAllConnections();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+});
+
 describe("DI wiring", () => {
     it("invokes createStopService (this router's instance) with 2 arguments (route + service-alert repositories)", () => {
         // Assert
@@ -30,7 +45,7 @@ describe("GET /api/v1/stops/nearby", () => {
         getMockService().getNearbyStops.mockReturnValue(payload);
 
         // Act
-        const response = await request(app).get("/api/v1/stops/nearby?lat=38.8&lng=-77.1");
+        const response = await request(server).get("/api/v1/stops/nearby?lat=38.8&lng=-77.1");
 
         // Assert
         expect(response.status).toBe(200);
@@ -39,7 +54,7 @@ describe("GET /api/v1/stops/nearby", () => {
 
     it("responds with 400 when lat is omitted", async () => {
         // Arrange & Act
-        const response = await request(app).get("/api/v1/stops/nearby?lng=-77.1");
+        const response = await request(server).get("/api/v1/stops/nearby?lng=-77.1");
 
         // Assert
         expect(response.status).toBe(400);
@@ -51,7 +66,7 @@ describe("GET /api/v1/stops/nearby", () => {
 
     it("responds with 400 when lat is out of range", async () => {
         // Arrange & Act
-        const response = await request(app).get("/api/v1/stops/nearby?lat=95&lng=-77.1");
+        const response = await request(server).get("/api/v1/stops/nearby?lat=95&lng=-77.1");
 
         // Assert
         expect(response.status).toBe(400);
@@ -60,7 +75,7 @@ describe("GET /api/v1/stops/nearby", () => {
 
     it("responds with 400 when lng is out of range", async () => {
         // Arrange & Act
-        const response = await request(app).get("/api/v1/stops/nearby?lat=38.8&lng=-200");
+        const response = await request(server).get("/api/v1/stops/nearby?lat=38.8&lng=-200");
 
         // Assert
         expect(response.status).toBe(400);
@@ -72,7 +87,7 @@ describe("GET /api/v1/stops/nearby", () => {
         getMockService().getNearbyStops.mockReturnValue([]);
 
         // Act
-        await request(app).get("/api/v1/stops/nearby?lat=38.8&lng=-77.1&radius=2&count=5");
+        await request(server).get("/api/v1/stops/nearby?lat=38.8&lng=-77.1&radius=2&count=5");
 
         // Assert
         expect(getMockService().getNearbyStops).toHaveBeenCalledWith(38.8, -77.1, { radius: 2, count: 5 });
@@ -83,7 +98,7 @@ describe("GET /api/v1/stops/nearby", () => {
         getMockService().getNearbyStops.mockReturnValue([]);
 
         // Act
-        const response = await request(app).get("/api/v1/stops/nearby?lat=38.8&lng=-77.1&count=51");
+        const response = await request(server).get("/api/v1/stops/nearby?lat=38.8&lng=-77.1&count=51");
 
         // Assert
         expect(response.status).toBe(200);

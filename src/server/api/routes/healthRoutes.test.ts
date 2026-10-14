@@ -1,5 +1,6 @@
+import type { Server } from "node:http";
 import request from "supertest";
-import { type MockInstance, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { type MockInstance, afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { axios } from "../../config";
 import app from "../../test/app";
 import { BusDataRepository } from "../repositories";
@@ -41,10 +42,24 @@ afterEach(() => {
     vi.restoreAllMocks();
 });
 
+// One server for the file, as in rateLimit.test.ts: a per-request server plus Node 20's keep-alive agent can
+// land a request on an earlier, closed server.
+let server: Server;
+
+beforeAll(async () => {
+    server = app.listen(0);
+    await new Promise<void>((resolve) => server.once("listening", () => resolve()));
+});
+
+afterAll(async () => {
+    server.closeAllConnections();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+});
+
 describe("health probes before the first successful route/stop load", () => {
     it("GET /api/v1/health/ready answers 503 never_loaded with null age and timestamps before any load attempt", async () => {
         // Arrange
-        const client = request(app);
+        const client = request(server);
 
         // Act
         const response = await client.get("/api/v1/health/ready");
@@ -66,7 +81,7 @@ describe("health probes before the first successful route/stop load", () => {
 
     it("GET /api/v1/health/live answers 200 ok before any route/stop load and makes no DASH call", async () => {
         // Arrange
-        const client = request(app);
+        const client = request(server);
 
         // Act
         const response = await client.get("/api/v1/health/live");
@@ -80,7 +95,7 @@ describe("health probes before the first successful route/stop load", () => {
 
     it("HEAD /api/v1/health/live answers 200", async () => {
         // Arrange
-        const client = request(app);
+        const client = request(server);
 
         // Act
         const response = await client.head("/api/v1/health/live");
@@ -98,7 +113,7 @@ describe("health probes before the first successful route/stop load", () => {
 
         // Act
         await expect(BusDataRepository.getInstance().load()).rejects.toThrow();
-        const response = await request(app).get("/api/v1/health/ready");
+        const response = await request(server).get("/api/v1/health/ready");
 
         // Assert
         expect(response.status).toBe(503);
@@ -120,7 +135,7 @@ describe("health probes before the first successful route/stop load", () => {
         const callsAfterFailure = getSpy.mock.calls.length;
 
         // Act
-        const response = await request(app).get("/api/v1/health/live");
+        const response = await request(server).get("/api/v1/health/live");
 
         // Assert
         expect(response.status).toBe(200);
@@ -145,7 +160,7 @@ describe("health probes after a successful route/stop load", () => {
         vi.setSystemTime(T0.getTime() + 90_500);
 
         // Act
-        const response = await request(app).get("/api/v1/health/ready");
+        const response = await request(server).get("/api/v1/health/ready");
 
         // Assert
         expect(response.status).toBe(200);
@@ -166,9 +181,9 @@ describe("health probes after a successful route/stop load", () => {
 
         // Act
         vi.setSystemTime(T0.getTime() + 11_100_000);
-        const atThreshold = await request(app).get("/api/v1/health/ready");
+        const atThreshold = await request(server).get("/api/v1/health/ready");
         vi.setSystemTime(T0.getTime() + 11_100_001);
-        const pastThreshold = await request(app).get("/api/v1/health/ready");
+        const pastThreshold = await request(server).get("/api/v1/health/ready");
 
         // Assert
         expect(atThreshold.status).toBe(200);
@@ -198,7 +213,7 @@ describe("health probes after a successful route/stop load", () => {
         await expect(BusDataRepository.getInstance().load()).rejects.toThrow();
 
         // Act
-        const response = await request(app).get("/api/v1/health/ready");
+        const response = await request(server).get("/api/v1/health/ready");
 
         // Assert
         expect(response.status).toBe(200);
@@ -216,7 +231,9 @@ describe("health probes after a successful route/stop load", () => {
         const callsAfterLoad = getSpy.mock.calls.length;
 
         // Act
-        const responses = await Promise.all(Array.from({ length: 20 }, () => request(app).get("/api/v1/health/live")));
+        const responses = await Promise.all(
+            Array.from({ length: 20 }, () => request(server).get("/api/v1/health/live")),
+        );
 
         // Assert
         for (const response of responses) {
