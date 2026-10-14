@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-10-13)
 Phase: 16
 Plan: Not started
 Status: All phases complete
-Last activity: 2026-10-13 — Phase 16 complete
+Last activity: 2026-10-13 - Completed quick task 261013-r6p: Move the 12 route test files off request(app) onto one long-lived server like rateLimit.test.ts; mark the Phase 12 and Phase 14 deferred items resolved
 
 Progress (v0.6): [██████████] 5/5 phases (100%)
 
@@ -190,6 +190,7 @@ None yet.
 | 260827-j3c | Discard current changes to CLAUDE.md, add Engineering Principles section, remove Core Value/Constraints sections from CLAUDE.md and AGENTS.md | 2026-08-27 | fd24325 | [260827-j3c-discard-current-changes-to-claude-md-add](./quick/260827-j3c-discard-current-changes-to-claude-md-add/) |
 | 260827-jaa | Consolidate root CLAUDE.md and .claude/CLAUDE.md into a single canonical .claude/CLAUDE.md; delete root CLAUDE.md | 2026-08-27 | 09f054c | [260827-jaa-consolidate-root-claude-md-and-claude-cl](./quick/260827-jaa-consolidate-root-claude-md-and-claude-cl/) |
 | 260915-fc8 | Ensure predictions endpoint uses Swiftly real-time predictions API; add vehicle positions endpoint using Swiftly real-time vehicles API | 2026-09-15 | 04a2b66 | [260915-fc8-ensure-predictions-endpoint-uses-swiftly](./quick/260915-fc8-ensure-predictions-endpoint-uses-swiftly/) |
+| 261013-r6p | Move the 12 route test files off request(app) onto one long-lived server like rateLimit.test.ts; mark the Phase 12 and Phase 14 deferred items resolved | 2026-10-13 | d87ba31 | [261013-r6p-move-the-12-route-test-files-off-request](./quick/261013-r6p-move-the-12-route-test-files-off-request/) |
 | 4 | Fix bun run lint failure: Biome format error in .superset/config.json | 2026-09-29 | 9be1043 | — |
 
 ## Deferred Items
