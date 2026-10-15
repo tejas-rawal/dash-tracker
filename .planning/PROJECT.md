@@ -2,7 +2,7 @@
 
 ## What This Is
 
-dash-tracker is a Node.js/Express REST API that proxies and structures data from the DASH public transit API (goswift.ly), exposing bus routes, stop discovery, arrival predictions, active service alerts, and anonymous device-scoped favorites/recents — via both REST and a live Server-Sent Events feed — through a layered architecture (routes → controllers → services → repositories). v0.1 shipped a dev-tooling cleanup (Biome-only lint/format); v0.2 shipped the first real feature set (stop discovery + live SSE predictions); v0.3 added SQLite-backed favorites (routes and stops, no cap) and auto-tracked recents (last 5 per device), both scoped by an anonymous `X-Device-Id` header with no auth system; v0.4 shipped GTFS-RT service alerts, embedded directly into route and stop responses so riders can see when what they're looking at is actually disrupted; Phase 10 (standalone) hardened a live vehicle-positions endpoint; v0.5 added location-based live predictions — one call returns arrivals for every stop around a rider.
+dash-tracker is a Node.js/Express REST API that proxies and structures data from the DASH public transit API (goswift.ly), exposing bus routes, stop discovery, arrival predictions, active service alerts, and anonymous device-scoped favorites/recents — via both REST and a live Server-Sent Events feed — through a layered architecture (routes → controllers → services → repositories). v0.1 shipped a dev-tooling cleanup (Biome-only lint/format); v0.2 shipped the first real feature set (stop discovery + live SSE predictions); v0.3 added SQLite-backed favorites (routes and stops, no cap) and auto-tracked recents (last 5 per device), both scoped by an anonymous `X-Device-Id` header with no auth system; v0.4 shipped GTFS-RT service alerts, embedded directly into route and stop responses so riders can see when what they're looking at is actually disrupted; Phase 10 (standalone) hardened a live vehicle-positions endpoint; v0.5 added location-based live predictions — one call returns arrivals for every stop around a rider; v0.6 hardened the backend for production: bounded DASH calls, a server that boots and heals while DASH is down, health/readiness probes, per-IP rate limiting with a concurrent-stream cap, and stricter alert/nearby data hygiene.
 
 ## Core Value
 
@@ -10,9 +10,34 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 
 ## Current State
 
-**Shipped:** v0.5 Nearby Stop Predictions (2026-09-24). `GET /api/v1/predictions/nearby?lat&lng&radius&number` returns live arrivals for every stop around a rider from one uncached DASH `predictions-near-location` call: stops nearest-first with distance (miles), predictions grouped route → destination, embedded active alerts, and a top-level `generatedAt`. Query params are parsed strictly (400, never clamped; radius ≤ 1mi, number ≤ 10), upstream failures map to 502, and malformed upstream entries are dropped with one warn. Live UAT passed against the real DASH API. Five milestones shipped to date (v0.1 tooling cleanup, v0.2 stop discovery + live SSE predictions, v0.3 favorites/recents, v0.4 service alerts, v0.5 nearby predictions), plus standalone Phase 10 (vehicle positions).
+**Shipped:** v0.6 Solidifying the backend (2026-10-15). The server now stays up, keeps its data current and stays responsive when DASH is slow, down or changing:
+- **Bounded DASH calls:** every call has a deadline (`DASH_API_TIMEOUT_MS`, default 10 s), and a stalled call returns a key-free 502.
+- **Boots without DASH:** the server listens as soon as SQLite opens and loads route/stop data in the background with capped, jittered backoff. Data-dependent endpoints return 503 + `Retry-After` until that first load succeeds. After that it refreshes hourly, and a failed or malformed refresh keeps the last good data.
+- **Health probes:** `/api/v1/health/live` always answers 200. `/api/v1/health/ready` reports the data's age and returns 503 before the first load or once the data goes stale.
+- **Rate limiting:** the four live-DASH routes share one 60/min per-IP limit (express-rate-limit, keyed via `TRUST_PROXY_HOPS`), and `/predictions/stream` also caps each IP at 5 open streams.
+- **Error safety nets:** SSE socket errors and unhandled rejections are logged and cleaned up, and every controller maps errors through one `sendErrorResponse`.
+- **Data hygiene:** soft-deleted or malformed alerts, and nearby entries with missing display fields, never reach riders.
 
-## Current Milestone: v0.6 Solidifying the backend
+853 tests pass with 98.8% statement coverage. Six milestones have shipped to date (v0.1 tooling cleanup, v0.2 stop discovery + live SSE predictions, v0.3 favorites/recents, v0.4 service alerts, v0.5 nearby predictions, v0.6 backend hardening), plus standalone Phase 10 (vehicle positions). Before the first production deploy, work through `.planning/DEPLOY-CHECKLIST.md` (`TRUST_PROXY_HOPS` behind the real proxy).
+
+## Next Milestone Goals
+
+Not yet defined. Start with `/gsd-new-milestone`. Candidates on file:
+- **Production readiness follow-ups from v0.6:**
+  - `DEPLOY-CHECKLIST.md`.
+  - Readiness staying 503 for up to ~1 h after DASH recovers (Phase 14 CR-01).
+  - `trust proxy = 0` silencing express-rate-limit's XFF warning (WR-01).
+  - The `exitAfterLogFlush` "write after end" exit code (Phase 12).
+  - Lenient route/stop numeric parsing (Phase 13 WR-01/WR-02).
+  - The open-start alert-window merge bug (Phase 15 WR-01).
+- **Features:**
+  - NEAR-10 (nearby SSE stream) and NEAR-11 (route filter on nearby predictions).
+  - SEED-002 (schedule adherence).
+  - SEED-001 follow-ups.
+  - The Expo/React Native frontend.
+
+<details>
+<summary>Archived: v0.6 Solidifying the backend milestone goal (shipped 2026-10-15)</summary>
 
 **Goal:** The server stays up, stays current, and stays responsive when DASH is slow, down, or changing — and can tell a host or load balancer whether it is healthy.
 
@@ -25,7 +50,7 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 - Per-IP rate limiting (429) on the live-upstream endpoints: nearby predictions, predictions, vehicles
 - Carried-forward tech debt: filter soft-deleted (`deletedAt`) alerts, stop `isAlertActive` failing open on malformed dates (Phase 9 WR-02), type-check display fields in the nearby entry guard (v0.5 WR-01)
 
-**Still on file for later:** NEAR-10/NEAR-11 (nearby SSE + route filter), SEED-002 (schedule adherence), the Expo/React Native frontend.
+</details>
 
 <details>
 <summary>Archived: v0.5 Nearby Stop Predictions milestone goal (shipped 2026-09-24)</summary>
@@ -108,9 +133,9 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 
 ### Active
 
-(none — all v0.6 requirements shipped; production `TRUST_PROXY_HOPS` check tracked in `.planning/DEPLOY-CHECKLIST.md`)
+(none — v0.6 shipped; the next milestone's requirements are defined by `/gsd-new-milestone`. The production `TRUST_PROXY_HOPS` check is tracked in `.planning/DEPLOY-CHECKLIST.md`.)
 
-See `.planning/REQUIREMENTS.md` for REQ-IDs.
+v0.6 REQ-IDs are archived in `.planning/milestones/v0.6-REQUIREMENTS.md`.
 
 ### Out of Scope
 
@@ -125,6 +150,10 @@ See `.planning/REQUIREMENTS.md` for REQ-IDs.
 - Logging nearby-prediction lookups as device recents — recents stay tied to explicit stop/route lookups
 - Pushing alert updates over the SSE prediction stream — SSE carries prediction updates only; alerts stay REST-only for now
 - Embedding active alerts on `GET /api/v1/predictions` (REST) responses (ALRT-09) — deferred to v2; a stop/route's own response already carries its active alerts via Phase 9's embedding, so a duplicate flag/array on the predictions response was judged redundant — Phase 9 D-05
+- Distributed / shared-store rate limiting (e.g. Redis) — single-process deployment; the in-memory per-IP limiter and stream cap are sufficient (v0.6)
+- Metrics / APM export (Prometheus, OpenTelemetry) — liveness + readiness probes cover the host/load-balancer need (v0.6)
+- Upstream response caching or request coalescing for live endpoints — v0.6 chose per-IP limiting only; tracked as UPST-03
+- Exiting the process when DASH is down at boot — replaced in v0.6 by listen-immediately + background retry with 503 readiness gating
 
 ## Context
 
@@ -142,16 +171,23 @@ See `.planning/REQUIREMENTS.md` for REQ-IDs.
 - Shipped v0.3 Phase 7 (2026-09-01): automatic recents tracking — every prediction lookup fire-and-forget-logs its stop (and, when an explicit route filter is given, its route) as a recent via `FavoritesRecentsRepository`, capped at 5 combined entries per device (oldest-evicted-first), listable via `GET /api/v1/recents` (`RecentsService`/`RecentsController`, mirroring the Phase 6 Favorites pattern); SSE stream path untouched; 313/313 tests pass. Code review caught a pre-ship BLOCKER (CR-01): route recents were written keyed by the client-supplied route *short name* (e.g. `"1A"`) but read back via `getRouteById`, which is keyed by internal route id — every route recent silently vanished from the response. Fixed same-session by resolving short name → internal id (`getRouteByShortName(...)?.id`) before persisting, matching the convention `FavoritesService`/`RecentsService.resolveEntity` already assumes for routes.
 - Known tech debt (v0.3 Phase 7): `RecentsController.resolveDeviceId` unsafely casts the device-id header to `string` with no in-controller guard (relies entirely on `requireDeviceId` middleware ordering); its `NotFoundError`→404 branch is currently unreachable since `RecentsService.listRecents` never throws; device-id header parsing logic is duplicated across `RecentsController`/`PredictionController`/`requireDeviceId` middleware/`FavoritesController`; the recents cap (`5`) is a magic number embedded in a SQL string rather than a named constant; `resolveEntity` is duplicated verbatim between `RecentsService` and `FavoritesService` — all non-blocking, flagged as WR-02/WR-03/IN-01/IN-02/IN-03 in `.planning/milestones/v0.3-phases/07-recents-routes-stops/07-REVIEW.md`
 - Known tech debt (Phase 9): `RouteWithAlerts` (`BusRoute & { alerts }`) is built via object spread over a `BusRoute` class instance, which loses its prototype methods (`getAllStops`, `getDirectionById`) even though the static type doesn't reflect that — a latent type-unsoundness (WR-01 in `09-REVIEW.md`), no live call site hits it today
-- Known tech debt (Phase 9): `ServiceAlertRepository.isAlertActive`'s date-boundary checks fail open (treat the alert as active) on a malformed `activePeriod` date string rather than excluding/logging it, since `NaN` comparisons are always false (WR-02 in `09-REVIEW.md`)
+- Known tech debt (Phase 9): `ServiceAlertRepository.isAlertActive`'s date-boundary checks fail open (treat the alert as active) on a malformed `activePeriod` date string rather than excluding/logging it, since `NaN` comparisons are always false (WR-02 in `09-REVIEW.md`) — closed in v0.6 Phase 15 (ALRT-13: malformed dates now drop the alert with a warn)
 - v0.4 originates from a planted seed (SEED-001) captured in a prior session, itself from research over the Swiftly API docs cross-checked against the DASH real-time API already integrated here; this worktree treated v0.4 as the next milestone after v0.2 independent of the then-unmerged v0.3 (Favorited & Recent Routes) branch — v0.4's phases were renumbered from 5-6 to 8-9 when both branches were merged into `main`, to keep phase numbering continuous
 - Shipped v0.4 Phase 8 (2026-09-04): `ServiceAlertService`/`ServiceAlertRepository`/`ServiceAlertPollService` ingest GTFS-RT service alerts from DASH/Swiftly's `gtfs-rt-alerts/v2?format=json` endpoint on a dedicated 5-minute poll, independent of the 30s prediction poll; alerts are filtered to only the currently-active window in-memory. Took 6 gap-closure rounds to reach the real live payload shape — the endpoint is a flat, custom Swiftly/Alexandria JSON format (bare top-level array, camelCase fields, ISO-8601 dates), not the nested GTFS-RT-protobuf-derived `{entities:[...]}` envelope with `{translation:[...]}` wrappers that early rounds assumed from an unreliable auto-generated API-doc example. Ingestion-only phase — no HTTP surface yet, wired into responses in Phase 9. 255/255 tests pass, `bun run build` clean, 0 open security threats (12/12 closed, see `08-SECURITY.md`)
 - Shipped v0.4 Phase 9 (2026-09-08), completing the v0.4 milestone: alerts embedded onto `GET /api/v1/routes/all`, `/routes/:shortName`, `/routes/:shortName/stops`, and `/stops/nearby` via a new trimmed `ServiceAlertSummary` response type and `ServiceAlertRepository.getActiveAlertsForRoute`/`getActiveAlertsForStop`, wired into `BusRouteService`/`StopService` via factory-DI. ALRT-09 (predictions) was descoped mid-phase to v2 — a route/stop's own response already carries its alerts, making a predictions-side duplicate redundant. 283/283 tests pass, 98% coverage, 0 open security threats (6/6 closed, see `09-SECURITY.md`). Code review surfaced 2 non-blocking warnings carried forward as tech debt (see Constraints/tech-debt note below). Human UAT confirmed the atomic Map-swap concurrency reasoning for the 5-minute alert-refresh poll.
 - Shipped v0.5 (2026-09-24), one phase (Phase 11, 3 plans): `NearbyPredictionService`/`NearbyPredictionController` plus a shared `predictionMapping` module reused by `PredictionService`. The live `predictions-near-location` shape was captured before the `Dash*` types were locked (applying the Phase 8 lesson). The first verification found a gap (CR-01: a null prediction element returned 500 for every stop), which gap-closure plan 11-03 fixed. 520/520 tests, 98.3% statements / 93.7% branches, 0 open security threats (16/16 closed). Live UAT confirmed the nearby stop IDs share the `BusStop.id` space, so alert embedding works on live data.
 - Shipped v0.6 Phase 12 (2026-09-29/30): every DASH call goes through one bounded client (`DASH_API_TIMEOUT_MS`, Zod-validated, default 10000, max 2,147,483,647) and fails as a key-free 502 instead of hanging; startup load and alert poll log timeouts instead of hanging. SSE response errors are logged and cleaned up like a disconnect; process handlers log unhandled rejections (stay up) and uncaught exceptions (exit 1). Graceful shutdown now force-closes SSE connections after a 10 s grace period and exits 1 if the repository close fails. Closes v0.2 WR-05 and v0.5 WR-02. Code review found 5 warnings and 4 info items, all fixed; 561/561 tests, 22/22 UAT, 0 open security threats (18/18 closed), re-verification passed 31/31.
 - Shipped v0.6 Phase 13 (2026-10-01, 7 plans incl. 2 gap-closure): the server listens as soon as SQLite is open and loads route/stop data in the background (`BusDataRefreshService`: equal-jitter backoff 1 s → 60 s cap until first success, then hourly). Until the first load, every route/stop-dependent endpoint returns 503 + `Retry-After: 5` via one shared `sendErrorResponse` helper used by all 8 controllers (generic 500 body, no echoed error text). `BusDataRepository.load()` is the single atomic load path: empty, errored or malformed refreshes (absent/null/non-finite stop code/lat/lon, missing/empty ids) change nothing and record `lastFailedAt`/`lastError`. A reload that drops a stop ends that stop's SSE streams on the next tick (reconnect gets 404). 670/670 tests; re-verification passed 19/19.
+- Shipped v0.6 (2026-10-15): 5 phases (12–16), 18 plans and 46 tasks, 160 commits from 2026-09-28 to 2026-10-13.
+  - Phase 14 added health/readiness probes and one shared 60/min per-IP limiter with `TRUST_PROXY_HOPS`.
+  - Phase 15 added alert and nearby-entry hygiene.
+  - Phase 16 added the 5-concurrent-stream cap per IP.
+  - Quick task 261013-r6p moved every route test onto one long-lived server per file, so keep-alive sockets cannot cross between per-request servers.
+  - Final state: 853/853 tests, 98.78% statements / 96.48% branches; lint and build pass.
+  - v0.6 phase artifacts are archived in `.planning/milestones/v0.6-phases/`; the open review findings are listed under Next Milestone Goals and in STATE.md Blockers/Concerns.
 - Known tech debt (v0.6 Phase 13, see `13-REVIEW.md`): WR-01, route/stop numeric fields are parsed with `parseInt`/`parseFloat` (`"12abc"` → 12, `"101.7"` → 101) and lat/lon are not range-checked; WR-02, string fields are unchecked — a numeric `shortName` is listed by `/routes/all` but 404s on `/routes/:shortName`, and a missing stop `name` is dropped from responses (fix by coercing, not rejecting); prior WR-03 (readiness signal) is Phase 14's HLTH-02; no guard against overlapping `load()` calls (IN-03)
 - Known tech debt (v0.6 Phase 12, see `12-VERIFICATION.md`): `exitAfterLogFlush` calls `logger.end()` and then waits; any log call in that window (a second uncaught exception in the same tick, or other logging while stdout is slow) hits Winston's unhandled "write after end" error and the process exits 7 instead of 1, sometimes losing the crash reason. Still non-zero, so a supervisor restarts it. Fix: attach an error listener before `logger.end()`, or skip `logger.end()` and wait only for stdout
-- Known tech debt (v0.5 Phase 11, see `.planning/milestones/v0.5-phases/11-nearby-stop-predictions/11-REVIEW.md`): WR-01, the nearby entry guard doesn't type-check display fields (`stopName`, `routeShortName`, `headsign`, …) or `agencyKey`, so an entry missing `stopName` is served with no `name` key; WR-02, the shared axios instance has no timeout, so a blackholed upstream leaves nearby requests pending (closed in v0.6 Phase 12); WR-03, one malformed element drops its whole entry, and if that is a stop's only entry, the stop's locally sourced alerts go with it; IN-01..IN-04, minor cleanup and test gaps
+- Known tech debt (v0.5 Phase 11, see `.planning/milestones/v0.5-phases/11-nearby-stop-predictions/11-REVIEW.md`): WR-01, the nearby entry guard doesn't type-check display fields (`stopName`, `routeShortName`, `headsign`, …) or `agencyKey`, so an entry missing `stopName` is served with no `name` key; WR-02, the shared axios instance has no timeout, so a blackholed upstream leaves nearby requests pending (closed in v0.6 Phase 12); WR-03, one malformed element drops its whole entry, and if that is a stop's only entry, the stop's locally sourced alerts go with it; IN-01..IN-04, minor cleanup and test gaps. WR-01 closed in v0.6 Phase 15 (NEAR-12)
 
 ## Constraints
 
@@ -224,4 +260,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-13 after Phase 16*
+*Last updated: 2026-10-15 after v0.6 milestone*
