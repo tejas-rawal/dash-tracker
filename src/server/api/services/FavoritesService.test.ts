@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { NotFoundError } from "../errors";
+import { DataNotReadyError, NotFoundError } from "../errors";
 import { BusRoute, BusStop, type FavoriteRecord, RouteType } from "../models";
 import { createFavoritesService } from "./FavoritesService";
 
@@ -109,6 +109,20 @@ describe("FavoritesService", () => {
 
             // Assert
             expect(mockFavoritesRepo.upsertFavorite).toHaveBeenCalledWith("device-a", "route", "route-1");
+        });
+
+        it("addFavorite rejects with DataNotReadyError and never writes when route/stop data has not loaded", async () => {
+            // Arrange
+            const mockFavoritesRepo = makeMockFavoritesRepository();
+            const mockBusDataRepo = makeMockBusDataRepository();
+            mockBusDataRepo.getRouteById.mockImplementation(() => {
+                throw new DataNotReadyError("Route and stop data is still loading");
+            });
+            const { addFavorite } = createFavoritesService(mockFavoritesRepo as never, mockBusDataRepo as never);
+
+            // Act & Assert
+            await expect(addFavorite("device-a", "route", "route-1")).rejects.toBeInstanceOf(DataNotReadyError);
+            expect(mockFavoritesRepo.upsertFavorite).not.toHaveBeenCalled();
         });
     });
 
@@ -259,6 +273,22 @@ describe("FavoritesService", () => {
 
             // Assert
             expect(result).toHaveLength(100);
+        });
+
+        it("listFavorites rejects with DataNotReadyError instead of dropping entries when route/stop data has not loaded", async () => {
+            // Arrange
+            const mockFavoritesRepo = makeMockFavoritesRepository();
+            const mockBusDataRepo = makeMockBusDataRepository();
+            mockFavoritesRepo.listFavorites.mockResolvedValue([
+                makeFavoriteRecord("stop", "stop-1", "2026-08-31T10:00:00.000Z"),
+            ]);
+            mockBusDataRepo.getStopById.mockImplementation(() => {
+                throw new DataNotReadyError("Route and stop data is still loading");
+            });
+            const { listFavorites } = createFavoritesService(mockFavoritesRepo as never, mockBusDataRepo as never);
+
+            // Act & Assert
+            await expect(listFavorites("device-a")).rejects.toBeInstanceOf(DataNotReadyError);
         });
     });
 });

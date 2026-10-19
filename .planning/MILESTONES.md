@@ -1,5 +1,26 @@
 # Milestones
 
+## v0.6 Solidifying the backend (Shipped: 2026-10-15)
+
+**Phases completed:** 5 phases, 18 plans, 46 tasks
+
+**Key accomplishments:**
+
+- No DASH call can hang any more. The shared axios client gives every request a deadline from the Zod-validated `DASH_API_TIMEOUT_MS` (default 10000 ms), and one interceptor turns timeouts and transport failures into a message-only `UpstreamApiError`. Live endpoints answer 502, and a stalled startup load or alert poll is logged instead of hanging.
+- Errors that used to escape are now caught. SSE response errors are logged and run the same once-only cleanup a disconnect does. `unhandledRejection` is logged and the server stays up. `uncaughtException` is logged, then the process exits 1. All 8 controllers map errors through one `sendErrorResponse` helper, and none echoes thrown text in a 500.
+- The server boots even when DASH is down. It listens as soon as SQLite opens, then loads route/stop data in the background with capped, jittered backoff until the first success, then refreshes hourly. Data-dependent endpoints answer 503 with `Retry-After: 5` until that first load. `BusDataRepository.load()` swaps in a complete, validated dataset in one step or changes nothing, so the last good copy keeps serving. Streams on a stop that a reload drops end on their next tick.
+- Hosts and load balancers can probe the server. `GET /api/v1/health/live` always answers 200. `GET /api/v1/health/ready` reports the data's age and answers 503 before the first load or once the data goes stale. Neither probe ever calls DASH.
+- Live DASH load is bounded per client IP. A shared limit of 60 requests per minute (express-rate-limit 8.7.0) covers `/predictions`, `/predictions/nearby`, `/predictions/stream` and `/vehicles`, and answers 429 with `Retry-After`. A separate cap allows 5 concurrent open prediction streams per IP. Both key on the client IP that `TRUST_PROXY_HOPS` resolves. In-memory endpoints and the health probes are never limited.
+- Bad data no longer reaches riders. Soft-deleted alerts and alerts with malformed dates or lists are dropped one at a time, with no effect on the rest of the poll. Nearby-prediction entries with a missing or mistyped name, ID, stop code or headsign are dropped.
+
+**Stats:** 160 commits, 163 files changed (+25,506 / −704), 72 `src/` files (+7,332 / −622); 853 tests, 98.78% statement coverage; timeline 2026-09-28 → 2026-10-13.
+
+**Closeout:** override_closeout. The milestone audit was skipped by user choice, as for v0.1–v0.5. The VERIFICATION.md reports for Phases 12–15 all say passed, but they are flagged stale because later phases and quick task 261013-r6p edited files they covered. On 2026-10-15 the full suite (853/853), coverage, lint and build all passed. Phase 16 is verified and current. Two deferred items (Phase 12 lint, Phase 14 `request(app)`) were fixed by quick task 261013-r6p before the close.
+
+Known verification overrides: 4 newly recorded (stale verification for Phases 12–15), 0 open audit items newly acknowledged, 2 carried forward from a prior close (see STATE.md Deferred Items)
+
+---
+
 ## v0.5 Nearby Stop Predictions (Shipped: 2026-09-24)
 
 **Phases completed:** 1 phases, 3 plans, 6 tasks

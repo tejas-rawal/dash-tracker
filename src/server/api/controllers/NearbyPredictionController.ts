@@ -1,6 +1,6 @@
 import type { Request, RequestHandler, Response } from "express";
-import { UpstreamApiError } from "../errors";
 import type { NearbyPredictionService } from "../services/NearbyPredictionService";
+import { sendErrorResponse } from "./errorResponse";
 
 export interface NearbyPredictionController {
     getNearbyPredictions: RequestHandler;
@@ -35,16 +35,6 @@ function parseNumberParam(raw: unknown): number | undefined {
     return parsed !== undefined && Number.isInteger(parsed) && parsed >= 1 && parsed <= MAX_PREDICTIONS_PER_DESTINATION
         ? parsed
         : undefined;
-}
-
-function resolveErrorStatus(error: unknown): number {
-    return error instanceof UpstreamApiError ? 502 : 500;
-}
-
-function resolveErrorBody(error: unknown): { error: string; details: string } {
-    const details = error instanceof Error ? error.message : "Unknown error";
-    const label = error instanceof UpstreamApiError ? "Bad Gateway" : "Request Failed";
-    return { error: label, details };
 }
 
 export function createNearbyPredictionController(service: NearbyPredictionService): NearbyPredictionController {
@@ -88,7 +78,7 @@ export function createNearbyPredictionController(service: NearbyPredictionServic
             const result = await service.getNearbyPredictions(lat, lng, { radius, number });
             res.json(result);
         } catch (error: unknown) {
-            res.status(resolveErrorStatus(error)).json(resolveErrorBody(error));
+            sendErrorResponse(res, error);
         }
     };
 

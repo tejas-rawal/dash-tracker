@@ -1,22 +1,9 @@
 import type { Request, RequestHandler, Response } from "express";
-import { NotFoundError } from "../errors";
 import type { RecentsService } from "../services/RecentsService";
+import { sendErrorResponse } from "./errorResponse";
 
 export interface RecentsController {
     listRecents: RequestHandler;
-}
-
-function resolveErrorStatus(error: unknown): number {
-    if (error instanceof NotFoundError) {
-        return 404;
-    }
-    return 500;
-}
-
-function resolveErrorBody(error: unknown): { error: string; details: string } {
-    const details = error instanceof Error ? error.message : "Unknown error";
-    const label = error instanceof NotFoundError ? "Not Found" : "Request Failed";
-    return { error: label, details };
 }
 
 function resolveDeviceId(req: Request): string {
@@ -30,7 +17,7 @@ export function createRecentsController(service: RecentsService): RecentsControl
             const result = await service.listRecents(resolveDeviceId(req));
             res.json(result);
         } catch (error: unknown) {
-            res.status(resolveErrorStatus(error)).json(resolveErrorBody(error));
+            sendErrorResponse(res, error);
         }
     };
 

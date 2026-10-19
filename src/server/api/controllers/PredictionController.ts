@@ -1,6 +1,6 @@
 import type { Request, RequestHandler, Response } from "express";
-import { NotFoundError, UpstreamApiError } from "../errors";
 import type { PredictionService } from "../services/PredictionService";
+import { sendErrorResponse } from "./errorResponse";
 
 export interface PredictionController {
     getPredictions: RequestHandler;
@@ -18,29 +18,6 @@ function resolveOptionalDeviceId(req: Request): string | undefined {
     const raw = req.headers["x-device-id"];
     const value = Array.isArray(raw) ? raw[0] : raw;
     return value !== undefined && value.trim().length > 0 ? value : undefined;
-}
-
-function resolveErrorStatus(error: unknown): number {
-    if (error instanceof NotFoundError) {
-        return 404;
-    }
-    if (error instanceof UpstreamApiError) {
-        return 502;
-    }
-    return 500;
-}
-
-function resolveErrorBody(error: unknown): { error: string; details: string } {
-    const details = error instanceof Error ? error.message : "Unknown error";
-    let label: string;
-    if (error instanceof NotFoundError) {
-        label = "Not Found";
-    } else if (error instanceof UpstreamApiError) {
-        label = "Bad Gateway";
-    } else {
-        label = "Request Failed";
-    }
-    return { error: label, details };
 }
 
 export function createPredictionController(service: PredictionService): PredictionController {
@@ -67,7 +44,7 @@ export function createPredictionController(service: PredictionService): Predicti
             });
             res.json(result);
         } catch (error: unknown) {
-            res.status(resolveErrorStatus(error)).json(resolveErrorBody(error));
+            sendErrorResponse(res, error);
         }
     };
 

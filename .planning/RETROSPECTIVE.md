@@ -179,6 +179,45 @@
 
 ---
 
+## Milestone: v0.6 — Solidifying the backend
+
+**Shipped:** 2026-10-15
+**Phases:** 5 | **Plans:** 18
+
+### What Was Built
+- A bounded shared DASH client: every request has a `DASH_API_TIMEOUT_MS` deadline, and one interceptor turns transport failures into a message-only `UpstreamApiError` (502). SSE `res` errors and process-level rejections are logged and cleaned up.
+- A resilient data lifecycle: the server listens before DASH loads, and a background loader uses capped, jittered backoff and then refreshes hourly. `BusDataRepository.load()` is atomic. The 503 + `Retry-After` responses before the first load all go through one `sendErrorResponse` used by all 8 controllers.
+- Liveness and readiness probes. One shared 60/min per-IP limiter (express-rate-limit 8.7.0), keyed on the IP that `TRUST_PROXY_HOPS` resolves, plus a cap of 5 concurrent streams per IP on `/predictions/stream`.
+- Alert hygiene (soft-deleted alerts and malformed dates or lists are dropped one at a time) and a nearby entry guard that checks every display field.
+
+### What Worked
+- Proving behavior against a real blackholed or refused fake DASH server and a real app server. Unit mocks would have missed the timeout and boot-order bugs that these end-to-end tests caught.
+- Gap closure stayed small and targeted: 13-06 and 13-07 for review WR-02 and WR-01, and 15-03 for CR-01. Each added one plan, not a rework round.
+- UAT turned a review finding into a scoped phase. Phase 14's WR-02 (open streams not counted) became Phase 16, and a production-only check went into `.planning/DEPLOY-CHECKLIST.md` rather than blocking UAT.
+
+### What Was Inefficient
+- For the second milestone in a row, the close needed a verification override. Phases 12–15 verified against files that later phases kept editing (`app.ts`, `REQUIREMENTS.md`, shared route tests), so their fingerprints went stale even though nothing regressed.
+- Deferred items fell behind the code. The Phase 12 lint item was fixed on 2026-09-29 (`9be1043`) but stayed open until the close. Fixing the Phase 14 `request(app)` debt took a separate quick task at close time.
+- Local HEAD ran ahead of `origin`, so worktree isolation fell back to sequential execution, and the isolation sentinel had to be re-recorded by hand.
+
+### Patterns Established
+- Each route test file starts one long-lived server and closes it with `closeAllConnections()`; supertest is never handed the bare app (quick task 261013-r6p).
+- Errors from DASH are always message-only, never the axios error object, which carries `DASH_API_KEY`. Controllers map every error through one `sendErrorResponse`.
+- A loader either swaps in a complete, validated dataset in one step or changes nothing, and it records `lastLoadedAt`/`lastFailedAt`/`lastError`.
+- Malformed upstream records are dropped one at a time with one id-naming warn, and never repaired.
+
+### Key Lessons
+- Mark a deferred item resolved in the same commit that fixes it. An entry left stale blocks the milestone close later.
+- When a later phase edits files an earlier phase's verification covered, re-run that verification before closing, or expect an override. A green full-suite run at close is the evidence that makes the override safe.
+- Push local `main` before dispatching isolated agents (this repeats Top Lesson 1).
+
+### Cost Observations
+- Model mix: not tracked
+- Sessions: not tracked
+- Notable: execution was 2–6 min per plan across 18 plans. As in v0.5, most wall time went to review, gap closure, verification and UAT.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -190,6 +229,7 @@
 | v0.3 | not tracked | 3 | First milestone with persistence (SQLite); first milestone where code review caught a pre-ship BLOCKER (write/read key mismatch) that unit tests missed entirely |
 | v0.4 | not tracked | 2 | First milestone with a multi-round (6x) gap-closure cycle driven by an unverified live third-party API shape |
 | v0.5 | not tracked | 1 | Live payload captured before DTO lock-in, so no shape rework; one gap-closure plan driven by route-level adversarial verification |
+| v0.6 | not tracked | 5 | First hardening milestone; first phase inserted from UAT (Phase 16); first deploy checklist; deferred items fixed by a quick task before close |
 
 ### Cumulative Quality
 
@@ -200,6 +240,7 @@
 | v0.3 | 313 | 80% threshold enforced repo-wide | 1 (`better-sqlite3`, vetted via a dedicated package-legitimacy checkpoint) |
 | v0.4 | 283 | 98% on new code; 80% threshold enforced repo-wide | 0 (no new dependencies — alerts built on existing axios/repository pattern) |
 | v0.5 | 520 | 98.3% statements / 93.7% branches repo-wide | 0 (no new dependencies — hand-rolled guard, no Zod, per D-18) |
+| v0.6 | 853 | 98.78% statements / 96.48% branches repo-wide | 1 (`express-rate-limit@8.7.0`, exact pin, vetted via a package-legitimacy checkpoint) |
 
 ### Top Lessons (Verified Across Milestones)
 
@@ -208,4 +249,5 @@
 3. Unit tests run against mocks in isolation cannot catch a write-path/read-path key mismatch (e.g. short name vs. internal id) — only an end-to-end data-flow trace or a real round-trip integration test will, and this bit v0.3's Recents feature as a pre-ship BLOCKER (CR-01)
 4. Unit tests that mock a third-party HTTP client directly give zero coverage of that client's own response-transform behavior — an unconfirmed live API response shape needs a real capture, not more hand-picked fixtures
 5. Treat an API reference/doc-generator example with all-placeholder values as unconfirmed evidence, not ground truth, until checked against a live response
-6. Validate upstream data down to every element the mapper dereferences. A container-level guard lets one malformed element fail the whole response (v0.5 CR-01)
+6. Validate upstream data down to every element the mapper dereferences. A container-level guard lets one malformed element fail the whole response (v0.5 CR-01; reapplied to alerts and nearby display fields in v0.6 Phase 15)
+7. Prove failure handling against a real misbehaving upstream (blackholed or refused fake server), not mocks: timeouts, boot order and stream teardown bugs only showed end to end (v0.6)

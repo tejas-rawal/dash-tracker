@@ -1,6 +1,7 @@
 import { Router } from "express";
 import busRoutes from "./busRoutes";
 import favoriteRoutes from "./favoriteRoutes";
+import healthRoutes from "./healthRoutes";
 import predictionRoutes from "./predictionRoutes";
 import recentRoutes from "./recentRoutes";
 import stopRoutes from "./stopRoutes";
@@ -14,5 +15,6 @@ router.use("/stops", stopRoutes);
 router.use("/favorites", favoriteRoutes);
 router.use("/recents", recentRoutes);
 router.use("/vehicles", vehicleRoutes);
+router.use("/health", healthRoutes);
 
 export default router;

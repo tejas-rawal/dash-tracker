@@ -1,36 +1,36 @@
 ---
 gsd_state_version: "1.0"
-milestone: v0.5
-status: "v0.5 shipped — PR #15"
-stopped_at: v0.5 milestone archived and tagged
-last_updated: "2026-09-24T18:09:18.728Z"
-last_activity: 2026-09-24
-state_head: 6d9791adbfac1e24a713d99fc346533b85bc05d4
+milestone: v0.6
+status: "Milestone v0.6 shipped — PR #16"
+stopped_at: Phase 16 complete — all phases complete
+last_updated: "2026-10-19T16:55:02.736Z"
+last_activity: 2026-10-19
+state_head: bf275a615615e89b77166362ca9d07b5ad824b0e
 progress:
-  total_phases: 2
-  completed_phases: 11
-  total_plans: 3
-  completed_plans: 3
+  total_phases: 5
+  completed_phases: 16
+  total_plans: 18
+  completed_plans: 18
   percent: 100
-milestone_name: Nearby Stop Predictions
-current_phase: 11
+milestone_name: Solidifying the backend
+current_phase: 16
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-24)
+See: .planning/PROJECT.md (updated 2026-10-15)
 
 **Core value:** Riders can always see accurate, near-real-time arrival predictions for their stop.
-**Current focus:** Planning next milestone (v0.5 shipped 2026-09-24)
+**Current focus:** Planning next milestone (v0.6 shipped 2026-10-15; start with /gsd-new-milestone)
 
 ## Current Position
 
-Phase: Milestone v0.5 complete
+Phase: Milestone v0.6 complete
 Plan: —
-Status: v0.5 shipped — PR #15
-Last activity: 2026-09-24
+Status: Milestone v0.6 shipped — PR #16
+Last activity: 2026-10-19 — Milestone v0.6 shipped as PR #16 (Phases 13 and 15 security-verified first)
 
 ## Performance Metrics
 
@@ -55,6 +55,11 @@ Last activity: 2026-09-24
 | 9 (v0.4) | 2 | - | - |
 | 10 (standalone) | 1 | - | - |
 | 11 (v0.5) | 3 | 14min | 5min |
+| 12 | 4 | - | - |
+| 13 | 7 | - | - |
+| 14 | 3 | - | - |
+| 15 | 3 | - | - |
+| 16 | 1 | - | - |
 
 **Recent Trend:**
 
@@ -72,38 +77,27 @@ Last activity: 2026-09-24
 | Phase 11 P01 | 5min | 2 tasks | 9 files |
 | Phase 11 P02 | 4min | 2 tasks | 3 files |
 | Phase 11 P03 | 5min | 2 tasks | 3 files |
+| Phase 12 P01 | 2min | 2 tasks | 7 files |
+| Phase 12 P03 | 3min | 2 tasks | 2 files |
+| Phase 12 P04 | 3min | 2 tasks | 4 files |
+| Phase 12 P02 | 3min | 2 tasks | 4 files |
+| Phase 13 P01 | 3min | 3 tasks | 9 files |
+| Phase 13 P02 | 2min | 3 tasks | 9 files |
+| Phase 13 P03 | 3 min | 2 tasks | 5 files |
+| Phase 13 P04 | 2min | 3 tasks | 9 files |
+| Phase 13 P05 | 6min | 3 tasks | 7 files |
+| Phase 13 P06 | 5min | 3 tasks | 5 files |
+| Phase 13 P07 | 5min | 2 tasks | 5 files |
+| Phase 15 P01 | 5min | 3 tasks | 4 files |
+| Phase 15 P02 | 3 min | 2 tasks | 3 files |
+| Phase 15 P03 | 4min | 2 tasks | 4 files |
+| Phase 16 P01 | 6min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- [v0.5 roadmap] v0.5 is a single phase (Phase 11) — one endpoint with no internal dependency boundary; coarse granularity. Live-payload confirmation of `predictions-near-location` is a success criterion gating DTO lock-in, not a separate phase
-- [v0.3, Phase 6] Favorites/recents identity is an anonymous device ID sent via `X-Device-Id` header, no auth system — device ID becomes a natural foreign key if real accounts are added later
-- [v0.3, Phase 5/6] Favorites/recents persisted in SQLite behind a new repository, isolated from the existing `BusDataRepository` — zero ops, fits existing repository-pattern architecture
-- [v0.3, Phase 6] Unfavorite is a plain SQL DELETE with no rows-affected check; repository upsert uses `INSERT ... ON CONFLICT DO UPDATE` — makes both favorite-an-already-favorited and unfavorite-a-non-favorite true no-op successes, no read-then-write race
-- [v0.3, Phase 7] Recents are auto-logged on any prediction/stop lookup rather than requiring a dedicated "log view" call — reflects actual usage automatically
-- [v0.3, Phase 7] Route recents are persisted keyed by the route's internal `id` (resolved from the client-supplied short name at write time), not the short name — matches the id-keyed lookup `resolveEntity`/`getRouteById` already uses; caught as a pre-ship BLOCKER (CR-01) in code review after route recents silently failed to hydrate
-- v0.2: Use Server-Sent Events (not WebSocket) for live predictions, with REST retained as fallback
-- v0.2: Server runs one shared 30s upstream poll per subscribed stop, stopping when idle, resuming on new subscriber
-- v0.2: Repo will eventually house both backend and Expo/React Native frontend (monorepo); frontend itself deferred
-- [Phase 3] Stop discovery lives in a new `StopController`/`StopService` pair, kept separate from `BusRouteController`/`BusRouteService`
-- [Phase 3] `GET /:shortName/stops` groups stops by direction (not a deduped flat list) — locked public contract, iterate `route.directions` directly
-- [Phase 05]: Installed better-sqlite3@^12.11.1 (not latest 13.0.3): v13 requires Node >=22 and its native binary crashed under both Bun 1.0.31 and system Node 20.20.2 in this environment
-- [Phase 8] Request `?format=json` explicitly from DASH/Swiftly's `gtfs-rt-alerts/v2` endpoint — it defaults to protobuf-binary otherwise
-- [Phase 8] Live alert payload is a flat, custom Swiftly/Alexandria JSON format (bare top-level array, camelCase, ISO-8601 dates) — not the nested GTFS-RT-protobuf-derived `{entities:[...]}` shape early rounds assumed from an auto-generated doc example
-- [Phase 9] Match alerts to routes/stops via internal `BusRoute.id`/`BusStop.id` (DASH's own ID space), not `shortName`/`code`
-- [Phase 9] Agency-wide alerts (no informed route/stop) are dropped from responses in v0.4; ALRT-09 (predictions embedding) deferred to v2
-- [Phase 10] `VehicleService` now validates `route` filters via `repository.getRouteByShortName` before any upstream DASH fetch, matching `BusRouteService`'s existing 404 pattern (D-04)
-- [Phase 10] Coordinate/timestamp safety filter uses `typeof value === "number" && Number.isFinite(value)`, not literal `NaN` checks — code review (CR-01/CR-02) found the NaN-only check missed missing/undefined/null lat/lon and let a malformed `loc.time` crash the whole request instead of dropping just the bad vehicle
-- [Phase 11]: [Phase 11-01] Nearby radius converts to upstream meters with Math.ceil(radius * 1609.344) (0.5 mi -> 805), never 0 and never narrower than requested
-- [Phase 11]: [Phase 11-01] Nearby upstream errors wrap as UpstreamApiError from error.message only (never the axios error object, which carries DASH_API_KEY); rider lat/lng are never logged
-- [Phase 11]: [Phase 11-02] Nearby radius/number caps (MAX_RADIUS_MILES = 1, MAX_PREDICTIONS_PER_DESTINATION = 10) are controller constants; out-of-range values return 400 and are never clamped
-- [Phase 11]: [Phase 11-02] An empty radius= or number= on /predictions/nearby is provided-but-invalid (400), not a fallback to the default
-- [Phase 11]: [Phase 11-03] Nearby prediction elements are validated in isValidNearbyEntry (finite min/sec/time, string tripId/vehicleId, no coercion); one malformed element drops its whole entry with the existing single warn. Hand-rolled guard kept per D-18 (no Zod)
-- [Phase 11]: [Phase 11-03] WR-02 (500 path echoes raw error.message) deferred to a follow-up quick task extracting one shared controller error-response helper for Prediction/Vehicle/NearbyPrediction controllers (WR-02 + IN-04); T-11-16 accepted low
+Decisions are logged in the PROJECT.md Key Decisions table. The per-phase decision logs for v0.6 are in `.planning/milestones/v0.6-phases/*/*-SUMMARY.md` and `*-CONTEXT.md`. Earlier milestones are in their own `v0.X-phases/` archives.
 
 ### Pending Todos
 
@@ -111,25 +105,26 @@ None yet.
 
 ### Blockers/Concerns
 
-- ⚠️ [Phase 11] `NearbyPredictionController` 500 path echoes `error.message` (WR-02/IN-04, accepted as T-11-16) — shared controller error-response helper across Prediction/Vehicle/Nearby controllers recommended as a follow-up quick task. Shared axios client still has no timeout (T-11-06, pre-existing).
 - ⚠️ [Phase 1, v0.1] `lint:fix` uses Biome's deprecated `--apply-unsafe` flag (should become `--write --unsafe` per Biome 1.9.4); non-blocking, not yet addressed.
 - ⚠️ [Phase 3] Code review (archived: `.planning/milestones/v0.2-phases/03-stop-discovery/03-REVIEW.md`) flagged 2 non-blocking edge cases: empty-string `lat`/`lng` query params coerce to `0` instead of 400ing in `StopController`; `StopService.getNearbyStops` doesn't lower-bound `count` if called directly (not reachable via the controller today). Neither blocks Phase 3 completion. Relevant to Phase 11: the new nearby-predictions validation must not copy this empty-string coercion bug (NEAR-08).
-- ⚠️ [Phase 4, v0.2] Residual WR-05 from the 3-iteration code-review fix cycle (archived: `.planning/milestones/v0.2-phases/04-live-predictions-via-sse/04-REVIEW.md`): `PredictionStreamController`'s initial SSE write is guarded only against synchronous throws — a mid-write client-socket error surfaces asynchronously via an `'error'` event with no handler anywhere in `src/server`. Non-blocking, doesn't violate any LIVE-01..05 requirement.
 - ⚠️ [v0.2] An unrelated, pre-existing uncommitted fix to `BusDataRepository.ts` (dedupe `initialize()`/`refreshData()` load paths) was swept into the v0.2 execution history by the automated code-review-fix pipeline (commit `b52c130`) — correct fix, but out of Phase 3/4 scope and not explicitly approved before landing. Flagged to the user; left in place.
 - ⚠️ [Phase 6, v0.3] `FavoritesController.unfavorite` doesn't validate `entityId` the way `favorite` does, and `favorite`'s `entityId` is trim-validated but the untrimmed value is what's persisted/looked up — both whitespace-padded-id edge cases (WR-01/WR-03, `.planning/milestones/v0.3-phases/06-favorites-routes-stops/06-REVIEW.md`). Non-blocking, doesn't violate any FAV-01..05/DEVICE-01 requirement.
 - ⚠️ [Phase 7, v0.3] `RecentsController.resolveDeviceId` unsafely casts the device-id header to `string` with no in-controller guard; its `NotFoundError`→404 branch is unreachable; device-id header parsing is duplicated across 4 files; the recents cap (`5`) is a magic number in a SQL string; `resolveEntity` is duplicated verbatim between `RecentsService`/`FavoritesService` (WR-02/WR-03/IN-01/IN-02/IN-03, `.planning/milestones/v0.3-phases/07-recents-routes-stops/07-REVIEW.md`). Non-blocking, doesn't violate any RECENT-01..06 requirement.
-- ⚠️ [Phase 8, v0.4 — STILL OPEN after Phase 9] The confirmed live DASH alert payload (G-05-5) includes `deletedAt`/`deletedBy` fields that `ServiceAlertService`/`ServiceAlertRepository` currently ignore entirely. If the DASH admin tool soft-deletes alerts instead of removing them from the feed, a deleted-but-still-time-active alert could still surface via `getActiveAlerts()` — and Phase 9 now exposes that data publicly on route/stop responses without addressing it. Was flagged as "consider before Phase 9 exposes alerts publicly" but not picked up during Phase 9 planning/execution. Worth a follow-up before/early in the next milestone. Phase 11 (NEAR-06) now exposes alerts on one more endpoint (`/predictions/nearby`).
 - ⚠️ [Phase 9] `RouteWithAlerts` (`BusRoute & { alerts }`) is built via object spread over a `BusRoute` class instance, losing its prototype methods even though the static type doesn't reflect that (WR-01, `09-REVIEW.md`). No live call site hits it today.
-- ⚠️ [Phase 9] `ServiceAlertRepository.isAlertActive`'s date-boundary checks fail open on a malformed `activePeriod` date string rather than excluding/logging it (WR-02, `09-REVIEW.md`).
+- ⚠️ [Phase 12] `exitAfterLogFlush` in `processHandlers.ts` calls `logger.end()` and then waits for the flush; a log call in that window (two uncaught exceptions in one tick, or other logging while stdout is slow) hits Winston's unhandled "write after end" error and the process exits 7 instead of 1, sometimes losing the crash reason (reproduced; see `12-VERIFICATION.md`). Still non-zero, so a supervisor restarts it. Fix is a few lines plus a test that fires the handler twice: attach an error listener before `logger.end()`, or skip `logger.end()` and wait only for stdout.
 - ⚠️ [Phase 10] CR-02's fix (dropping vehicles with malformed `loc.time` instead of crashing the request) has no committed regression test — production code is correct and independently spot-checked by both the code fixer and the phase verifier, but a future refactor could silently reintroduce the crash with nothing to catch it. Flagged as an info-level gap in `10-VERIFICATION.md`; recommend adding the 3 spot-check cases to the committed `VehicleService.test.ts` suite.
+- ⚠️ [Phase 13] Code review (`13-REVIEW.md`) left 2 non-blocking warnings: numeric route/stop fields parsed with lenient `parseInt`/`parseFloat` and lat/lon not range-checked (WR-01); string fields unchecked, so a numeric `shortName` 404s on `/routes/:shortName` and a missing stop `name` is dropped (WR-02 — coerce, don't reject). Also open: no guard against overlapping `load()` calls (IN-03); permanent load failures log only at warn. Readiness signal (old WR-03) shipped in Phase 14 (HLTH-02).
+- ⚠️ [Phase 13] `.claude/CLAUDE.md`/`AGENTS.md` endpoint list is incomplete (stops, favorites/recents, nearby, stream, vehicles missing). The Vitest version was corrected to 3.2.6.
+- ⚠️ [Phase 14] Code review (`14-REVIEW.md`), all non-blocking and adjudicated in `14-VERIFICATION.md`: CR-01 (accepted per D-08) — once stale, an instance stays 503 for up to ~1h after DASH recovers because post-load retries are hourly; revisit before deploying behind an orchestrator that de-routes on readiness (WR-05: every replica de-routes together). WR-01 — `trust proxy = 0` silences express-rate-limit's XFF misconfiguration warning (map 0 → `false`). WR-02 closed by Phase 16. WR-03 — fixed 5-min grace breaks the 3-failure guarantee when `DASH_API_TIMEOUT_MS` > ~100s. WR-04 — `rateLimit.test.ts` reads `TRUST_PROXY_HOPS` from the local `.env` (pin it in `test/setup.ts`).
+- ⚠️ [Phase 15] Code review (`15-REVIEW.md`), all non-blocking and adjudicated in `15-VERIFICATION.md`: WR-01 — when merging an alert's periods an open start is ignored if another period has a start, so a currently active alert can be hidden (real bug, pre-existing; needs its own fix). WR-04 — `deriveActiveWindow` spreads every date into `Math.min`/`Math.max`, so one alert with ~130k periods throws `RangeError` and fails the poll (replace with a loop). WR-02 — lenient `new Date()` parsing makes alert windows depend on server TZ. WR-03 — alert text fields reach riders with no runtime type check. IN-05 — an alert whose ids are all non-strings is kept but shown nowhere, silently.
+- ⚠️ [Phase 15] `upstreamRateLimit.test.ts` ("allows the 59th and 60th requests and rejects the 61st and 62nd") hit its 5 s timeout once under full-suite coverage load; passes alone and on re-run. Raise that test's timeout if it recurs.
+- ⚠️ [Phase 16] Before the first production deploy, work through `.planning/DEPLOY-CHECKLIST.md`: with `TRUST_PROXY_HOPS` left at 0 behind a proxy, the whole service shares 5 streams and one 60/min bucket. Pairs with Phase 14 WR-01 (map 0 → `false` so express-rate-limit's XFF warning is not silenced).
+- [Phase 13-05] Bun 1.0.31 'bunx' does not forward SIGTERM/SIGINT to its child: signalling a 'bunx tsx' wrapper orphans the server. Smokes ran ./node_modules/.bin/tsx directly. Check how production is supervised (start-server uses ts-node via bun run, untested).
 
 ### Quick Tasks Completed
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
-| 260827-j3c | Discard current changes to CLAUDE.md, add Engineering Principles section, remove Core Value/Constraints sections from CLAUDE.md and AGENTS.md | 2026-08-27 | fd24325 | [260827-j3c-discard-current-changes-to-claude-md-add](./quick/260827-j3c-discard-current-changes-to-claude-md-add/) |
-| 260827-jaa | Consolidate root CLAUDE.md and .claude/CLAUDE.md into a single canonical .claude/CLAUDE.md; delete root CLAUDE.md | 2026-08-27 | 09f054c | [260827-jaa-consolidate-root-claude-md-and-claude-cl](./quick/260827-jaa-consolidate-root-claude-md-and-claude-cl/) |
-| 260915-fc8 | Ensure predictions endpoint uses Swiftly real-time predictions API; add vehicle positions endpoint using Swiftly real-time vehicles API | 2026-09-15 | 04a2b66 | [260915-fc8-ensure-predictions-endpoint-uses-swiftly](./quick/260915-fc8-ensure-predictions-endpoint-uses-swiftly/) |
 
 ## Deferred Items
 
@@ -137,6 +132,10 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
+| verification_override | 12-bounded-upstream-calls-error-safety-nets/12-VERIFICATION.md | passed (flagged stale: later phases / quick task 261013-r6p edited covered files; full suite, lint and build green 2026-10-15) | 2026-10-15 | v0.6 |
+| verification_override | 13-resilient-route-stop-data-lifecycle/13-VERIFICATION.md | passed (flagged stale: later phases / quick task 261013-r6p edited covered files; full suite, lint and build green 2026-10-15) | 2026-10-15 | v0.6 |
+| verification_override | 14-health-checks-rate-limiting/14-VERIFICATION.md | passed (flagged stale: later phases / quick task 261013-r6p edited covered files; full suite, lint and build green 2026-10-15) | 2026-10-15 | v0.6 |
+| verification_override | 15-alert-nearby-data-hygiene/15-VERIFICATION.md | passed (flagged stale: later phases / quick task 261013-r6p edited covered files; full suite, lint and build green 2026-10-15) | 2026-10-15 | v0.6 |
 | seeds | SEED-001-service-alerts-per-route | dormant | 2026-09-24 | v0.5 |
 | seeds | SEED-002-schedule-adherence | dormant | 2026-09-24 | v0.5 |
 | verification_override | 11-nearby-stop-predictions/11-VERIFICATION.md | passed (flagged stale: REQUIREMENTS.md checkboxes edited after verification; no code change) | 2026-09-24 | v0.5 |
@@ -147,8 +146,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-24
-Stopped at: v0.5 milestone closed (override_closeout: audit skipped, Phase 11 verification override, 2 seeds acknowledged)
+Last session: 2026-10-13
+Stopped at: v0.6 milestone completed and archived (2026-10-15)
 Resume file: None
 
 ## Operator Next Steps

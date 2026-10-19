@@ -1,0 +1,1 @@
+No external API integration: no DASH capability is added or changed; the phase schedules, retries and atomically commits the existing route/stop call through the already-bounded shared client, and maps the server's own typed errors to HTTP responses.

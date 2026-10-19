@@ -11,3 +11,10 @@ export class UpstreamApiError extends Error {
         this.name = "UpstreamApiError";
     }
 }
+
+export class DataNotReadyError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "DataNotReadyError";
+    }
+}

@@ -131,10 +131,10 @@ describe("VehicleController", () => {
             });
         });
 
-        it("responds with 500 and a Request Failed body when the service throws a generic Error", async () => {
+        it("responds with 500 and a generic Request Failed body that does not echo the thrown message", async () => {
             // Arrange
             const mockService = makeMockService();
-            mockService.getVehiclePositions.mockRejectedValue(new Error("network error"));
+            mockService.getVehiclePositions.mockRejectedValue(new Error("vehicle cache corrupted"));
             const { getVehiclePositions } = createVehicleController(mockService);
             const req = makeMockReq({});
             const res = makeMockRes();
@@ -146,8 +146,9 @@ describe("VehicleController", () => {
             expect(res.status).toHaveBeenCalledWith(500);
             expect(res.json).toHaveBeenCalledWith({
                 error: "Request Failed",
-                details: "network error",
+                details: "An unexpected error occurred",
             });
+            expect(JSON.stringify(vi.mocked(res.json).mock.calls[0][0])).not.toContain("vehicle cache corrupted");
         });
     });
 });

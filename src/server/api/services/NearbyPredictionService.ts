@@ -21,6 +21,10 @@ function isFiniteNumber(value: unknown): value is number {
     return typeof value === "number" && Number.isFinite(value);
 }
 
+function isNonEmptyString(value: unknown): value is string {
+    return typeof value === "string" && value !== "";
+}
+
 // Checks exactly the five fields the shared mapping copies. Values are never coerced, so a
 // wrong-typed field rejects the prediction rather than being served as a made-up arrival.
 function isValidPrediction(prediction: unknown): boolean {
@@ -34,18 +38,23 @@ function isValidPrediction(prediction: unknown): boolean {
     );
 }
 
-// Guards two failure modes of the shared mapping, which copies every prediction element field by
-// field: a non-object element throws there and turns the whole request into a 500, and an
-// incomplete element would be served to riders as an arrival with missing fields. One bad element
-// invalidates its whole entry, so the entry is dropped rather than served with fewer arrivals.
+// Covers every field the response copies: the display fields groupByStop and mapToRoutePrediction
+// serve (route and stop names and IDs, stopCode, each destination's directionId and headsign) and
+// the prediction elements. A missing or mistyped field would otherwise reach riders as a nameless
+// or garbled stop, and a non-object element would throw in the mapping and turn the request into
+// a 500. One bad field drops the whole entry; nothing is replaced or coerced.
 function isValidNearbyEntry(entry: unknown): entry is DashNearbyPredictionData {
     if (!isRecord(entry)) {
         return false;
     }
-    const { stopId, distanceToStop, destinations } = entry;
+    const { routeId, routeName, routeShortName, stopId, stopName, stopCode, distanceToStop, destinations } = entry;
     return (
-        typeof stopId === "string" &&
-        stopId !== "" &&
+        isNonEmptyString(routeId) &&
+        isNonEmptyString(routeName) &&
+        isNonEmptyString(routeShortName) &&
+        isNonEmptyString(stopId) &&
+        isNonEmptyString(stopName) &&
+        isFiniteNumber(stopCode) &&
         typeof distanceToStop === "number" &&
         Number.isFinite(distanceToStop) &&
         distanceToStop >= 0 &&
@@ -53,6 +62,8 @@ function isValidNearbyEntry(entry: unknown): entry is DashNearbyPredictionData {
         destinations.every(
             (destination) =>
                 isRecord(destination) &&
+                isNonEmptyString(destination.directionId) &&
+                isNonEmptyString(destination.headsign) &&
                 Array.isArray(destination.predictions) &&
                 destination.predictions.every(isValidPrediction),
         )
@@ -98,15 +109,8 @@ export function createNearbyPredictionService(serviceAlertRepository: ServiceAle
         const url = buildDashApiUrl(lat, lng, meters, options.number);
         // The rider's coordinates are deliberately kept out of the log line.
         logger.info(`Fetching nearby predictions from DASH API: predictions-near-location (meters=${meters})`);
-        try {
-            const response = await axios.get(url);
-            return response.data;
-        } catch (error: unknown) {
-            // Only the message may leave this block: axios errors carry config.headers.Authorization,
-            // which is DASH_API_KEY, so the error object is never logged or rethrown.
-            const message = error instanceof Error ? error.message : "Unknown error";
-            throw new UpstreamApiError(`DASH API request failed for nearby predictions: ${message}`);
-        }
+        const response = await axios.get(url);
+        return response.data;
     }
 
     function parseDashResponse(body: unknown): { agencyKey: string; predictionsData: unknown[] } {
@@ -124,7 +128,12 @@ export function createNearbyPredictionService(serviceAlertRepository: ServiceAle
                 "DASH API returned a malformed nearby predictions response (predictionsData is not an array)",
             );
         }
-        return { agencyKey: data.agencyKey as string, predictionsData: data.predictionsData };
+        if (typeof data.agencyKey !== "string") {
+            throw new UpstreamApiError(
+                "DASH API returned a malformed nearby predictions response (agencyKey is not a string)",
+            );
+        }
+        return { agencyKey: data.agencyKey, predictionsData: data.predictionsData };
     }
 
     function filterValidEntries(entries: unknown[]): DashNearbyPredictionData[] {

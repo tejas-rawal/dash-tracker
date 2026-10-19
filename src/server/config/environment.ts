@@ -11,10 +11,23 @@ const environmentSchema = z.object({
     DASH_API_AGENCY: z.string().min(1, "DASH_API_AGENCY must not be empty"),
     // biome-ignore lint/style/useNamingConvention: env vars use SCREAMING_SNAKE_CASE by convention
     DASH_API_KEY: z.string().min(1, "DASH_API_KEY must not be empty"),
+    // Capped at Node's max timer delay: a larger value overflows AbortSignal.timeout, which then
+    // aborts every DASH call after 1ms or throws, instead of failing startup here.
+    // biome-ignore lint/style/useNamingConvention: env vars use SCREAMING_SNAKE_CASE by convention
+    DASH_API_TIMEOUT_MS: z.coerce.number().int().positive().max(2_147_483_647).default(10000),
     // biome-ignore lint/style/useNamingConvention: env vars use SCREAMING_SNAKE_CASE by convention
     PORT: z.coerce.number().int().positive().default(3000),
     // biome-ignore lint/style/useNamingConvention: env vars use SCREAMING_SNAKE_CASE by convention
     DB_PATH: z.string().min(1).default("data/dash-tracker.sqlite"),
+    // Number of trusted reverse proxies in front of the server. 0 ignores X-Forwarded-For, so the rate limit keys
+    // on the socket address and a forged header cannot dodge it. Digits only: coercion would turn an empty value
+    // into 0 instead of failing startup (D-17).
+    // biome-ignore lint/style/useNamingConvention: env vars use SCREAMING_SNAKE_CASE by convention
+    TRUST_PROXY_HOPS: z
+        .string()
+        .regex(/^\d+$/, "TRUST_PROXY_HOPS must be a non-negative integer")
+        .default("0")
+        .transform(Number),
 });
 
 const parsed = environmentSchema.safeParse(process.env);
@@ -31,9 +44,11 @@ export const environment = {
         baseUrl: parsed.data.DASH_API_BASE_URL,
         agency: parsed.data.DASH_API_AGENCY,
         apiKey: parsed.data.DASH_API_KEY,
+        timeoutMs: parsed.data.DASH_API_TIMEOUT_MS,
     },
     server: {
         port: parsed.data.PORT,
+        trustProxyHops: parsed.data.TRUST_PROXY_HOPS,
     },
     database: {
         path: parsed.data.DB_PATH,

@@ -1,5 +1,6 @@
+import type { Server } from "node:http";
 import request from "supertest";
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("../services/RecentsService", () => ({
     createRecentsService: vi.fn(() => ({
@@ -13,9 +14,23 @@ import { createRecentsService } from "../services/RecentsService";
 const getMockService = () => vi.mocked(createRecentsService).mock.results[0]?.value;
 
 describe("GET /api/v1/recents", () => {
+    // One server for the file, as in rateLimit.test.ts: a per-request server plus Node 20's keep-alive agent can
+    // land a request on an earlier, closed server.
+    let server: Server;
+
+    beforeAll(async () => {
+        server = app.listen(0);
+        await new Promise<void>((resolve) => server.once("listening", () => resolve()));
+    });
+
+    afterAll(async () => {
+        server.closeAllConnections();
+        await new Promise<void>((resolve) => server.close(() => resolve()));
+    });
+
     it("responds with 400 when X-Device-Id header is missing", async () => {
         // Act
-        const response = await request(app).get("/api/v1/recents");
+        const response = await request(server).get("/api/v1/recents");
 
         // Assert
         expect(response.status).toBe(400);
@@ -30,7 +45,7 @@ describe("GET /api/v1/recents", () => {
         getMockService().listRecents.mockResolvedValue([]);
 
         // Act
-        const response = await request(app).get("/api/v1/recents").set("X-Device-Id", "device-a");
+        const response = await request(server).get("/api/v1/recents").set("X-Device-Id", "device-a");
 
         // Assert
         expect(response.status).toBe(200);
@@ -46,7 +61,7 @@ describe("GET /api/v1/recents", () => {
         getMockService().listRecents.mockResolvedValue(payload);
 
         // Act
-        const response = await request(app).get("/api/v1/recents").set("X-Device-Id", "device-a");
+        const response = await request(server).get("/api/v1/recents").set("X-Device-Id", "device-a");
 
         // Assert
         expect(response.status).toBe(200);

@@ -1,13 +1,15 @@
 import type { Request, Response } from "express";
 import { describe, expect, it, vi } from "vitest";
-import { NotFoundError } from "../errors";
+import { DataNotReadyError, NotFoundError } from "../errors";
 import { createFavoritesController } from "./FavoritesController";
 
 const makeMockRes = () => {
     const res = {
         json: vi.fn(),
+        set: vi.fn(),
         status: vi.fn(),
     } as unknown as Response;
+    (res.set as ReturnType<typeof vi.fn>).mockReturnValue(res);
     (res.status as ReturnType<typeof vi.fn>).mockReturnValue(res);
     return res;
 };
@@ -124,10 +126,10 @@ describe("FavoritesController", () => {
             expect(mockService.addFavorite).toHaveBeenCalledWith("device-xyz", "stop", "stop-1");
         });
 
-        it("responds with 500 and Request Failed body when the service throws a generic Error", async () => {
+        it("responds with 500 and a generic Request Failed body that does not echo the thrown message", async () => {
             // Arrange
             const mockService = makeMockService();
-            mockService.addFavorite.mockRejectedValue(new Error("unexpected"));
+            mockService.addFavorite.mockRejectedValue(new Error("favorites store corrupted"));
             const { favorite } = createFavoritesController(mockService as never);
             const req = makeMockReq({ entityType: "route", entityId: "route-1" });
             const res = makeMockRes();
@@ -137,7 +139,11 @@ describe("FavoritesController", () => {
 
             // Assert
             expect(res.status).toHaveBeenCalledWith(500);
-            expect(res.json).toHaveBeenCalledWith({ error: "Request Failed", details: "unexpected" });
+            expect(res.json).toHaveBeenCalledWith({
+                error: "Request Failed",
+                details: "An unexpected error occurred",
+            });
+            expect(JSON.stringify(vi.mocked(res.json).mock.calls[0][0])).not.toContain("favorites store corrupted");
         });
     });
 
@@ -209,10 +215,10 @@ describe("FavoritesController", () => {
             expect(mockService.removeFavorite).toHaveBeenCalledWith("device-xyz", "route", "route-1");
         });
 
-        it("responds with 500 and Request Failed body when the service throws a generic Error", async () => {
+        it("responds with 500 and a generic Request Failed body that does not echo the thrown message", async () => {
             // Arrange
             const mockService = makeMockService();
-            mockService.removeFavorite.mockRejectedValue(new Error("unexpected"));
+            mockService.removeFavorite.mockRejectedValue(new Error("favorites delete crashed"));
             const { unfavorite } = createFavoritesController(mockService as never);
             const req = makeMockReqWithParams({ entityType: "route", entityId: "route-1" });
             const res = makeMockRes();
@@ -222,7 +228,11 @@ describe("FavoritesController", () => {
 
             // Assert
             expect(res.status).toHaveBeenCalledWith(500);
-            expect(res.json).toHaveBeenCalledWith({ error: "Request Failed", details: "unexpected" });
+            expect(res.json).toHaveBeenCalledWith({
+                error: "Request Failed",
+                details: "An unexpected error occurred",
+            });
+            expect(JSON.stringify(vi.mocked(res.json).mock.calls[0][0])).not.toContain("favorites delete crashed");
         });
     });
 
@@ -276,10 +286,10 @@ describe("FavoritesController", () => {
             expect(mockService.listFavorites).toHaveBeenCalledWith("device-xyz");
         });
 
-        it("responds with 500 and Request Failed body when the service throws a generic Error", async () => {
+        it("responds with 500 and a generic Request Failed body that does not echo the thrown message", async () => {
             // Arrange
             const mockService = makeMockService();
-            mockService.listFavorites.mockRejectedValue(new Error("unexpected"));
+            mockService.listFavorites.mockRejectedValue(new Error("favorites listing crashed"));
             const { listFavorites } = createFavoritesController(mockService as never);
             const req = makeMockReq();
             const res = makeMockRes();
@@ -289,7 +299,31 @@ describe("FavoritesController", () => {
 
             // Assert
             expect(res.status).toHaveBeenCalledWith(500);
-            expect(res.json).toHaveBeenCalledWith({ error: "Request Failed", details: "unexpected" });
+            expect(res.json).toHaveBeenCalledWith({
+                error: "Request Failed",
+                details: "An unexpected error occurred",
+            });
+            expect(JSON.stringify(vi.mocked(res.json).mock.calls[0][0])).not.toContain("favorites listing crashed");
+        });
+
+        it("responds to listFavorites with 503 and Retry-After when route/stop data has not loaded yet", async () => {
+            // Arrange
+            const mockService = makeMockService();
+            mockService.listFavorites.mockRejectedValue(new DataNotReadyError("Route and stop data is still loading"));
+            const { listFavorites } = createFavoritesController(mockService as never);
+            const req = makeMockReq();
+            const res = makeMockRes();
+
+            // Act
+            await listFavorites(req, res, vi.fn());
+
+            // Assert
+            expect(res.set).toHaveBeenCalledWith("Retry-After", "5");
+            expect(res.status).toHaveBeenCalledWith(503);
+            expect(res.json).toHaveBeenCalledWith({
+                error: "Service Unavailable",
+                details: "Route and stop data is still loading",
+            });
         });
     });
 });

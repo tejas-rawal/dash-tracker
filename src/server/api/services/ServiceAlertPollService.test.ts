@@ -96,4 +96,32 @@ describe("ServiceAlertPollService", () => {
         // Assert
         expect(mockRepository.applyAlerts).toHaveBeenCalledWith(alerts);
     });
+
+    it("stop() cancels the 5-minute poll so no further fetch happens", async () => {
+        // Arrange
+        const mockService = makeMockService();
+        const mockRepository = makeMockRepository();
+        mockService.fetchAlerts.mockResolvedValue([makeAlert()]);
+        const { start, stop } = createServiceAlertPollService(mockService as never, mockRepository as never);
+        start();
+        await vi.advanceTimersByTimeAsync(0);
+
+        // Act
+        stop();
+        await vi.advanceTimersByTimeAsync(900_000);
+
+        // Assert
+        expect(mockService.fetchAlerts).toHaveBeenCalledTimes(1);
+    });
+
+    it("stop() before start() is harmless", () => {
+        // Arrange
+        const { stop } = createServiceAlertPollService(makeMockService() as never, makeMockRepository() as never);
+
+        // Act
+        const act = (): void => stop();
+
+        // Assert
+        expect(act).not.toThrow();
+    });
 });

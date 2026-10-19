@@ -1,7 +1,7 @@
 import http from "node:http";
 import type { AddressInfo } from "node:net";
 import request from "supertest";
-import { type MockInstance, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { type MockInstance, afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { axios } from "../../config";
 import { NotFoundError, UpstreamApiError } from "../errors";
 import type { StopPredictionsResponse } from "../models/Prediction";
@@ -45,6 +45,20 @@ const makeStopPredictionsResponse = (stopId = "stop-1"): StopPredictionsResponse
     },
 });
 
+// One server for the file, as in rateLimit.test.ts: a per-request server plus Node 20's keep-alive agent can
+// land a request on an earlier, closed server.
+let server: http.Server;
+
+beforeAll(async () => {
+    server = app.listen(0);
+    await new Promise<void>((resolve) => server.once("listening", () => resolve()));
+});
+
+afterAll(async () => {
+    server.closeAllConnections();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+});
+
 describe("predictionRoutes wiring", () => {
     it("passes both a BusDataRepository and a FavoritesRecentsRepository instance to createPredictionService", () => {
         // Assert
@@ -55,7 +69,7 @@ describe("predictionRoutes wiring", () => {
 describe("GET /api/v1/predictions", () => {
     it("responds with 400 when stop query parameter is missing", async () => {
         // Arrange & Act
-        const response = await request(app).get("/api/v1/predictions");
+        const response = await request(server).get("/api/v1/predictions");
 
         // Assert
         expect(response.status).toBe(400);
@@ -67,7 +81,7 @@ describe("GET /api/v1/predictions", () => {
 
     it("responds with 400 when number parameter is not a positive integer", async () => {
         // Arrange & Act
-        const response = await request(app).get("/api/v1/predictions?stop=stop-1&number=abc");
+        const response = await request(server).get("/api/v1/predictions?stop=stop-1&number=abc");
 
         // Assert
         expect(response.status).toBe(400);
@@ -79,7 +93,7 @@ describe("GET /api/v1/predictions", () => {
 
     it("responds with 400 when number parameter is zero", async () => {
         // Arrange & Act
-        const response = await request(app).get("/api/v1/predictions?stop=stop-1&number=0");
+        const response = await request(server).get("/api/v1/predictions?stop=stop-1&number=0");
 
         // Assert
         expect(response.status).toBe(400);
@@ -91,7 +105,7 @@ describe("GET /api/v1/predictions", () => {
         getMockService().getPredictionsForStop.mockResolvedValue(payload);
 
         // Act
-        const response = await request(app).get("/api/v1/predictions?stop=stop-1");
+        const response = await request(server).get("/api/v1/predictions?stop=stop-1");
 
         // Assert
         expect(response.status).toBe(200);
@@ -108,7 +122,7 @@ describe("GET /api/v1/predictions", () => {
         getMockService().getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse("stop-42"));
 
         // Act
-        await request(app).get("/api/v1/predictions?stop=stop-42");
+        await request(server).get("/api/v1/predictions?stop=stop-42");
 
         // Assert
         expect(getMockService().getPredictionsForStop).toHaveBeenCalledWith("stop-42", expect.any(Object));
@@ -119,7 +133,7 @@ describe("GET /api/v1/predictions", () => {
         getMockService().getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse());
 
         // Act
-        await request(app).get("/api/v1/predictions?stop=stop-1&number=5");
+        await request(server).get("/api/v1/predictions?stop=stop-1&number=5");
 
         // Assert
         expect(getMockService().getPredictionsForStop).toHaveBeenCalledWith(
@@ -133,7 +147,7 @@ describe("GET /api/v1/predictions", () => {
         getMockService().getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse());
 
         // Act
-        await request(app).get("/api/v1/predictions?stop=stop-1&route=1A");
+        await request(server).get("/api/v1/predictions?stop=stop-1&route=1A");
 
         // Assert
         expect(getMockService().getPredictionsForStop).toHaveBeenCalledWith(
@@ -147,7 +161,7 @@ describe("GET /api/v1/predictions", () => {
         getMockService().getPredictionsForStop.mockRejectedValue(new NotFoundError("Stop not found: stop-1"));
 
         // Act
-        const response = await request(app).get("/api/v1/predictions?stop=stop-1");
+        const response = await request(server).get("/api/v1/predictions?stop=stop-1");
 
         // Assert
         expect(response.status).toBe(404);
@@ -162,14 +176,15 @@ describe("GET /api/v1/predictions", () => {
         getMockService().getPredictionsForStop.mockRejectedValue(new Error("upstream failure"));
 
         // Act
-        const response = await request(app).get("/api/v1/predictions?stop=stop-1");
+        const response = await request(server).get("/api/v1/predictions?stop=stop-1");
 
         // Assert
         expect(response.status).toBe(500);
-        expect(response.body).toMatchObject({
+        expect(response.body).toEqual({
             error: "Request Failed",
-            details: "upstream failure",
+            details: "An unexpected error occurred",
         });
+        expect(JSON.stringify(response.body)).not.toContain("upstream failure");
     });
 
     it("responds with 502 when the service throws an UpstreamApiError", async () => {
@@ -179,7 +194,7 @@ describe("GET /api/v1/predictions", () => {
         );
 
         // Act
-        const response = await request(app).get("/api/v1/predictions?stop=stop-1");
+        const response = await request(server).get("/api/v1/predictions?stop=stop-1");
 
         // Assert
         expect(response.status).toBe(502);
@@ -194,7 +209,7 @@ describe("GET /api/v1/predictions", () => {
         getMockService().getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse());
 
         // Act
-        const response = await request(app).get("/api/v1/predictions?stop=stop-1");
+        const response = await request(server).get("/api/v1/predictions?stop=stop-1");
 
         // Assert
         expect(response.body.data.routes[0]).toMatchObject({
@@ -213,7 +228,6 @@ describe("GET /api/v1/predictions/stream", () => {
     it("streams an immediate event: prediction frame carrying the mocked payload", async () => {
         // Arrange
         getMockService().getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse("stop-1"));
-        const server = app.listen(0);
         const port = (server.address() as AddressInfo).port;
 
         // Act & Assert
@@ -222,7 +236,6 @@ describe("GET /api/v1/predictions/stream", () => {
                 try {
                     expect(res.headers["content-type"]).toMatch(/^text\/event-stream/);
                 } catch (assertionError) {
-                    server.close();
                     reject(assertionError as Error);
                     return;
                 }
@@ -230,9 +243,8 @@ describe("GET /api/v1/predictions/stream", () => {
                 res.on("data", (chunk: Buffer) => {
                     req.destroy();
                     // let the server-side "close" event fire and tear down the poll loop/interval
-                    // before closing the server, to avoid leaking a 30s timer into later tests
+                    // before the next test, to avoid leaking a 30s timer into later tests
                     setTimeout(() => {
-                        server.close();
                         try {
                             const text = chunk.toString();
                             expect(text).toContain("event: prediction");
@@ -251,9 +263,44 @@ describe("GET /api/v1/predictions/stream", () => {
         });
     });
 
+    it("keeps the stream open when express.json() consumed a request body, which closes the request early", async () => {
+        // Arrange
+        getMockService().getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse("stop-body"));
+        const port = (server.address() as AddressInfo).port;
+        const body = JSON.stringify({ ignored: true });
+
+        // Act
+        const firstChunk = await new Promise<string>((resolve, reject) => {
+            const req = http.request(
+                `http://localhost:${port}/api/v1/predictions/stream?stop=stop-body`,
+                {
+                    method: "GET",
+                    headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
+                },
+                (res) => {
+                    res.on("data", (chunk: Buffer) => {
+                        req.destroy();
+                        resolve(chunk.toString());
+                    });
+                    res.on("end", () => resolve(""));
+                },
+            );
+            req.on("error", () => {
+                // ignore socket-hangup from req.destroy()
+            });
+            req.end(body);
+            setTimeout(() => reject(new Error("timed out waiting for stream data")), 2000);
+        });
+        await new Promise((resolve) => setTimeout(resolve, 20));
+
+        // Assert
+        expect(firstChunk).toContain("event: prediction");
+        expect(firstChunk).toContain("stop-body");
+    });
+
     it("responds with 400 when the stop query parameter is missing", async () => {
         // Arrange & Act
-        const response = await request(app).get("/api/v1/predictions/stream");
+        const response = await request(server).get("/api/v1/predictions/stream");
 
         // Assert
         expect(response.status).toBe(400);
@@ -268,7 +315,7 @@ describe("GET /api/v1/predictions/stream", () => {
         getMockService().getPredictionsForStop.mockRejectedValue(new NotFoundError("Stop not found: missing-stop"));
 
         // Act
-        const response = await request(app).get("/api/v1/predictions/stream?stop=missing-stop");
+        const response = await request(server).get("/api/v1/predictions/stream?stop=missing-stop");
 
         // Assert
         expect(response.status).toBe(404);
@@ -281,7 +328,6 @@ describe("GET /api/v1/predictions/stream", () => {
     it("performs its own independent fetch for REST even while a stream loop is active for the same stop", async () => {
         // Arrange
         getMockService().getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse("stop-shared"));
-        const server = app.listen(0);
         const port = (server.address() as AddressInfo).port;
 
         // Act: open a stream connection first (populates the loop/cache for this stop)
@@ -296,7 +342,7 @@ describe("GET /api/v1/predictions/stream", () => {
         });
         const callsAfterStreamOpen = getMockService().getPredictionsForStop.mock.calls.length;
 
-        const restResponse = await request(app).get("/api/v1/predictions?stop=stop-shared");
+        const restResponse = await request(server).get("/api/v1/predictions?stop=stop-shared");
 
         // Assert: REST performed its own additional fetch, not served from the stream's cache
         expect(restResponse.status).toBe(200);
@@ -304,13 +350,11 @@ describe("GET /api/v1/predictions/stream", () => {
 
         streamReq.destroy();
         await new Promise((resolve) => setTimeout(resolve, 20));
-        server.close();
     });
 
     it("tears down the poll loop on client disconnect, triggering a fresh fetch on reconnect", async () => {
         // Arrange
         getMockService().getPredictionsForStop.mockResolvedValue(makeStopPredictionsResponse("stop-reconnect"));
-        const server = app.listen(0);
         const port = (server.address() as AddressInfo).port;
 
         // Act: open, read first frame, then disconnect
@@ -333,7 +377,6 @@ describe("GET /api/v1/predictions/stream", () => {
                 res.on("data", () => {
                     req.destroy();
                     setTimeout(() => {
-                        server.close();
                         resolve();
                     }, 20);
                 });
@@ -492,7 +535,7 @@ describe("GET /api/v1/predictions/nearby", () => {
         getSpy.mockResolvedValue({ data: makeLiveNearbyPredictionsResponse() });
 
         // Act
-        const response = await request(app).get(nearbyUrl);
+        const response = await request(server).get(nearbyUrl);
 
         // Assert
         expect(response.status).toBe(200);
@@ -531,7 +574,7 @@ describe("GET /api/v1/predictions/nearby", () => {
         getSpy.mockResolvedValue({ data: makeLiveNearbyPredictionsResponse() });
 
         // Act
-        const response = await request(app).get(nearbyUrl);
+        const response = await request(server).get(nearbyUrl);
 
         // Assert
         expect(response.status).toBe(200);
@@ -544,7 +587,7 @@ describe("GET /api/v1/predictions/nearby", () => {
 
     it("responds with 400 without calling upstream when lat is missing", async () => {
         // Arrange & Act
-        const response = await request(app).get("/api/v1/predictions/nearby?lng=-77.0469");
+        const response = await request(server).get("/api/v1/predictions/nearby?lng=-77.0469");
 
         // Assert
         expect(response.status).toBe(400);
@@ -557,7 +600,7 @@ describe("GET /api/v1/predictions/nearby", () => {
         getSpy.mockResolvedValue({ data: { ...makeLiveNearbyPredictionsResponse(), success: false } });
 
         // Act
-        const response = await request(app).get(nearbyUrl);
+        const response = await request(server).get(nearbyUrl);
 
         // Assert
         expect(response.status).toBe(502);
@@ -565,15 +608,16 @@ describe("GET /api/v1/predictions/nearby", () => {
     });
     it("responds with 502 when the upstream request fails at the network level", async () => {
         // Arrange
-        getSpy.mockRejectedValue(new Error("connect ECONNREFUSED"));
+        // vi.spyOn replaces axios.get outright, so the client's interceptors never run in this block.
+        getSpy.mockRejectedValue(new UpstreamApiError("DASH API request failed: connect ECONNREFUSED"));
 
         // Act
-        const response = await request(app).get(nearbyUrl);
+        const response = await request(server).get(nearbyUrl);
 
         // Assert
         expect(response.status).toBe(502);
         expect(response.body.error).toBe("Bad Gateway");
-        expect(response.body.details).toContain("DASH API request failed for nearby predictions");
+        expect(response.body.details).toBe("DASH API request failed: connect ECONNREFUSED");
     });
 
     it("responds with 502 when the upstream body has no predictionsData array", async () => {
@@ -583,7 +627,7 @@ describe("GET /api/v1/predictions/nearby", () => {
         });
 
         // Act
-        const response = await request(app).get(nearbyUrl);
+        const response = await request(server).get(nearbyUrl);
 
         // Assert
         expect(response.status).toBe(502);
@@ -596,12 +640,47 @@ describe("GET /api/v1/predictions/nearby", () => {
         getSpy.mockResolvedValue({ data: body });
 
         // Act
-        const response = await request(app).get(nearbyUrl);
+        const response = await request(server).get(nearbyUrl);
 
         // Assert
         expect(response.status).toBe(200);
         expect((response.body.data.stops as NearbyStopBody[]).map((stop) => stop.id)).toEqual(["548", "561", "949"]);
     });
+
+    it.each([
+        { label: "no stopName", override: { stopName: undefined } },
+        { label: "an empty stopName", override: { stopName: "" } },
+        { label: "a numeric routeShortName", override: { routeShortName: 30 } },
+        { label: "a null routeName", override: { routeName: null } },
+        { label: "no routeId", override: { routeId: undefined } },
+    ])(
+        "never serves a nearby stop built from an entry with $label and still returns the valid stops",
+        async ({ override }) => {
+            // Arrange
+            // 12 m would make stop 999 the nearest, so it would be listed first if it leaked.
+            const body = makeLiveNearbyPredictionsResponse();
+            body.data.predictionsData.push({
+                ...body.data.predictionsData[2],
+                stopId: "999",
+                distanceToStop: 12,
+                ...override,
+            });
+            getSpy.mockResolvedValue({ data: body });
+
+            // Act
+            const response = await request(server).get(nearbyUrl);
+
+            // Assert
+            expect(response.status).toBe(200);
+            const stops = response.body.data.stops as (NearbyStopBody & { name: unknown })[];
+            expect(stops.map((stop) => stop.id)).toEqual(["548", "561", "949"]);
+            for (const stop of stops) {
+                expect(typeof stop.name).toBe("string");
+                expect(stop.name).not.toBe("");
+            }
+            expect(getSpy).toHaveBeenCalledTimes(1);
+        },
+    );
 
     it.each([
         { label: "null", element: null },
@@ -621,7 +700,7 @@ describe("GET /api/v1/predictions/nearby", () => {
             getSpy.mockResolvedValue({ data: body });
 
             // Act
-            const response = await request(app).get(nearbyUrl);
+            const response = await request(server).get(nearbyUrl);
 
             // Assert
             expect(response.status).toBe(200);
@@ -655,7 +734,7 @@ describe("GET /api/v1/predictions/nearby", () => {
         getSpy.mockResolvedValue({ data: makeLiveNearbyPredictionsResponse() });
 
         // Act
-        const response = await request(app).get(`${nearbyUrl}&radius=0.25&number=3`);
+        const response = await request(server).get(`${nearbyUrl}&radius=0.25&number=3`);
 
         // Assert
         expect(response.status).toBe(200);
@@ -670,7 +749,7 @@ describe("GET /api/v1/predictions/nearby", () => {
         getSpy.mockResolvedValue({ data: makeLiveNearbyPredictionsResponse() });
 
         // Act
-        const response = await request(app).get(`${nearbyUrl}&radius=1&number=10`);
+        const response = await request(server).get(`${nearbyUrl}&radius=1&number=10`);
 
         // Assert
         expect(response.status).toBe(200);
@@ -681,7 +760,7 @@ describe("GET /api/v1/predictions/nearby", () => {
 
     it("responds with 400 without calling upstream when radius is above 1 mile", async () => {
         // Arrange & Act
-        const response = await request(app).get(`${nearbyUrl}&radius=1.5`);
+        const response = await request(server).get(`${nearbyUrl}&radius=1.5`);
 
         // Assert
         expect(response.status).toBe(400);
@@ -694,7 +773,7 @@ describe("GET /api/v1/predictions/nearby", () => {
 
     it("responds with 400 without calling upstream when number is above 10", async () => {
         // Arrange & Act
-        const response = await request(app).get(`${nearbyUrl}&number=11`);
+        const response = await request(server).get(`${nearbyUrl}&number=11`);
 
         // Assert
         expect(response.status).toBe(400);
@@ -710,7 +789,7 @@ describe("GET /api/v1/predictions/nearby", () => {
         getSpy.mockResolvedValue({ data: makeLiveNearbyPredictionsResponse() });
 
         // Act
-        const response = await request(app).get(`${nearbyUrl}&number=5.0`);
+        const response = await request(server).get(`${nearbyUrl}&number=5.0`);
 
         // Assert
         expect(response.status).toBe(200);

@@ -6,12 +6,15 @@ const POLL_INTERVAL_MS = 5 * 60_000; // 5 min, vs. PredictionStreamService's 30s
 
 export interface ServiceAlertPollService {
     start(): void;
+    stop(): void;
 }
 
 export function createServiceAlertPollService(
     service: ServiceAlertService,
     repository: ServiceAlertRepository,
 ): ServiceAlertPollService {
+    let interval: NodeJS.Timeout | undefined;
+
     // No overlap guard between ticks (flagged assumption 1): each setInterval tick fires an
     // independent, unawaited pollAlerts() call. ServiceAlertRepository.applyAlerts()'s atomic
     // Map swap means the last-completing fetch wins, with no torn/partial state, if ticks overlap.
@@ -27,10 +30,15 @@ export function createServiceAlertPollService(
 
     function start(): void {
         void pollAlerts(); // immediate first fetch, fire-and-forget (D-07)
-        setInterval(() => {
+        interval = setInterval(() => {
             void pollAlerts();
         }, POLL_INTERVAL_MS);
     }
 
-    return { start };
+    function stop(): void {
+        clearInterval(interval);
+        interval = undefined;
+    }
+
+    return { start, stop };
 }

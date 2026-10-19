@@ -1,5 +1,6 @@
+import type { Server } from "node:http";
 import request from "supertest";
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("../services/FavoritesService", () => ({
     createFavoritesService: vi.fn(() => ({
@@ -14,10 +15,24 @@ import { createFavoritesService } from "../services/FavoritesService";
 
 const getMockService = () => vi.mocked(createFavoritesService).mock.results[0]?.value;
 
+// One server for the file, as in rateLimit.test.ts: a per-request server plus Node 20's keep-alive agent can
+// land a request on an earlier, closed server.
+let server: Server;
+
+beforeAll(async () => {
+    server = app.listen(0);
+    await new Promise<void>((resolve) => server.once("listening", () => resolve()));
+});
+
+afterAll(async () => {
+    server.closeAllConnections();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+});
+
 describe("POST /api/v1/favorites", () => {
     it("responds with 400 when X-Device-Id header is missing", async () => {
         // Act
-        const response = await request(app).post("/api/v1/favorites").send({ entityType: "route", entityId: "r-1" });
+        const response = await request(server).post("/api/v1/favorites").send({ entityType: "route", entityId: "r-1" });
 
         // Assert
         expect(response.status).toBe(400);
@@ -32,7 +47,7 @@ describe("POST /api/v1/favorites", () => {
         getMockService().addFavorite.mockResolvedValue(undefined);
 
         // Act
-        const response = await request(app)
+        const response = await request(server)
             .post("/api/v1/favorites")
             .set("X-Device-Id", "device-a")
             .send({ entityType: "route", entityId: "route-1" });
@@ -47,7 +62,7 @@ describe("POST /api/v1/favorites", () => {
         getMockService().addFavorite.mockResolvedValue(undefined);
 
         // Act
-        await request(app)
+        await request(server)
             .post("/api/v1/favorites")
             .set("X-Device-Id", "device-xyz")
             .send({ entityType: "stop", entityId: "stop-9" });
@@ -60,7 +75,7 @@ describe("POST /api/v1/favorites", () => {
 describe("DELETE /api/v1/favorites/:entityType/:entityId", () => {
     it("responds with 400 when X-Device-Id header is missing", async () => {
         // Act
-        const response = await request(app).delete("/api/v1/favorites/route/route-1");
+        const response = await request(server).delete("/api/v1/favorites/route/route-1");
 
         // Assert
         expect(response.status).toBe(400);
@@ -71,7 +86,7 @@ describe("DELETE /api/v1/favorites/:entityType/:entityId", () => {
         getMockService().removeFavorite.mockResolvedValue(undefined);
 
         // Act
-        const response = await request(app).delete("/api/v1/favorites/route/route-1").set("X-Device-Id", "device-a");
+        const response = await request(server).delete("/api/v1/favorites/route/route-1").set("X-Device-Id", "device-a");
 
         // Assert
         expect(response.status).toBe(200);
@@ -83,7 +98,7 @@ describe("DELETE /api/v1/favorites/:entityType/:entityId", () => {
         getMockService().removeFavorite.mockResolvedValue(undefined);
 
         // Act
-        const response = await request(app).delete("/api/v1/favorites/route/route-1").set("X-Device-Id", "device-a");
+        const response = await request(server).delete("/api/v1/favorites/route/route-1").set("X-Device-Id", "device-a");
 
         // Assert
         expect(response.status).toBe(200);
@@ -93,7 +108,7 @@ describe("DELETE /api/v1/favorites/:entityType/:entityId", () => {
 
     it("responds with 400 for an invalid entityType path segment", async () => {
         // Act
-        const response = await request(app).delete("/api/v1/favorites/vehicle/x").set("X-Device-Id", "device-a");
+        const response = await request(server).delete("/api/v1/favorites/vehicle/x").set("X-Device-Id", "device-a");
 
         // Assert
         expect(response.status).toBe(400);
@@ -103,7 +118,7 @@ describe("DELETE /api/v1/favorites/:entityType/:entityId", () => {
 describe("GET /api/v1/favorites", () => {
     it("responds with 400 when X-Device-Id header is missing", async () => {
         // Act
-        const response = await request(app).get("/api/v1/favorites");
+        const response = await request(server).get("/api/v1/favorites");
 
         // Assert
         expect(response.status).toBe(400);
@@ -114,7 +129,7 @@ describe("GET /api/v1/favorites", () => {
         getMockService().listFavorites.mockResolvedValue([]);
 
         // Act
-        const response = await request(app).get("/api/v1/favorites").set("X-Device-Id", "device-a");
+        const response = await request(server).get("/api/v1/favorites").set("X-Device-Id", "device-a");
 
         // Assert
         expect(response.status).toBe(200);
@@ -130,7 +145,7 @@ describe("GET /api/v1/favorites", () => {
         getMockService().listFavorites.mockResolvedValue(payload);
 
         // Act
-        const response = await request(app).get("/api/v1/favorites").set("X-Device-Id", "device-a");
+        const response = await request(server).get("/api/v1/favorites").set("X-Device-Id", "device-a");
 
         // Assert
         expect(response.status).toBe(200);

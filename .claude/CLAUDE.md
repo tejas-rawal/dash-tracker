@@ -10,7 +10,7 @@ dash-tracker is a Node.js/Express REST API that proxies and structures data from
 
 ## Commands
 
-- **Install:** `bun install`
+- **Install:** `bun install --frozen-lockfile`, run with Bun 1.3.14 (for example `~/.proto/tools/bun/1.3.14/bun`) rather than the `packageManager`-pinned `bun@1.0.31`. The tracked lockfile is the text `bun.lock`; 1.0.31 ignores it and writes the git-ignored binary `bun.lockb`, so the committed lockfile would go stale. Add a dependency with Bun 1.3.14 as an exact pin behind a 7-day release-age gate: `bun add <package>@<version> --minimum-release-age=604800`. The `bun run` scripts below run under the pinned 1.0.31.
 - **Dev server:** `bun run dev-server` (nodemon + ts-node, auto-restart on change)
 - **Build:** `bun run build` (`rm -rf dist && tsc` → `dist/`)
 - **Start built server:** `bun run start-server` (ts-node, no build step)
@@ -31,12 +31,12 @@ dash-tracker is a Node.js/Express REST API that proxies and structures data from
 
 ## Technology Stack
 
-- TypeScript 5.7.3, Node 20, Bun 1.0.31 (package manager — `bun.lockb`)
+- TypeScript 5.7.3, Node 20, Bun as package manager and script runner: the tracked lockfile is the text `bun.lock`, installed and updated with Bun 1.3.14; `packageManager` pins `bun@1.0.31`, which runs the `bun run` scripts but writes the git-ignored binary `bun.lockb` if used to install
 - Express 4.21.2, Zod 3.24.0 (env/data validation), Axios 1.7.9 (DASH API client), Winston 3.17.0 (logging)
 - Biome 1.9.4 — sole lint + format tool (`biome.json`; 120 char width, 4-space indent, `noDefaultExport` off); Prettier fully removed
-- Vitest 2.1.5 — tests co-located as `*.test.ts`
+- Vitest 3.2.6 — tests co-located as `*.test.ts`
 - Build: `tsc` → `dist/` (ES2020, CommonJS, strict mode)
-- Required env vars (Zod-validated at startup, crash on missing/invalid): `DASH_API_BASE_URL`, `DASH_API_AGENCY`, `DASH_API_KEY`, optional `PORT`
+- Required env vars (Zod-validated at startup, crash on missing/invalid): `DASH_API_BASE_URL`, `DASH_API_AGENCY`, `DASH_API_KEY`; optional `PORT`, `DASH_API_TIMEOUT_MS`, `DB_PATH`, `TRUST_PROXY_HOPS` (trusted reverse-proxy hop count for the client IP, default 0); see `.env.example`
 <!-- GSD:stack-end -->
 
 <!-- GSD:conventions-start source:CONVENTIONS.md -->
@@ -67,11 +67,12 @@ Layered, strict top-down flow, no skipping: **Routes → Controllers → Service
 | **Models** | Domain types (`BusRoute`, `BusStop`, `RouteDirection`, `Prediction`) | `src/server/api/models/` |
 | **Config** | Env validation (Zod), axios client, Winston logger | `src/server/config/` |
 
-- `BusDataRepository` is a singleton (`getInstance()`), populated once via `initialize()` before `app.ts` starts accepting requests; in-memory maps are read-only afterward (no cache invalidation); predictions are fetched live from DASH API on every request (uncached)
-- Error mapping: `NotFoundError` → 404, `UpstreamApiError` → 502, unknown → 500 (controllers catch and translate; services throw)
+- `BusDataRepository` is a singleton (`getInstance()`) whose only fetch path is `load()`: it validates the whole DASH routes payload and then swaps routes, short names and stops in one synchronous step, or rejects and changes nothing, so the last good copy keeps serving; `getLoadState()` records `lastLoadedAt`, `lastFailedAt` and a message-only `lastError`; `BusDataRefreshService` drives `load()` in the background with chained, never-overlapping `setTimeout` attempts (capped exponential backoff with jitter until the first success, then hourly); predictions are fetched live from DASH API on every request (uncached)
+- Error mapping: every controller maps errors through one helper, `sendErrorResponse` (`src/server/api/controllers/errorResponse.ts`): `NotFoundError` → 404, `DataNotReadyError` → 503 with `Retry-After: 5`, `UpstreamApiError` → 502, anything else → 500 with the fixed details "An unexpected error occurred" (logged, never echoed); services throw and controllers translate
 - DASH-shaped API types (`Dash*`) are kept separate from service response types (`StopPredictionsResponse`, etc.) — mapping happens explicitly in `PredictionService`
-- Entry point `src/server/app.ts`: init repository → start Express → graceful shutdown on SIGTERM/SIGINT
-- Endpoints: `GET /api/v1/routes/all`, `GET /api/v1/routes/:shortName`, `GET /api/v1/predictions?stop&route&number`
+- Entry point `src/server/app.ts`: registers process error handlers → opens SQLite (fatal on failure) → listens → starts the route/stop loader and the alert poll in the background, so DASH never blocks listen and data-dependent endpoints answer 503 until the first load; SIGTERM/SIGINT stop both loops before the server closes
+- Endpoints: `GET /api/v1/routes/all`, `GET /api/v1/routes/:shortName`, `GET /api/v1/predictions?stop&route&number`, `GET /api/v1/health/live`, `GET /api/v1/health/ready`
+- Rate limiting: one shared `express-rate-limit` bucket (`src/server/api/middleware/upstreamRateLimit.ts`, 60 requests per minute per client IP) sits in front of the routes that call DASH live (`/predictions`, `/predictions/nearby`, `/predictions/stream`, `/vehicles`) and answers 429 `{ error, details }` with `Retry-After`; in-memory endpoints and the health probes are never limited, and the client IP honors `TRUST_PROXY_HOPS`; `/predictions/stream` also passes a per-IP concurrent-stream cap (`src/server/api/middleware/streamConcurrencyCap.ts`, 5 open streams per client IP, checked after the bucket so every connect still spends it) that answers 429 `{ error, details }` with `Retry-After: 5`, never touches an open stream, and frees a slot when the stream's response closes
 <!-- GSD:architecture-end -->
 
 ## Engineering Principles
