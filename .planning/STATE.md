@@ -1,19 +1,18 @@
 ---
 gsd_state_version: "1.0"
 milestone: v0.6
-milestone_name: Solidifying the backend
-status: Awaiting next milestone
+status: "Milestone v0.6 shipped — PR #16"
 stopped_at: Phase 16 complete — all phases complete
-last_updated: "2026-10-15T16:08:11.138Z"
-last_activity: 2026-10-15
-last_activity_desc: Milestone v0.6 completed and archived
-state_head: cf7457e0c3bc0f3e572cb853c796b8c79074e747
+last_updated: "2026-10-19T16:55:02.736Z"
+last_activity: 2026-10-19
+state_head: bf275a615615e89b77166362ca9d07b5ad824b0e
 progress:
   total_phases: 5
   completed_phases: 16
   total_plans: 18
   completed_plans: 18
   percent: 100
+milestone_name: Solidifying the backend
 current_phase: 16
 ---
 
@@ -30,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 
 Phase: Milestone v0.6 complete
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-10-15 — Milestone v0.6 completed and archived
+Status: Milestone v0.6 shipped — PR #16
+Last activity: 2026-10-19 — Milestone v0.6 shipped as PR #16 (Phases 13 and 15 security-verified first)
 
 ## Performance Metrics
 
