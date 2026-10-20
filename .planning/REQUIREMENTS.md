@@ -113,12 +113,48 @@ Which phases cover which requirements. Filled in by the roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| MONO-01 | Phase 17 | Pending |
+| MONO-02 | Phase 17 | Pending |
+| MONO-03 | Phase 17 | Pending |
+| MONO-04 | Phase 17 | Pending |
+| MONO-05 | Phase 17 | Pending |
+| TOOL-05 | Phase 17 | Pending |
+| TOOL-06 | Phase 18 | Pending |
+| TOOL-07 | Phase 18 | Pending |
+| TOOL-08 | Phase 18 | Pending |
+| TOOL-09 | Phase 18 | Pending |
+| TOOL-10 | Phase 18 | Pending |
+| TOOL-11 | Phase 17 | Pending |
+| CORS-01 | Phase 18 | Pending |
+| CORS-02 | Phase 18 | Pending |
+| CORS-03 | Phase 18 | Pending |
+| CORS-04 | Phase 18 | Pending |
+| CORS-05 | Phase 18 | Pending |
+| APP-01 | Phase 19 | Pending |
+| APP-02 | Phase 19 | Pending |
+| APP-03 | Phase 19 | Pending |
+| ROUTE-01 | Phase 19 | Pending |
+| ROUTE-02 | Phase 19 | Pending |
+| ROUTE-03 | Phase 19 | Pending |
+| STOP-03 | Phase 20 | Pending |
+| STOP-04 | Phase 20 | Pending |
+| ARR-01 | Phase 20 | Pending |
+| ARR-02 | Phase 20 | Pending |
+| ARR-03 | Phase 20 | Pending |
+| ARR-04 | Phase 20 | Pending |
+| LIVE-08 | Phase 21 | Pending |
+| LIVE-09 | Phase 21 | Pending |
+| LIVE-10 | Phase 21 | Pending |
+| LIVE-11 | Phase 21 | Pending |
+| QUAL-01 | Phase 19 | Pending |
+| QUAL-02 | Phase 19 | Pending |
+| QUAL-03 | Phase 19 | Pending |
 
 **Coverage:**
 - v0.7 requirements: 36 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 36
+- Mapped to phases: 36
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-10-20*
-*Last updated: 2026-10-20 after initial definition*
+*Last updated: 2026-10-20 after v0.7 roadmap creation*

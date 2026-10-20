@@ -251,6 +251,7 @@ v0.6 REQ-IDs are archived in `.planning/milestones/v0.6-REQUIREMENTS.md`.
 | Upstream alert lists (`activePeriods`, `informedEntities`) are typed `unknown` on the model; only `parseAlert` reads them | The compiler then refuses any unchecked read of upstream structure | ✓ Shipped Phase 15 |
 | The nearby entry guard requires non-empty string names/ids, a finite `stopCode` and non-empty destination `directionId`/`headsign`; no trimming | A rider must never see a stop with no name or a destination with no headsign (v0.5 WR-01) | ✓ Shipped Phase 15 — whitespace-only names still pass (D-11) |
 | Cap concurrent `/predictions/stream` connections at 5 per client IP (IPv6 /56), keyed like the shared 60/min bucket and checked after it | Held-open streams bypassed the per-request bucket and could multiply DASH polls; 5 fits a rider app with a few stops open, and riders behind one shared address sharing 5 is an accepted trade-off (AR-16-02) | ✓ Shipped Phase 16 — live UAT against DASH passed; production proxy-hop check moved to the deploy checklist |
+| Ship the v0.7 monorepo restructure (Phase 17) as its own PR, merged with a merge commit | A squash merge would collapse the rename-only `git mv` commit into the config changes and break `git log --follow`/blame for every moved server file | — Pending |
 
 ## Evolution
 
