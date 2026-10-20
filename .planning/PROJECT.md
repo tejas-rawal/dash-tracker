@@ -20,21 +20,21 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 
 853 tests pass with 98.8% statement coverage. Six milestones have shipped to date (v0.1 tooling cleanup, v0.2 stop discovery + live SSE predictions, v0.3 favorites/recents, v0.4 service alerts, v0.5 nearby predictions, v0.6 backend hardening), plus standalone Phase 10 (vehicle positions). Before the first production deploy, work through `.planning/DEPLOY-CHECKLIST.md` (`TRUST_PROXY_HOPS` behind the real proxy).
 
-## Next Milestone Goals
+## Current Milestone: v0.7 Frontend Foundation
 
-Not yet defined. Start with `/gsd-new-milestone`. Candidates on file:
-- **Production readiness follow-ups from v0.6:**
-  - `DEPLOY-CHECKLIST.md`.
-  - Readiness staying 503 for up to ~1 h after DASH recovers (Phase 14 CR-01).
-  - `trust proxy = 0` silencing express-rate-limit's XFF warning (WR-01).
-  - The `exitAfterLogFlush` "write after end" exit code (Phase 12).
-  - Lenient route/stop numeric parsing (Phase 13 WR-01/WR-02).
-  - The open-start alert-window merge bug (Phase 15 WR-01).
-- **Features:**
-  - NEAR-10 (nearby SSE stream) and NEAR-11 (route filter on nearby predictions).
-  - SEED-002 (schedule adherence).
-  - SEED-001 follow-ups.
-  - The Expo/React Native frontend.
+**Goal:** The repo becomes a Bun-workspaces monorepo on a current toolchain, and the first Expo app ships: on iOS, Android, and the web, a rider can pick a route, then a stop, and watch that stop's live arrivals.
+
+**Target features:**
+- Monorepo restructure (first phase): Bun workspaces at the root, the backend moved to `apps/server`, the Expo app in `apps/mobile`; the server's tests, coverage, build, and dev server stay green
+- Toolchain bump: Node 24 LTS (`.node-version`, `@tsconfig/node24`, CI) and the `packageManager` pin moved to Bun 1.3.x, removing the 1.0.31 vs 1.3.14 split and the stray `bun.lockb`
+- CORS middleware on the server so Expo web and the browser preview can call the API, with configurable allowed origins (native builds don't need it)
+- One app screen flow: route list (`/routes/all`) → that route's stops (`/routes/:shortName/stops`) → live arrivals, loaded over REST (`/predictions`) and then updated over SSE (`/predictions/stream`)
+- Configurable API base URL for the app (`localhost` doesn't reach the server from a phone or emulator)
+- Quality bar: Biome covers `apps/mobile`, the app has unit tests under an 80% coverage threshold, and CI lints, type-checks, and tests both workspaces
+
+**Backlog carried forward (not in v0.7):**
+- Production readiness follow-ups from v0.6: `DEPLOY-CHECKLIST.md`; readiness staying 503 for ~1 h after DASH recovers (Phase 14 CR-01); `trust proxy = 0` XFF warning (WR-01); `exitAfterLogFlush` exit code (Phase 12); lenient route/stop numeric parsing (Phase 13 WR-01/WR-02); open-start alert-window merge bug (Phase 15 WR-01)
+- Features: NEAR-10 (nearby SSE stream), NEAR-11 (route filter on nearby predictions), SEED-002 (schedule adherence), SEED-001 follow-ups
 
 <details>
 <summary>Archived: v0.6 Solidifying the backend milestone goal (shipped 2026-10-15)</summary>
@@ -133,14 +133,22 @@ Not yet defined. Start with `/gsd-new-milestone`. Candidates on file:
 
 ### Active
 
-(none — v0.6 shipped; the next milestone's requirements are defined by `/gsd-new-milestone`. The production `TRUST_PROXY_HOPS` check is tracked in `.planning/DEPLOY-CHECKLIST.md`.)
+- [ ] Repo is a Bun-workspaces monorepo with the backend in `apps/server` and the Expo app in `apps/mobile`
+- [ ] Toolchain on Node 24 LTS and a single Bun 1.3.x version (pin, lockfile, CI)
+- [ ] Server sends CORS headers for configured origins so Expo web can call it
+- [ ] Rider can browse routes → stops → live arrivals (REST then SSE) on iOS, Android, and web
+- [ ] App code is Biome-linted, unit-tested at ≥80% coverage, and covered by CI
+
+Detailed REQ-IDs live in `.planning/REQUIREMENTS.md`. The production `TRUST_PROXY_HOPS` check is tracked in `.planning/DEPLOY-CHECKLIST.md`.
 
 v0.6 REQ-IDs are archived in `.planning/milestones/v0.6-REQUIREMENTS.md`.
 
 ### Out of Scope
 
-- The Expo/React Native frontend app itself — this repo is intended to eventually house both backend and frontend (monorepo, not separate repos), but the app is deferred to a future milestone
-- Offline caching and countdown animation UI — client-side concerns that land with the future Expo milestone
+- Offline caching and animated countdown UI — v0.7 ships the first working screen flow; polish comes after it works end to end
+- Nearby/location-based stop picking, favorites/recents, and a dedicated alerts UI in the app — v0.7 is one route → stop → arrivals flow; these build on it later
+- A shared API-types package (`packages/shared`) — deferred until a second consumer or real drift justifies it (v0.7)
+- Store builds / production deploys of the app (EAS submit, app-store release, hosted web) — v0.7 targets local dev builds, Expo Go, and the Expo web dev server
 - Replacing `tsc` as the build tool (e.g. with Vite/esbuild) — Vite is a frontend bundler/dev server and doesn't fit compiling this Node/Express backend; not part of this cleanup
 - Replacing Vitest — it's a test runner only, unrelated to lint/format consolidation
 - Schedule adherence (SEED-002, on-time performance vs. schedule) — companion idea to service alerts but deliberately deferred to its own future milestone
@@ -157,7 +165,7 @@ v0.6 REQ-IDs are archived in `.planning/milestones/v0.6-REQUIREMENTS.md`.
 
 ## Context
 
-- This repo is intended to eventually house both the backend API and the Expo/React Native frontend (monorepo by design, not separate repos) — the frontend itself is planned for a future milestone
+- This repo houses both the backend API and the Expo/React Native frontend (monorepo by design, not separate repos) — v0.7 starts the frontend
 - The Expo app will consume this API for near-real-time bus arrivals: 30-second refresh cadence, offline caching, and an animated countdown UI (client-side concerns, out of scope until that milestone)
 - Existing codebase mapped in `.planning/codebase/` (STACK.md, ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, TESTING.md, INTEGRATIONS.md, CONCERNS.md) — predates v0.2, not yet refreshed with Phase 3/4 additions
 - Shipped v0.1: Biome is now the sole lint/format tool (Prettier fully removed), entire repo reformatted to it
@@ -192,7 +200,9 @@ v0.6 REQ-IDs are archived in `.planning/milestones/v0.6-REQUIREMENTS.md`.
 ## Constraints
 
 - **Tooling**: Biome must remain the linter (existing `biome.json` config — 120 char line width, 4-space indent, `noDefaultExport` disabled) — no reason to replace it, only to stop pairing it with Prettier
-- **Compatibility**: Build step (`tsc` → `dist/`) and test runner (Vitest) are out of scope and must keep working unchanged after the lint/format swap
+- **Compatibility**: The server's build step (`tsc` → `dist/`) and test runner (Vitest) must keep working through the monorepo move
+- **Ordering (v0.7)**: The monorepo restructure is the first phase — app work starts only on top of a server that still passes its full suite in `apps/server`
+- **Toolchain (v0.7)**: Node 24 LTS and one Bun 1.3.x version everywhere (local pin, lockfile, CI); Expo SDK versions follow Expo's own compatibility matrix
 
 ## Key Decisions
 
@@ -260,4 +270,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-15 after v0.6 milestone*
+*Last updated: 2026-10-20 after starting v0.7 milestone*
