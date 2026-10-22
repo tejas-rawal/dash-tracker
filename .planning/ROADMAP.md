@@ -108,7 +108,12 @@ See `.planning/milestones/v0.6-ROADMAP.md` for full phase details.
   4. `bun.lock` is the only lockfile, and a root `bunfig.toml` pins the hoisted linker, exact version specifiers and the 7-day minimum release age. `bun install --frozen-lockfile` under Bun 1.3.14 (the `packageManager` pin) leaves the working tree clean, both locally and in every CI job.
   5. A fresh Superset worktree sets up and runs the server from `apps/server`. CLAUDE.md, AGENTS.md, README and the Codecov upload all use the new paths.
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 17-01-PLAN.md — Bun 1.3.14 pin, bunfig.toml install gates, single lockfile, CI on the pinned Bun with a clean-tree check, and the legitimacy gate for @vitest/coverage-v8@3.2.6
+- [ ] 17-02-PLAN.md — Rename-only move to apps/server, workspace wiring, exact pins and coverage-v8 3.2.6 with no lockfile drift, hermetic tests, and server runtime proofs from root and apps/server
+- [ ] 17-03-PLAN.md — Superset worktree setup/run from apps/server, CLAUDE.md/AGENTS.md/README on the new layout with the full endpoint list, and the D-04 wording of MONO-01 and criterion 3
 **Notes**:
 - The Bun pin and single lockfile (TOOL-05, MONO-05) land first: the root fan-out scripts need Bun 1.3's `--filter`.
 - **Decided (2026-10-20):** Phase 17 ships as its own PR, merged with a merge commit (not a squash), so the rename-only commit and file history survive on `main`.
