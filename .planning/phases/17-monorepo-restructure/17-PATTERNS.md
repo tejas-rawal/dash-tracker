@@ -51,7 +51,7 @@ Phase 17 changes no code under `src/` (D-06). Every "analog" is the pre-move ver
 Edits in the config commit:
 - `name` → `@dash-tracker/server`. Drop `packageManager` (root only). Drop `lint`, `lint:fix`, `format`, `format:write` (D-04/D-05: root only).
 - **cwd-relative breakage:** `start-server` / `dev-server` → `ts-node src/app.ts` / `nodemon --exec ts-node src/app.ts`.
-- Add `"typecheck": "tsc --noEmit"`. Note that `tsconfig.json` excludes `src/**/*.test.ts`, so tests are type-checked only by vitest `--typecheck`, which is acceptable per Claude's Discretion.
+- Add `"typecheck": "tsc --noEmit"`. Note that `tsconfig.json` excludes `src/**/*.test.ts`, so tests are type-checked only by vitest `--typecheck`, which is acceptable per Claude's Discretion. **Superseded 2026-10-22 (D-06 amendment):** vitest `--typecheck` only checks `*.test-d.ts`. After a test-only commit fixes the 6 latent errors, `typecheck` becomes `tsc -p tsconfig.typecheck.json` (extends `tsconfig.json`, `noEmit`, tests included). See plan 17-02 Task 2.
 - D-09: replace every `^x` with the exact version `bun.lock` resolves. Current caret entries: `@types/better-sqlite3`, `@types/express`, `@types/winston`, `axios`, `better-sqlite3`, `dotenv`, `express`, `nodemon`, `ts-node`, `winston`, `zod`, `@biomejs/biome`, `@types/supertest`, `supertest`, `typescript`.
 - TOOL-11: `@vitest/coverage-v8` `2.1.5` → `3.2.6` (matches `vitest: 3.2.6`).
 - `@biomejs/biome` is needed by the root `lint`. Either keep it here (hoisted, so `biome` resolves from the root under the hoisted linker) or move it to the root `devDependencies`. Moving it is cleaner, since the root runs it. It must stay at the same resolved version (D-10).
@@ -150,6 +150,7 @@ Edits (D-07):
     "run": ["bun run dev:server"]
 }
 ```
+**Superseded 2026-10-22 (D-13 amendment):** `run` is `["cd apps/server && exec bun run dev-server"]`, because `--filter` drops SIGTERM. The setup shape is plan 17-03 Task 1's: `[ -f apps/server/.env ] || (cd apps/server && …setup.sh)`.
 
 ### `bunfig.toml` (new, no analog)
 
@@ -188,7 +189,7 @@ Use STACK.md. At minimum: `[install]` `exact = true` (D-09), and `linker = "hois
 | `src/server/test/setup.ts`, coverage excludes | `vitest.config.mts` | vitest `root` | → `src/test/...` |
 | `./coverage/clover.xml` | ci.yml Codecov | repo root | → `./apps/server/coverage/clover.xml` |
 | `$(pwd)/.env` | Superset setup script | Superset cwd (repo root) | `cd apps/server` first |
-| `bun run dev-server` | Superset `run` | root | → `bun run dev:server` |
+| `bun run dev-server` | Superset `run` | root | → `cd apps/server && exec bun run dev-server` (D-13 amendment, 2026-10-22) |
 | `node_modules/typescript/lib` | `.vscode/settings.json` `js/ts.tsdk.path` | repo root | Still works if TS is hoisted. Verify. |
 | `./node_modules/@biomejs/biome/configuration_schema.json` | `biome.json` `$schema` | repo root | Still works if biome is installed at the root |
 

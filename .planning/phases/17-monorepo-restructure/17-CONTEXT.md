@@ -26,6 +26,7 @@ Requirements: MONO-01..05, TOOL-05, TOOL-11. No runtime, toolchain-version or be
 
 ### Phase 17 / 18 boundary
 - **D-06:** The `createApp()` extraction (sharing middleware wiring between `app.ts` and `test/app.ts`) is **deferred to Phase 18**, together with CORS. Phase 17 makes no code changes to `src/`.
+  - **Amended 2026-10-22 (user decision during plan revision):** one exception, for test files only. A separate test-only commit, after the rename commit and never inside it, fixes the 6 latent type errors in `*.test.ts` files (unused imports, one fixture cast) without changing test behavior. `typecheck` then covers the test files in Phase 17 instead of leaving that to Phase 18. Why: `tsc --noEmit` skips `*.test.ts` and vitest `--typecheck` only checks `*.test-d.ts`, so no command type-checked the tests. App code under `src/` stays untouched, and `createApp()` stays deferred.
 - **D-07:** CI changes in Phase 17:
   - Codecov `files` → `./apps/server/coverage/clover.xml`.
   - `oven-sh/setup-bun@v2` with `bun-version-file: package.json`, so every job runs the `packageManager` Bun (1.3.14).
@@ -42,6 +43,7 @@ Requirements: MONO-01..05, TOOL-05, TOOL-11. No runtime, toolchain-version or be
 ### Package names, scripts, docs
 - **D-12:** The server package is `@dash-tracker/server` and the root package stays `dash-tracker` (private, `workspaces: ["apps/*"]`, `packageManager: "bun@1.3.14"`).
 - **D-13:** `apps/server` keeps `build`, `start-server`, `dev-server`, `test` and `test:coverage` under their current names and adds `typecheck`. The root adds `dev:server` → `bun run --filter @dash-tracker/server dev-server`. Superset `run` uses `bun run dev:server`. Phase 19 adds `dev:mobile` beside it.
+  - **Amended 2026-10-22 (user decision during plan revision):** Superset `run` no longer uses `bun run dev:server`. It runs the workspace script from `apps/server`: `cd apps/server && exec bun run dev-server`. Why: `bun run --filter`, which `dev:server` uses, does not forward SIGTERM, so stopping a Superset run could leave nodemon and the server orphaned. A plain `bun run dev-server` forwards SIGINT and SIGTERM, as it did before the move. The user chose `cd apps/server && bun run dev-server`. The planner added `exec` after a planning-time probe: `/bin/sh` forks the last command of an `&&` list, so a signal sent to the shell left nodemon and the server running. With `exec`, bun replaces the shell, and SIGTERM or SIGINT left no process and freed the port. proto still resolves Bun 1.3.14 from the root `packageManager` inside `apps/server`. The root `dev:server` script stays for humans, who stop it with Ctrl-C. Plan 17-03 proves the run command with a SIGTERM and SIGINT smoke.
 - **D-14:** CLAUDE.md, AGENTS.md and README are updated for:
   - every path and command in the workspace layout, including the "imports rooted at `src/server/`" line;
   - the end of the Bun 1.0.31 workaround text: `packageManager` is now 1.3.14 and `bun install --frozen-lockfile` uses it directly;
