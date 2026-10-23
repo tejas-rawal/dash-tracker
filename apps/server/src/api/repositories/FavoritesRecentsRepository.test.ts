@@ -1,13 +1,10 @@
-import { randomUUID } from "node:crypto";
 import { existsSync, rmSync } from "node:fs";
-import os from "node:os";
-import path from "node:path";
 import Database from "better-sqlite3";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { testDbPath: TEST_DB_PATH } = vi.hoisted(() => {
-    // Use require() instead of the module-level ES imports below: vi.hoisted() factories
-    // run before those imports are bound, so referencing them here would hit the TDZ.
+    // Load Node built-ins with require(): vi.hoisted() factories run before module-level
+    // imports are bound, so an ES import referenced here would hit the TDZ.
     // biome-ignore lint/style/useNodejsImportProtocol: require() target must be a bare specifier here
     const nodeOs: typeof import("node:os") = require("os");
     // biome-ignore lint/style/useNodejsImportProtocol: require() target must be a bare specifier here

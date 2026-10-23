@@ -50,7 +50,7 @@ const makeDashNearbyPredictionData = (overrides: Record<string, unknown> = {}): 
         ],
         distanceToStop: 46.5,
         ...overrides,
-    }) as DashNearbyPredictionData;
+    }) as unknown as DashNearbyPredictionData;
 
 const makeDashNearbyApiResponse = (entries: unknown[]) => ({
     success: true,
