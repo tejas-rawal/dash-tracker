@@ -24,7 +24,7 @@
         "test:coverage": "vitest --run --typecheck --coverage",
         "start-server": "ts-node src/app.ts",
         "dev-server": "nodemon --exec ts-node src/app.ts",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc -p tsconfig.typecheck.json"
     },
     "types": "./dist/index.d.ts",
     "dependencies": {
