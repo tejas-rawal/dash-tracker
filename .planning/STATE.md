@@ -5,17 +5,17 @@ milestone_name: Frontend Foundation
 current_phase: 17
 current_phase_name: Monorepo Restructure
 status: executing
-stopped_at: Completed 17-01-PLAN.md
-last_updated: "2026-10-23T17:14:48.049Z"
+stopped_at: Completed 17-02-PLAN.md
+last_updated: "2026-10-23T17:26:32.461Z"
 last_activity: 2026-10-23
 last_activity_desc: Phase 17 execution started
-state_head: 931447726a71826a1d1aa82434489591b4b60c72
+state_head: 0cb2c8a9816388a35ac8ba34b327b8a6976c0cb3
 progress:
   total_phases: 5
   completed_phases: 16
   total_plans: 3
-  completed_plans: 1
-  percent: 33
+  completed_plans: 2
+  percent: 67
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-20)
 ## Current Position
 
 Phase: 17 (Monorepo Restructure) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-10-23 — Phase 17 execution started
 
@@ -97,6 +97,7 @@ Progress (v0.7): [░░░░░░░░░░] 0%
 | Phase 15 P03 | 4min | 2 tasks | 4 files |
 | Phase 16 P01 | 6min | 3 tasks | 7 files |
 | Phase 17 P01 | 3h 2m | 3 tasks | 5 files |
+| Phase 17 P02 | 8min | 3 tasks | 127 files |
 
 ## Accumulated Context
 
@@ -113,6 +114,9 @@ Recent decisions affecting v0.7:
 - [Phase 17]: Declare no trustedDependencies in Phase 17: a partial list replaces Bun's default trust list and blocks esbuild/Biome postinstalls (TOOL-07, Phase 18)
 - [Phase 17]: CI uses only the plain pull_request event, never pull_request_target
 - [Phase 17]: @vitest/coverage-v8@3.2.6 approved by the user despite SUS (too-new) seam verdict driven by newer 4.x/5.x publishes
+- [Phase 17]: Root owns @biomejs/biome 1.9.4 (exact) since the root runs the single Biome lint; the workspace no longer lists it
+- [Phase 17]: typecheck uses apps/server/tsconfig.typecheck.json (extends tsconfig.json, noEmit, tests included) so build keeps test files out of dist
+- [Phase 17]: streamConcurrencyCap 'never claims a slot' hang under coverage load deferred: pre-existing, fix lives in src/test/streamClient.ts outside 17-02's allowed test files
 
 ### Pending Todos
 
@@ -146,6 +150,7 @@ None yet.
 - ⚠️ [Phase 15] `upstreamRateLimit.test.ts` ("allows the 59th and 60th requests and rejects the 61st and 62nd") hit its 5 s timeout once under full-suite coverage load; passes alone and on re-run. Raise that test's timeout if it recurs (watch for it in Phase 17's root-run coverage gate).
 - ⚠️ [Phase 16] Before the first production deploy, work through `.planning/DEPLOY-CHECKLIST.md`: with `TRUST_PROXY_HOPS` left at 0 behind a proxy, the whole service shares 5 streams and one 60/min bucket. Pairs with Phase 14 WR-01.
 - [Phase 13-05] Bun 1.0.31 `bunx` does not forward SIGTERM/SIGINT to its child, so signalling a `bunx tsx` wrapper orphans the server; smokes ran `./node_modules/.bin/tsx` directly. Phase 17 (Bun 1.3.14) and Phase 18 (`tsx` replaces ts-node) change both sides of this, so re-check signal forwarding then.
+- [Phase 17-02] streamConcurrencyCap.test.ts 'never claims a slot for a connect the shared bucket rejects' hung past its 15 s timeout in 1 of 8 root coverage runs (pre-existing; connectStream in src/test/streamClient.ts swallows pre-response socket errors). See 17 deferred-items.md; fix in Phase 18 or a quick task.
 
 ### Quick Tasks Completed
 
@@ -172,8 +177,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-23T17:14:48.020Z
-Stopped at: Completed 17-01-PLAN.md
+Last session: 2026-10-23T17:26:08.114Z
+Stopped at: Completed 17-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

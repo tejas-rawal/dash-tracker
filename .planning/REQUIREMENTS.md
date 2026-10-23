@@ -11,8 +11,8 @@ Requirements for this milestone. Each maps to exactly one roadmap phase. Researc
 ### Monorepo
 
 - [ ] **MONO-01**: The repo root is a Bun workspace containing `apps/server` and `apps/mobile`. Root scripts (`lint`, `test`, `test:coverage`, `build`, `typecheck`) fan out to each workspace.
-- [ ] **MONO-02**: The backend moves from `src/server/` to `apps/server` as a pure `git mv`, in a commit of its own, so `git log --follow` and blame keep each file's history.
-- [ ] **MONO-03**: All 853 server tests pass, and coverage stays ≥80% on every metric (currently ~98.8% statements), whether run from the repo root or from `apps/server`. `build`, `start-server` and `dev-server` work from the new location.
+- [x] **MONO-02**: The backend moves from `src/server/` to `apps/server` as a pure `git mv`, in a commit of its own, so `git log --follow` and blame keep each file's history.
+- [x] **MONO-03**: All 853 server tests pass, and coverage stays ≥80% on every metric (currently ~98.8% statements), whether run from the repo root or from `apps/server`. `build`, `start-server` and `dev-server` work from the new location.
 - [ ] **MONO-04**: These all resolve under `apps/server`:
   - the server's `.env` / `.env.example`;
   - the SQLite `data/` path;
@@ -20,17 +20,17 @@ Requirements for this milestone. Each maps to exactly one roadmap phase. Researc
   - the Superset setup/run config;
   - CLAUDE.md, AGENTS.md and README paths;
   - Codecov paths.
-- [ ] **MONO-05**: `bun.lock` is the only lockfile (`package-lock.json` and `bun.lockb` are deleted). A root `bunfig.toml` pins the hoisted linker, exact version specifiers and the 7-day minimum release age.
+- [x] **MONO-05**: `bun.lock` is the only lockfile (`package-lock.json` and `bun.lockb` are deleted). A root `bunfig.toml` pins the hoisted linker, exact version specifiers and the 7-day minimum release age.
 
 ### Toolchain
 
-- [ ] **TOOL-05**: `packageManager` is `bun@1.3.14`, and local installs and every CI job use exactly that Bun version.
+- [x] **TOOL-05**: `packageManager` is `bun@1.3.14`, and local installs and every CI job use exactly that Bun version.
 - [ ] **TOOL-06**: `.node-version` pins a Node 24 LTS release, and every CI job sets up Node from it before `bun install`.
 - [ ] **TOOL-07**: better-sqlite3 builds and loads on Node 24 after a clean install, and is declared explicitly in `trustedDependencies` (`bun pm untrusted` is empty).
 - [ ] **TOOL-08**: The server runs under `tsx` (`tsx watch` for the dev server), and `ts-node` and `nodemon` are removed.
 - [ ] **TOOL-09**: Both workspaces use TypeScript 6. The server extends `@tsconfig/node24` and still emits CommonJS to `dist/`, and each workspace's tsconfig has an explicit `types` list, so hoisted `@types` packages don't leak between apps.
 - [ ] **TOOL-10**: Biome 2.5 is the only lint/format tool. The `biome migrate` commit and the reformat commit are separate, the reformat commit is listed in `.git-blame-ignore-revs`, and `lint:fix` uses a non-deprecated flag.
-- [ ] **TOOL-11**: `@vitest/coverage-v8` matches the installed vitest version (3.2.6).
+- [x] **TOOL-11**: `@vitest/coverage-v8` matches the installed vitest version (3.2.6).
 
 ### CORS
 
@@ -114,17 +114,17 @@ Which phases cover which requirements. Filled in by the roadmap.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | MONO-01 | Phase 17 | Pending |
-| MONO-02 | Phase 17 | Pending |
-| MONO-03 | Phase 17 | Pending |
+| MONO-02 | Phase 17 | Complete |
+| MONO-03 | Phase 17 | Complete |
 | MONO-04 | Phase 17 | Pending |
-| MONO-05 | Phase 17 | Pending |
-| TOOL-05 | Phase 17 | Pending |
+| MONO-05 | Phase 17 | Complete |
+| TOOL-05 | Phase 17 | Complete |
 | TOOL-06 | Phase 18 | Pending |
 | TOOL-07 | Phase 18 | Pending |
 | TOOL-08 | Phase 18 | Pending |
 | TOOL-09 | Phase 18 | Pending |
 | TOOL-10 | Phase 18 | Pending |
-| TOOL-11 | Phase 17 | Pending |
+| TOOL-11 | Phase 17 | Complete |
 | CORS-01 | Phase 18 | Pending |
 | CORS-02 | Phase 18 | Pending |
 | CORS-03 | Phase 18 | Pending |
