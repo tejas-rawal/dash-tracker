@@ -4,18 +4,18 @@ milestone: v0.7
 milestone_name: Frontend Foundation
 current_phase: 17
 current_phase_name: Monorepo Restructure
-status: executing
-stopped_at: Completed 17-02-PLAN.md
-last_updated: "2026-10-23T17:26:32.461Z"
+status: verifying
+stopped_at: Completed 17-03-PLAN.md
+last_updated: "2026-10-23T17:32:18.434Z"
 last_activity: 2026-10-23
 last_activity_desc: Phase 17 execution started
-state_head: 0cb2c8a9816388a35ac8ba34b327b8a6976c0cb3
+state_head: e0c8a572335cba7c1b1a626f00274a0015eb0f2e
 progress:
   total_phases: 5
   completed_phases: 16
   total_plans: 3
-  completed_plans: 2
-  percent: 67
+  completed_plans: 3
+  percent: 100
 ---
 
 # Project State
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-10-20)
 
 Phase: 17 (Monorepo Restructure) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-23 — Phase 17 execution started
 
 Progress (v0.7): [░░░░░░░░░░] 0%
@@ -98,6 +98,7 @@ Progress (v0.7): [░░░░░░░░░░] 0%
 | Phase 16 P01 | 6min | 3 tasks | 7 files |
 | Phase 17 P01 | 3h 2m | 3 tasks | 5 files |
 | Phase 17 P02 | 8min | 3 tasks | 127 files |
+| Phase 17 P03 | 4min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -117,6 +118,7 @@ Recent decisions affecting v0.7:
 - [Phase 17]: Root owns @biomejs/biome 1.9.4 (exact) since the root runs the single Biome lint; the workspace no longer lists it
 - [Phase 17]: typecheck uses apps/server/tsconfig.typecheck.json (extends tsconfig.json, noEmit, tests included) so build keeps test files out of dist
 - [Phase 17]: streamConcurrencyCap 'never claims a slot' hang under coverage load deferred: pre-existing, fix lives in src/test/streamClient.ts outside 17-02's allowed test files
+- [Phase 17]: Superset run is cd apps/server && exec bun run dev-server; exec lets bun receive SIGTERM/SIGINT under any /bin/sh, proven by a fresh-worktree simulation with no orphans
 
 ### Pending Todos
 
@@ -177,8 +179,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-23T17:26:08.114Z
-Stopped at: Completed 17-02-PLAN.md
+Last session: 2026-10-23T17:32:18.401Z
+Stopped at: Completed 17-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

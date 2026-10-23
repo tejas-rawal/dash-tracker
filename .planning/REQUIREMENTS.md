@@ -10,10 +10,10 @@ Requirements for this milestone. Each maps to exactly one roadmap phase. Researc
 
 ### Monorepo
 
-- [ ] **MONO-01**: The repo root is a Bun workspace containing `apps/server` and `apps/mobile`. Root `test`, `test:coverage`, `build` and `typecheck` scripts fan out to each workspace. Root `lint` runs Biome once from the root and covers every workspace.
+- [x] **MONO-01**: The repo root is a Bun workspace containing `apps/server` and `apps/mobile`. Root `test`, `test:coverage`, `build` and `typecheck` scripts fan out to each workspace. Root `lint` runs Biome once from the root and covers every workspace.
 - [x] **MONO-02**: The backend moves from `src/server/` to `apps/server` as a pure `git mv`, in a commit of its own, so `git log --follow` and blame keep each file's history.
 - [x] **MONO-03**: All 853 server tests pass, and coverage stays ≥80% on every metric (currently ~98.8% statements), whether run from the repo root or from `apps/server`. `build`, `start-server` and `dev-server` work from the new location.
-- [ ] **MONO-04**: These all resolve under `apps/server`:
+- [x] **MONO-04**: These all resolve under `apps/server`:
   - the server's `.env` / `.env.example`;
   - the SQLite `data/` path;
   - the Vitest config;
@@ -113,10 +113,10 @@ Which phases cover which requirements. Filled in by the roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| MONO-01 | Phase 17 | Pending |
+| MONO-01 | Phase 17 | Complete |
 | MONO-02 | Phase 17 | Complete |
 | MONO-03 | Phase 17 | Complete |
-| MONO-04 | Phase 17 | Pending |
+| MONO-04 | Phase 17 | Complete |
 | MONO-05 | Phase 17 | Complete |
 | TOOL-05 | Phase 17 | Complete |
 | TOOL-06 | Phase 18 | Pending |
