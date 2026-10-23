@@ -1,4 +1,7 @@
 {
-    "setup": ["bun install", "[ -f .env ] || /Users/trawal/.superset/dash-tracker-setup.sh"],
-    "run": ["bun run dev-server"]
+    "setup": [
+        "bun install --frozen-lockfile",
+        "[ -f apps/server/.env ] || (cd apps/server && /Users/trawal/.superset/dash-tracker-setup.sh)"
+    ],
+    "run": ["cd apps/server && exec bun run dev-server"]
 }
