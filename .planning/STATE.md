@@ -4,18 +4,18 @@ milestone: v0.7
 milestone_name: Frontend Foundation
 current_phase: 17
 current_phase_name: Monorepo Restructure
-status: planning
-stopped_at: Phase 17 context gathered
-last_updated: "2026-10-22T19:36:45.951Z"
-last_activity: 2026-10-20
-last_activity_desc: v0.7 roadmap created (Phases 17-21, 36/36 requirements mapped)
-state_head: 3c619d355ca830633db581450ca03a1d82d2d236
+status: executing
+stopped_at: Completed 17-01-PLAN.md
+last_updated: "2026-10-23T17:14:48.049Z"
+last_activity: 2026-10-23
+last_activity_desc: Phase 17 execution started
+state_head: 931447726a71826a1d1aa82434489591b4b60c72
 progress:
   total_phases: 5
   completed_phases: 16
   total_plans: 3
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 33
 ---
 
 # Project State
@@ -25,14 +25,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-20)
 
 **Core value:** Riders can always see accurate, near-real-time arrival predictions for their stop.
-**Current focus:** v0.7 Frontend Foundation — Phase 17: Monorepo Restructure
+**Current focus:** Phase 17 — Monorepo Restructure
 
 ## Current Position
 
-Phase: 17 (Monorepo Restructure) — READY TO EXECUTE
-Plan: —
-Status: Ready to plan (roadmap created)
-Last activity: 2026-10-20 — v0.7 roadmap created (Phases 17-21, 36/36 requirements mapped)
+Phase: 17 (Monorepo Restructure) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-10-23 — Phase 17 execution started
 
 Progress (v0.7): [░░░░░░░░░░] 0%
 
@@ -96,6 +96,7 @@ Progress (v0.7): [░░░░░░░░░░] 0%
 | Phase 15 P02 | 3 min | 2 tasks | 3 files |
 | Phase 15 P03 | 4min | 2 tasks | 4 files |
 | Phase 16 P01 | 6min | 3 tasks | 7 files |
+| Phase 17 P01 | 3h 2m | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -108,6 +109,10 @@ Recent decisions affecting v0.7:
 - [Roadmap v0.7] Five phases, not the research's six. Coarse granularity merges the toolchain and CORS work into Phase 18: both are server-only, both must land before app code, and each change still gets its own commits. The restructure stays alone in Phase 17 so it gets its own gate and can ship as its own PR. REST (Phase 20) and SSE (Phase 21) stay separate so the core flow ships even if streaming slips.
 - [Requirements v0.7] Bun is pinned at 1.3.14 (not 1.4). `CORS_ALLOWED_ORIGINS` is optional and defaults to empty, which means no browser access. Biome moves to 2.5 in this milestone. Route colors (CORS-05) depend on what the live payload carries.
 - [Research v0.7] SSE runs over global `fetch` with `eventsource-parser`, not react-native-sse. v0.7 adds no REST polling alongside the stream and no server heartbeat. Freshness is measured from when the client receives data: stale banner at 75 s, watchdog reconnect at 90 s. The API base URL fails loudly when unset, with no fallback.
+- [Phase 17]: Pin linker = hoisted explicitly in bunfig.toml: a regenerated bun.lock gets configVersion 1, which would silently switch to isolated installs
+- [Phase 17]: Declare no trustedDependencies in Phase 17: a partial list replaces Bun's default trust list and blocks esbuild/Biome postinstalls (TOOL-07, Phase 18)
+- [Phase 17]: CI uses only the plain pull_request event, never pull_request_target
+- [Phase 17]: @vitest/coverage-v8@3.2.6 approved by the user despite SUS (too-new) seam verdict driven by newer 4.x/5.x publishes
 
 ### Pending Todos
 
@@ -167,9 +172,9 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-22T16:39:29.562Z
-Stopped at: Phase 17 context gathered
-Resume file: .planning/phases/17-monorepo-restructure/17-CONTEXT.md
+Last session: 2026-10-23T17:14:48.020Z
+Stopped at: Completed 17-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 

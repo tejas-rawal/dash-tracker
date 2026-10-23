@@ -108,11 +108,11 @@ See `.planning/milestones/v0.6-ROADMAP.md` for full phase details.
   4. `bun.lock` is the only lockfile, and a root `bunfig.toml` pins the hoisted linker, exact version specifiers and the 7-day minimum release age. `bun install --frozen-lockfile` under Bun 1.3.14 (the `packageManager` pin) leaves the working tree clean, both locally and in every CI job.
   5. A fresh Superset worktree sets up and runs the server from `apps/server`. CLAUDE.md, AGENTS.md, README and the Codecov upload all use the new paths.
 
-**Plans**: 3 plans
+**Plans**: 1/3 plans executed
 
 Plans:
 **Wave 1**
-- [ ] 17-01-PLAN.md — Bun 1.3.14 pin, bunfig.toml install gates, single lockfile, CI on the pinned Bun with a clean-tree check, and the legitimacy gate for @vitest/coverage-v8@3.2.6
+- [x] 17-01-PLAN.md — Bun 1.3.14 pin, bunfig.toml install gates, single lockfile, CI on the pinned Bun with a clean-tree check, and the legitimacy gate for @vitest/coverage-v8@3.2.6
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 17-02-PLAN.md — Rename-only move to apps/server, workspace wiring, exact pins and coverage-v8 3.2.6 with no lockfile drift, hermetic tests, and server runtime proofs from root and apps/server
@@ -236,7 +236,7 @@ Phases execute in numeric order: 17 → 18 → 19 → 20 → 21
 | 14. Health Checks & Rate Limiting | v0.6 | 3/3 | Complete | 2026-10-07 |
 | 15. Alert & Nearby Data Hygiene | v0.6 | 3/3 | Complete | 2026-10-07 |
 | 16. Concurrent SSE Stream Cap per IP | v0.6 | 1/1 | Complete | 2026-10-13 |
-| 17. Monorepo Restructure | v0.7 | 0/TBD | Not started | - |
+| 17. Monorepo Restructure | v0.7 | 1/3 | In Progress | - |
 | 18. Server Toolchain & CORS | v0.7 | 0/TBD | Not started | - |
 | 19. App Foundation & Route List | v0.7 | 0/TBD | Not started | - |
 | 20. Stops & Arrivals over REST | v0.7 | 0/TBD | Not started | - |
