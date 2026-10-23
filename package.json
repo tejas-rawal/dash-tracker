@@ -17,7 +17,7 @@
     "description": "DASH bus tracker app",
     "keywords": ["dash", "bus", "tracker"],
     "license": "Apache-2.0",
-    "packageManager": "bun@1.0.31",
+    "packageManager": "bun@1.3.14",
     "private": true,
     "scripts": {
         "lint": "biome check .",
