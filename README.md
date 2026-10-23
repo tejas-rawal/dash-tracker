@@ -3,6 +3,26 @@
 ## Project Overview
 DASH Tracker is a comprehensive React Native transit app providing real-time transit information, route planning, and personalized transit experiences. Built with TypeScript, Firebase backend services, and Mapbox for mapping functionality, the app supports both iOS and Android platforms.
 
+## Repository layout and local development
+
+This repository is a Bun-workspaces monorepo; the Express API lives in `apps/server` (package `@dash-tracker/server`).
+
+**Prerequisites:** Bun 1.3.14, from the root `packageManager` field, and Node from `.node-version`.
+
+**Commands** (run from the repo root):
+- `bun install --frozen-lockfile` - install every workspace from `bun.lock`
+- `bun run dev:server` - start the API with auto-restart (stop with Ctrl-C)
+- `bun run test` / `bun run test:coverage` - run the test suites in every workspace
+- `bun run build` - compile every workspace (the API builds to `apps/server/dist/`)
+- `bun run typecheck` - type-check every workspace, tests included
+- `bun run lint` - run Biome once over the whole repository
+
+**Local config:** copy `apps/server/.env.example` to `apps/server/.env` and fill in the DASH values. The API keeps its SQLite database in `apps/server/data/`.
+
+One-time move: if you have an env file or a `data/` directory at the repo root from before the monorepo, move both into `apps/server` by hand; there is no migration script.
+
+See [AGENTS.md](./AGENTS.md) for the architecture, conventions and the full endpoint list.
+
 ## Architecture Stack
 - **Frontend**: React Native with TypeScript
 - **Backend**: Firebase (Authentication, Firestore, Cloud Functions)

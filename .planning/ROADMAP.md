@@ -104,7 +104,7 @@ See `.planning/milestones/v0.6-ROADMAP.md` for full phase details.
 
   1. `git log --follow` and `git blame` on any moved server file show its history from before the move. The move commit contains only renames (100% similarity in `git show --stat -M`). Config and path fixes land in later commits.
   2. From the repo root and from `apps/server`, all 853 server tests pass and coverage stays ≥80% on every metric (about 98.8% statements), with `@vitest/coverage-v8` on the same version as vitest (3.2.6). `build`, `start-server` and `dev-server` work from `apps/server`, which now holds `.env`, `.env.example`, `data/` and the Vitest config.
-  3. The root `lint`, `test`, `test:coverage`, `build` and `typecheck` scripts fan out to every workspace under `apps/`, and a failure in any workspace fails the root script.
+  3. The root `test`, `test:coverage`, `build` and `typecheck` scripts fan out to every workspace under `apps/`, and a failure in any workspace fails the root script. The root `lint` runs Biome once from the root and covers every workspace and the root files.
   4. `bun.lock` is the only lockfile, and a root `bunfig.toml` pins the hoisted linker, exact version specifiers and the 7-day minimum release age. `bun install --frozen-lockfile` under Bun 1.3.14 (the `packageManager` pin) leaves the working tree clean, both locally and in every CI job.
   5. A fresh Superset worktree sets up and runs the server from `apps/server`. CLAUDE.md, AGENTS.md, README and the Codecov upload all use the new paths.
 
