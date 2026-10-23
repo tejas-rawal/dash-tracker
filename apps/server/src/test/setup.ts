@@ -3,3 +3,4 @@ process.env.DASH_API_AGENCY = "test-agency";
 process.env.DASH_API_KEY = "test-api-key";
 process.env.PORT = "3000";
 process.env.DASH_API_TIMEOUT_MS = "200";
+process.env.TRUST_PROXY_HOPS = "0";
