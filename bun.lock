@@ -4,6 +4,13 @@
   "workspaces": {
     "": {
       "name": "dash-tracker",
+      "devDependencies": {
+        "@biomejs/biome": "1.9.4",
+      },
+    },
+    "apps/server": {
+      "name": "@dash-tracker/server",
+      "version": "0.0.1",
       "dependencies": {
         "@types/better-sqlite3": "^9.6.0",
         "@types/express": "^5.0.0",
@@ -19,7 +26,6 @@
         "zod": "^3.24.0",
       },
       "devDependencies": {
-        "@biomejs/biome": "^1.9.4",
         "@tsconfig/node20": "20.1.4",
         "@tsconfig/strictest": "2.0.5",
         "@types/node": "20.17.6",
@@ -68,6 +74,8 @@
     "@cspotcode/source-map-support": ["@cspotcode/source-map-support@0.8.1", "", { "dependencies": { "@jridgewell/trace-mapping": "0.3.9" } }, ""],
 
     "@dabh/diagnostics": ["@dabh/diagnostics@2.0.3", "", { "dependencies": { "colorspace": "1.1.x", "enabled": "2.0.x", "kuler": "^2.0.0" } }, ""],
+
+    "@dash-tracker/server": ["@dash-tracker/server@workspace:apps/server"],
 
     "@esbuild/aix-ppc64": ["@esbuild/aix-ppc64@0.23.0", "", { "os": "aix", "cpu": "ppc64" }, "sha512-3sG8Zwa5fMcA9bgqB8AfWPQ+HFke6uD3h1s3RIwUNK8EG7a4buxvuFTs3j1IMs2NXAk9F30C/FF4vxRgQCcmoQ=="],
 

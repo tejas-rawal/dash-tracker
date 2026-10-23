@@ -1,5 +1,5 @@
 {
-    "name": "dash-tracker",
+    "name": "@dash-tracker/server",
     "version": "0.0.1",
     "author": {
         "name": "Tejas Rawal",
@@ -17,18 +17,14 @@
     "description": "DASH bus tracker app",
     "keywords": ["dash", "bus", "tracker"],
     "license": "Apache-2.0",
-    "packageManager": "bun@1.3.14",
     "private": true,
     "scripts": {
-        "lint": "biome check .",
-        "lint:fix": "biome check . --apply-unsafe",
         "build": "rm -rf dist && tsc",
-        "format": "biome check .",
-        "format:write": "biome check . --write",
         "test": "vitest --run --typecheck",
         "test:coverage": "vitest --run --typecheck --coverage",
-        "start-server": "ts-node src/server/app.ts",
-        "dev-server": "nodemon --exec ts-node src/server/app.ts"
+        "start-server": "ts-node src/app.ts",
+        "dev-server": "nodemon --exec ts-node src/app.ts",
+        "typecheck": "tsc --noEmit"
     },
     "types": "./dist/index.d.ts",
     "dependencies": {
@@ -46,7 +42,6 @@
         "zod": "^3.24.0"
     },
     "devDependencies": {
-        "@biomejs/biome": "^1.9.4",
         "@tsconfig/node20": "20.1.4",
         "@tsconfig/strictest": "2.0.5",
         "@types/node": "20.17.6",
