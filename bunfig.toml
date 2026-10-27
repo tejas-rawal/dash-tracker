@@ -1,0 +1,5 @@
+[install]
+# A regenerated bun.lock gets configVersion 1, which would silently switch the workspace to isolated installs
+linker = "hoisted"
+exact = true
+minimumReleaseAge = 604800 # 7 days, in seconds

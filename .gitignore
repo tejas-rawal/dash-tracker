@@ -138,5 +138,5 @@ data/
 .planning/state.json
 
 ### Bun ###
-# Legacy binary lockfile bun 1.0.31 writes alongside the tracked text bun.lock
+# Binary lockfile written by old Bun versions; the text bun.lock is the only lockfile
 bun.lockb
