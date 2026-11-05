@@ -7,10 +7,10 @@ export default defineConfig({
     test: {
         root: dirname(fileURLToPath(import.meta.url)),
         globals: true,
-        setupFiles: ["src/server/test/setup.ts"],
+        setupFiles: ["src/test/setup.ts"],
         coverage: {
             include: ["src/**/*.ts"],
-            exclude: ["src/**/*.test.ts", "src/server/test/**", "src/server/app.ts", "src/server/config/**"],
+            exclude: ["src/**/*.test.ts", "src/test/**", "src/app.ts", "src/config/**"],
             thresholds: {
                 branches: 80,
                 functions: 80,

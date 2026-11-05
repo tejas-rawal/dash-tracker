@@ -1,36 +1,40 @@
 ---
 gsd_state_version: "1.0"
-milestone: v0.6
-status: "Milestone v0.6 shipped — PR #16"
-stopped_at: Phase 16 complete — all phases complete
-last_updated: "2026-10-19T16:55:02.736Z"
-last_activity: 2026-10-19
-state_head: bf275a615615e89b77166362ca9d07b5ad824b0e
+milestone: v0.7
+milestone_name: Frontend Foundation
+current_phase: 17
+current_phase_name: Monorepo Restructure
+status: verifying
+stopped_at: Completed 17-03-PLAN.md
+last_updated: "2026-10-23T17:32:18.434Z"
+last_activity: 2026-10-23
+last_activity_desc: Phase 17 execution started
+state_head: e0c8a572335cba7c1b1a626f00274a0015eb0f2e
 progress:
   total_phases: 5
   completed_phases: 16
-  total_plans: 18
-  completed_plans: 18
+  total_plans: 3
+  completed_plans: 3
   percent: 100
-milestone_name: Solidifying the backend
-current_phase: 16
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-15)
+See: .planning/PROJECT.md (updated 2026-10-20)
 
 **Core value:** Riders can always see accurate, near-real-time arrival predictions for their stop.
-**Current focus:** Planning next milestone (v0.6 shipped 2026-10-15; start with /gsd-new-milestone)
+**Current focus:** Phase 17 — Monorepo Restructure
 
 ## Current Position
 
-Phase: Milestone v0.6 complete
-Plan: —
-Status: Milestone v0.6 shipped — PR #16
-Last activity: 2026-10-19 — Milestone v0.6 shipped as PR #16 (Phases 13 and 15 security-verified first)
+Phase: 17 (Monorepo Restructure) — EXECUTING
+Plan: 3 of 3
+Status: Phase complete — ready for verification
+Last activity: 2026-10-23 — Phase 17 execution started
+
+Progress (v0.7): [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -92,6 +96,9 @@ Last activity: 2026-10-19 — Milestone v0.6 shipped as PR #16 (Phases 13 and 15
 | Phase 15 P02 | 3 min | 2 tasks | 3 files |
 | Phase 15 P03 | 4min | 2 tasks | 4 files |
 | Phase 16 P01 | 6min | 3 tasks | 7 files |
+| Phase 17 P01 | 3h 2m | 3 tasks | 5 files |
+| Phase 17 P02 | 8min | 3 tasks | 127 files |
+| Phase 17 P03 | 4min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -99,27 +106,53 @@ Last activity: 2026-10-19 — Milestone v0.6 shipped as PR #16 (Phases 13 and 15
 
 Decisions are logged in the PROJECT.md Key Decisions table. The per-phase decision logs for v0.6 are in `.planning/milestones/v0.6-phases/*/*-SUMMARY.md` and `*-CONTEXT.md`. Earlier milestones are in their own `v0.X-phases/` archives.
 
+Recent decisions affecting v0.7:
+
+- [Roadmap v0.7] Five phases, not the research's six. Coarse granularity merges the toolchain and CORS work into Phase 18: both are server-only, both must land before app code, and each change still gets its own commits. The restructure stays alone in Phase 17 so it gets its own gate and can ship as its own PR. REST (Phase 20) and SSE (Phase 21) stay separate so the core flow ships even if streaming slips.
+- [Requirements v0.7] Bun is pinned at 1.3.14 (not 1.4). `CORS_ALLOWED_ORIGINS` is optional and defaults to empty, which means no browser access. Biome moves to 2.5 in this milestone. Route colors (CORS-05) depend on what the live payload carries.
+- [Research v0.7] SSE runs over global `fetch` with `eventsource-parser`, not react-native-sse. v0.7 adds no REST polling alongside the stream and no server heartbeat. Freshness is measured from when the client receives data: stale banner at 75 s, watchdog reconnect at 90 s. The API base URL fails loudly when unset, with no fallback.
+- [Phase 17]: Pin linker = hoisted explicitly in bunfig.toml: a regenerated bun.lock gets configVersion 1, which would silently switch to isolated installs
+- [Phase 17]: Declare no trustedDependencies in Phase 17: a partial list replaces Bun's default trust list and blocks esbuild/Biome postinstalls (TOOL-07, Phase 18)
+- [Phase 17]: CI uses only the plain pull_request event, never pull_request_target
+- [Phase 17]: @vitest/coverage-v8@3.2.6 approved by the user despite SUS (too-new) seam verdict driven by newer 4.x/5.x publishes
+- [Phase 17]: Root owns @biomejs/biome 1.9.4 (exact) since the root runs the single Biome lint; the workspace no longer lists it
+- [Phase 17]: typecheck uses apps/server/tsconfig.typecheck.json (extends tsconfig.json, noEmit, tests included) so build keeps test files out of dist
+- [Phase 17]: streamConcurrencyCap 'never claims a slot' hang under coverage load deferred: pre-existing, fix lives in src/test/streamClient.ts outside 17-02's allowed test files
+- [Phase 17]: Superset run is cd apps/server && exec bun run dev-server; exec lets bun receive SIGTERM/SIGINT under any /bin/sh, proven by a fresh-worktree simulation with no orphans
+
 ### Pending Todos
 
 None yet.
 
 ### Blockers/Concerns
 
-- ⚠️ [Phase 1, v0.1] `lint:fix` uses Biome's deprecated `--apply-unsafe` flag (should become `--write --unsafe` per Biome 1.9.4); non-blocking, not yet addressed.
-- ⚠️ [Phase 3] Code review (archived: `.planning/milestones/v0.2-phases/03-stop-discovery/03-REVIEW.md`) flagged 2 non-blocking edge cases: empty-string `lat`/`lng` query params coerce to `0` instead of 400ing in `StopController`; `StopService.getNearbyStops` doesn't lower-bound `count` if called directly (not reachable via the controller today). Neither blocks Phase 3 completion. Relevant to Phase 11: the new nearby-predictions validation must not copy this empty-string coercion bug (NEAR-08).
+**v0.7 (new):**
+
+- ⚠️ [Phase 19] Expo SDK 58 (RN 0.88.0 and every 58.0.x patch) is behind the 7-day release-age gate until about 2026-10-22 to 26. Install only once the newest `expo` patch's whole dependency closure has cleared it. If execution reaches Phase 19 earlier, wait. Don't drop to SDK 57, and don't use `minimumReleaseAgeExcludes`.
+- ⚠️ [Phase 19] Research before planning: the SDK 58 blank TypeScript template plus expo-router, jest-expo/Jest 30/RNTL 14 under the hoisted linker, which Biome 2 rules fire on Expo files, and whether `expo install` writes `~` despite `exact = true`. SDK 58 Expo Go isn't in the iOS App Store yet, so UAT runs on the iOS simulator, on Android or with a dev build.
+- ⚠️ [Phase 21] Spike before planning. On an Android debug build and the iOS simulator, confirm that `expo/fetch` delivers stream chunks as they arrive and that `abort()` frees the server's stream slot. If it fails, replan Phase 21; the REST flow from Phase 20 is unaffected.
+- ⚠️ [Phase 17] Ask the user whether to land the restructure as its own PR or to merge the milestone PR without squashing. A squash merge would lose the pure-rename commit that keeps `git log --follow` and blame intact.
+- ⚠️ [Phase 18 / Phase 20] Capture live DASH payloads before planning. Phase 18 needs to know whether `/routes?verbose=true` carries `color`/`textColor` (decides CORS-05). Phase 20 needs the default number of `/predictions?stop=` entries per destination.
+- ⚠️ [Phase 17 / Phase 19] MONO-01 (workspace with both apps) and TOOL-09 (TypeScript 6 in both workspaces) are mapped to Phases 17 and 18, where only `apps/server` exists. The mobile half of each is checked by Phase 19 success criterion 5.
+
+**Carried forward:**
+
+- ⚠️ [Phase 1, v0.1] `lint:fix` uses Biome's deprecated `--apply-unsafe` flag. Scheduled: Phase 18 (TOOL-10).
+- ⚠️ [Phase 3] Code review (archived: `.planning/milestones/v0.2-phases/03-stop-discovery/03-REVIEW.md`) flagged 2 non-blocking edge cases: empty-string `lat`/`lng` query params coerce to `0` instead of 400ing in `StopController`; `StopService.getNearbyStops` doesn't lower-bound `count` if called directly (not reachable via the controller today).
 - ⚠️ [v0.2] An unrelated, pre-existing uncommitted fix to `BusDataRepository.ts` (dedupe `initialize()`/`refreshData()` load paths) was swept into the v0.2 execution history by the automated code-review-fix pipeline (commit `b52c130`) — correct fix, but out of Phase 3/4 scope and not explicitly approved before landing. Flagged to the user; left in place.
-- ⚠️ [Phase 6, v0.3] `FavoritesController.unfavorite` doesn't validate `entityId` the way `favorite` does, and `favorite`'s `entityId` is trim-validated but the untrimmed value is what's persisted/looked up — both whitespace-padded-id edge cases (WR-01/WR-03, `.planning/milestones/v0.3-phases/06-favorites-routes-stops/06-REVIEW.md`). Non-blocking, doesn't violate any FAV-01..05/DEVICE-01 requirement.
-- ⚠️ [Phase 7, v0.3] `RecentsController.resolveDeviceId` unsafely casts the device-id header to `string` with no in-controller guard; its `NotFoundError`→404 branch is unreachable; device-id header parsing is duplicated across 4 files; the recents cap (`5`) is a magic number in a SQL string; `resolveEntity` is duplicated verbatim between `RecentsService`/`FavoritesService` (WR-02/WR-03/IN-01/IN-02/IN-03, `.planning/milestones/v0.3-phases/07-recents-routes-stops/07-REVIEW.md`). Non-blocking, doesn't violate any RECENT-01..06 requirement.
+- ⚠️ [Phase 6, v0.3] `FavoritesController.unfavorite` doesn't validate `entityId` the way `favorite` does, and `favorite`'s `entityId` is trim-validated but the untrimmed value is what's persisted/looked up — both whitespace-padded-id edge cases (WR-01/WR-03, `.planning/milestones/v0.3-phases/06-favorites-routes-stops/06-REVIEW.md`). Non-blocking.
+- ⚠️ [Phase 7, v0.3] `RecentsController.resolveDeviceId` unsafely casts the device-id header to `string` with no in-controller guard; its `NotFoundError`→404 branch is unreachable; device-id header parsing is duplicated across 4 files; the recents cap (`5`) is a magic number in a SQL string; `resolveEntity` is duplicated verbatim between `RecentsService`/`FavoritesService` (WR-02/WR-03/IN-01/IN-02/IN-03, `.planning/milestones/v0.3-phases/07-recents-routes-stops/07-REVIEW.md`). Non-blocking.
 - ⚠️ [Phase 9] `RouteWithAlerts` (`BusRoute & { alerts }`) is built via object spread over a `BusRoute` class instance, losing its prototype methods even though the static type doesn't reflect that (WR-01, `09-REVIEW.md`). No live call site hits it today.
-- ⚠️ [Phase 12] `exitAfterLogFlush` in `processHandlers.ts` calls `logger.end()` and then waits for the flush; a log call in that window (two uncaught exceptions in one tick, or other logging while stdout is slow) hits Winston's unhandled "write after end" error and the process exits 7 instead of 1, sometimes losing the crash reason (reproduced; see `12-VERIFICATION.md`). Still non-zero, so a supervisor restarts it. Fix is a few lines plus a test that fires the handler twice: attach an error listener before `logger.end()`, or skip `logger.end()` and wait only for stdout.
-- ⚠️ [Phase 10] CR-02's fix (dropping vehicles with malformed `loc.time` instead of crashing the request) has no committed regression test — production code is correct and independently spot-checked by both the code fixer and the phase verifier, but a future refactor could silently reintroduce the crash with nothing to catch it. Flagged as an info-level gap in `10-VERIFICATION.md`; recommend adding the 3 spot-check cases to the committed `VehicleService.test.ts` suite.
-- ⚠️ [Phase 13] Code review (`13-REVIEW.md`) left 2 non-blocking warnings: numeric route/stop fields parsed with lenient `parseInt`/`parseFloat` and lat/lon not range-checked (WR-01); string fields unchecked, so a numeric `shortName` 404s on `/routes/:shortName` and a missing stop `name` is dropped (WR-02 — coerce, don't reject). Also open: no guard against overlapping `load()` calls (IN-03); permanent load failures log only at warn. Readiness signal (old WR-03) shipped in Phase 14 (HLTH-02).
-- ⚠️ [Phase 13] `.claude/CLAUDE.md`/`AGENTS.md` endpoint list is incomplete (stops, favorites/recents, nearby, stream, vehicles missing). The Vitest version was corrected to 3.2.6.
-- ⚠️ [Phase 14] Code review (`14-REVIEW.md`), all non-blocking and adjudicated in `14-VERIFICATION.md`: CR-01 (accepted per D-08) — once stale, an instance stays 503 for up to ~1h after DASH recovers because post-load retries are hourly; revisit before deploying behind an orchestrator that de-routes on readiness (WR-05: every replica de-routes together). WR-01 — `trust proxy = 0` silences express-rate-limit's XFF misconfiguration warning (map 0 → `false`). WR-02 closed by Phase 16. WR-03 — fixed 5-min grace breaks the 3-failure guarantee when `DASH_API_TIMEOUT_MS` > ~100s. WR-04 — `rateLimit.test.ts` reads `TRUST_PROXY_HOPS` from the local `.env` (pin it in `test/setup.ts`).
-- ⚠️ [Phase 15] Code review (`15-REVIEW.md`), all non-blocking and adjudicated in `15-VERIFICATION.md`: WR-01 — when merging an alert's periods an open start is ignored if another period has a start, so a currently active alert can be hidden (real bug, pre-existing; needs its own fix). WR-04 — `deriveActiveWindow` spreads every date into `Math.min`/`Math.max`, so one alert with ~130k periods throws `RangeError` and fails the poll (replace with a loop). WR-02 — lenient `new Date()` parsing makes alert windows depend on server TZ. WR-03 — alert text fields reach riders with no runtime type check. IN-05 — an alert whose ids are all non-strings is kept but shown nowhere, silently.
-- ⚠️ [Phase 15] `upstreamRateLimit.test.ts` ("allows the 59th and 60th requests and rejects the 61st and 62nd") hit its 5 s timeout once under full-suite coverage load; passes alone and on re-run. Raise that test's timeout if it recurs.
-- ⚠️ [Phase 16] Before the first production deploy, work through `.planning/DEPLOY-CHECKLIST.md`: with `TRUST_PROXY_HOPS` left at 0 behind a proxy, the whole service shares 5 streams and one 60/min bucket. Pairs with Phase 14 WR-01 (map 0 → `false` so express-rate-limit's XFF warning is not silenced).
-- [Phase 13-05] Bun 1.0.31 'bunx' does not forward SIGTERM/SIGINT to its child: signalling a 'bunx tsx' wrapper orphans the server. Smokes ran ./node_modules/.bin/tsx directly. Check how production is supervised (start-server uses ts-node via bun run, untested).
+- ⚠️ [Phase 12] `exitAfterLogFlush` in `processHandlers.ts` calls `logger.end()` and then waits for the flush; a log call in that window hits Winston's unhandled "write after end" error and the process exits 7 instead of 1, sometimes losing the crash reason (see `12-VERIFICATION.md`). Still non-zero, so a supervisor restarts it. Fix: attach an error listener before `logger.end()`, or skip `logger.end()` and wait only for stdout.
+- ⚠️ [Phase 10] CR-02's fix (dropping vehicles with malformed `loc.time` instead of crashing the request) has no committed regression test (info-level gap in `10-VERIFICATION.md`); recommend adding the 3 spot-check cases to `VehicleService.test.ts`.
+- ⚠️ [Phase 13] Code review (`13-REVIEW.md`) left 2 non-blocking warnings: numeric route/stop fields parsed with lenient `parseInt`/`parseFloat` and lat/lon not range-checked (WR-01); string fields unchecked, so a numeric `shortName` 404s on `/routes/:shortName` and a missing stop `name` is dropped (WR-02 — coerce, don't reject). Also open: no guard against overlapping `load()` calls (IN-03); permanent load failures log only at warn.
+- ⚠️ [Phase 13] `.claude/CLAUDE.md`/`AGENTS.md` endpoint list is incomplete (stops, favorites/recents, nearby, stream, vehicles missing). Phase 17 (MONO-04) rewrites their paths, which is a natural time to complete the list.
+- ⚠️ [Phase 14] Code review (`14-REVIEW.md`), all non-blocking and adjudicated in `14-VERIFICATION.md`: CR-01 (accepted per D-08) — once stale, an instance stays 503 for up to ~1h after DASH recovers; WR-01 — `trust proxy = 0` silences express-rate-limit's XFF warning (map 0 → `false`); WR-03 — fixed 5-min grace breaks the 3-failure guarantee when `DASH_API_TIMEOUT_MS` > ~100s; WR-04 — `rateLimit.test.ts` reads `TRUST_PROXY_HOPS` from the local `.env` (pin it in `test/setup.ts`). WR-04 matters in Phase 17, where `.env` moves to `apps/server`.
+- ⚠️ [Phase 15] Code review (`15-REVIEW.md`), all non-blocking and adjudicated in `15-VERIFICATION.md`: WR-01 — an open start is ignored when merging alert periods, so a currently active alert can be hidden (real bug, needs its own fix); WR-04 — `Math.min`/`Math.max` spread can throw `RangeError` on a huge alert; WR-02 — date parsing depends on server TZ; WR-03 — alert text fields have no runtime type check; IN-05 — an alert whose ids are all non-strings is kept but shown nowhere.
+- ⚠️ [Phase 15] `upstreamRateLimit.test.ts` ("allows the 59th and 60th requests and rejects the 61st and 62nd") hit its 5 s timeout once under full-suite coverage load; passes alone and on re-run. Raise that test's timeout if it recurs (watch for it in Phase 17's root-run coverage gate).
+- ⚠️ [Phase 16] Before the first production deploy, work through `.planning/DEPLOY-CHECKLIST.md`: with `TRUST_PROXY_HOPS` left at 0 behind a proxy, the whole service shares 5 streams and one 60/min bucket. Pairs with Phase 14 WR-01.
+- [Phase 13-05] Bun 1.0.31 `bunx` does not forward SIGTERM/SIGINT to its child, so signalling a `bunx tsx` wrapper orphans the server; smokes ran `./node_modules/.bin/tsx` directly. Phase 17 (Bun 1.3.14) and Phase 18 (`tsx` replaces ts-node) change both sides of this, so re-check signal forwarding then.
+- [Phase 17-02] streamConcurrencyCap.test.ts 'never claims a slot for a connect the shared bucket rejects' hung past its 15 s timeout in 1 of 8 root coverage runs (pre-existing; connectStream in src/test/streamClient.ts swallows pre-response socket errors). See 17 deferred-items.md; fix in Phase 18 or a quick task.
 
 ### Quick Tasks Completed
 
@@ -146,10 +179,11 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-13
-Stopped at: v0.6 milestone completed and archived (2026-10-15)
+Last session: 2026-10-23T17:32:18.401Z
+Stopped at: Completed 17-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Discuss Phase 17 with /gsd-discuss-phase 17, or plan it directly with /gsd-plan-phase 17
+- Decide the merge policy for the restructure (its own PR, or a non-squash milestone merge) before Phase 17 executes

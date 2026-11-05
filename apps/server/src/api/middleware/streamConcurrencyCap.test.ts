@@ -6,7 +6,7 @@ import { ipKeyGenerator } from "express-rate-limit";
 import request from "supertest";
 import { type MockInstance, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { logger } from "../../config";
-import { type OpenedStream, connectStream, openStream } from "../../test/streamClient";
+import { type OpenedStream, connectStream } from "../../test/streamClient";
 import { createStreamConcurrencyCap } from "./streamConcurrencyCap";
 import { createUpstreamRateLimiter } from "./upstreamRateLimit";
 

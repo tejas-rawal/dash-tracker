@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 4
+open_count: 5
 waived_count: 0
 fixed_count: 0
-total_count: 4
-last_updated: 2026-10-01T14:32:07.975Z
+total_count: 5
+last_updated: 2026-10-23T17:24:12.528Z
 ---
 
 # Broken Windows Ledger
@@ -19,6 +19,7 @@ last_updated: 2026-10-01T14:32:07.975Z
 | 2 | 05 | unrun-verify | src/server/api/services/ServiceAlertPollService.ts |  | Live boot check against real DASH/Swiftly API (G-05-1 human-check) not run by executor - requires human observation of server startup logs | open |  | 2026-09-02T01:00:52.929Z |  |
 | 3 | 13 | deviation | src/server/api/services/BusDataRefreshService.test.ts |  | 13-05: plan's adjacency spec (n=1..6) contradicts its locked equal-jitter formula at the 6->7 cap boundary; pinned n=1..5 plus a separate cap-boundary case | open |  | 2026-10-01T14:32:07.817Z |  |
 | 4 | 13 | deviation | src/server/app.ts |  | 13-05: SIGTERM/SIGINT smokes run tsx directly; Bun 1.0.31 'bunx' does not forward signals to its child (exit 143, orphaned node processes) | open |  | 2026-10-01T14:32:07.975Z |  |
+| 5 | 17 | deviation | apps/server/src/test/streamClient.ts |  | streamConcurrencyCap.test.ts 'never claims a slot for a connect the shared bucket rejects' hung past its 15 s timeout in 1 of 8 root coverage runs; connectStream swallows pre-response socket errors (see 17 deferred-items.md) | open |  | 2026-10-23T17:24:12.528Z |  |
 
 ````json
 [
@@ -71,6 +72,19 @@ last_updated: 2026-10-01T14:32:07.975Z
     "recorded_at": "2026-10-01T14:32:07.975Z",
     "resolved_at": null,
     "milestone": "v0.6"
+  },
+  {
+    "id": 5,
+    "kind": "deviation",
+    "phase": "17",
+    "file": "apps/server/src/test/streamClient.ts",
+    "line": null,
+    "description": "streamConcurrencyCap.test.ts 'never claims a slot for a connect the shared bucket rejects' hung past its 15 s timeout in 1 of 8 root coverage runs; connectStream swallows pre-response socket errors (see 17 deferred-items.md)",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-23T17:24:12.528Z",
+    "resolved_at": null,
+    "milestone": "v0.7"
   }
 ]
 ````

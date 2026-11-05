@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BusRoute, BusStop, RouteType } from "../models";
-import { RouteDirection } from "../models/RouteDirection";
 
 vi.mock("../../config", () => ({
     axios: { get: vi.fn() },
