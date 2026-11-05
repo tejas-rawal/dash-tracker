@@ -1,18 +1,14 @@
 ---
-status: testing
+status: complete
 phase: 17-monorepo-restructure
 source: [17-VERIFICATION.md]
 started: 2026-10-23T17:46:48Z
-updated: 2026-11-04T12:30:00Z
+updated: 2026-11-05T18:13:05.030Z
 ---
 
 ## Current Test
 
-number: 5
-name: Merge the Phase 17 PR with a merge commit, never a squash (prohibition, D-01)
-expected: |
-  Rename commit 0be937b is reachable from main, and `git log --follow -- apps/server/src/app.ts` on main still lists b904b99
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -38,7 +34,8 @@ note: "Verified by Claude on PR #17, CI run 40558783754 (user re-enabled the man
 
 ### 5. Merge the Phase 17 PR with a merge commit, never a squash (prohibition, D-01)
 expected: Rename commit 0be937b is reachable from main, and `git log --follow -- apps/server/src/app.ts` on main still lists b904b99
-result: [pending]
+result: pass
+note: "Verified by Claude after merging PR #17 with gh pr merge --merge: main is merge commit caffee2 (parents b904b99, 1df28f2); git merge-base --is-ancestor 0be937b origin/main succeeds; git log --follow -- apps/server/src/app.ts on main lists 0be937b and b904b99 (14 commits)."
 
 ### 6. Review the two test-tier prohibitions (install gates and coverage gate not weakened)
 expected: Accept the grep and diff evidence in 17-VERIFICATION.md, or require a wired enforcement test
@@ -52,9 +49,9 @@ note: "Truth 20 checked directly: vitest --sequence.shuffle.files with seeds 123
 ## Summary
 
 total: 7
-passed: 5
+passed: 6
 issues: 0
-pending: 1
+pending: 0
 skipped: 1
 blocked: 0
 
