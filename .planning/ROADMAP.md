@@ -245,3 +245,13 @@ Phases execute in numeric order: 17 → 18 → 19 → 20 → 21
 ---
 
 _Full phase details for shipped milestones archived to `.planning/milestones/v0.1-ROADMAP.md` through `.planning/milestones/v0.6-ROADMAP.md`._
+
+## Backlog
+
+### Phase 999.1: Follow-up — Phase 17 deferred UAT follow-up: Test 7 (BACKLOG)
+
+**Goal:** Resolve the UAT checkpoint deferred during Phase 17 verification
+**Source phase:** 17
+**Deferred at:** 2026-11-05 during /gsd-verify-work 17 session completion
+**Follow-ups:**
+- [ ] Test 7: apps/server/src/api/routes/healthRoutes.test.ts is order-dependent within the file: vitest --sequence.shuffle.tests (seeds 1234, 98765, 42) fails 1-2 'before the first successful route/stop load' tests because the BusDataRepository singleton is never reset between tests. Pre-existing since v0.6 (b904b99), not a Phase 17 regression; normal CI order passes. (deferred 2026-11-04)
