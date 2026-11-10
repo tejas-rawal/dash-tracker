@@ -139,7 +139,24 @@ Plans:
   4. With `CORS_ALLOWED_ORIGINS=http://localhost:8081`, browser code on that origin can read the 200, both 429s (shared bucket and stream cap), the 503, the 404 and the SSE stream, and it can read `Retry-After`. Its preflight never spends a rate-limit token. With the variable unset, no browser origin can read responses. A value containing `*`, a path, a trailing slash or a malformed origin stops the server at startup.
   5. Requests without an `Origin` header (native apps, curl) behave exactly as before. Route responses carry DASH's `color`/`textColor` if the live routes payload has them. If it doesn't, CORS-05 is closed as not applicable, with the captured payload as evidence.
 
-**Plans**: TBD
+**Plans**: 6 plans
+
+Plans:
+**Wave 1**
+- [ ] 18-01-PLAN.md — Node 24.22.2 LTS pin, explicit trustedDependencies with `bun pm untrusted` empty, clean reinstall with better-sqlite3 on ABI 137, CI setup-node before every install plus a dist boot smoke, and the legitimacy gate for @types/node and Biome 2.5.15
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 18-02-PLAN.md — tsx replaces ts-node/nodemon (signals re-checked), @types to devDependencies, TypeScript 6.0.3 on @tsconfig/node24 with CommonJS emit (commonjs + bundler) and explicit `types: ["node"]`
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 18-03-PLAN.md — Biome 2.5.15: new-rule fix, migrate commit with the 1.9.4 style rules named one by one, tool-only reformat commit, .git-blame-ignore-revs, `lint:fix` = `--write --unsafe`, same 36 warnings
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 18-04-PLAN.md — createApp() extraction, then `cors` with an exact-origin callback from Zod-validated CORS_ALLOWED_ORIGINS, mounted after trust proxy; malformed origins stop startup; docs
+- [ ] 18-05-PLAN.md — DASH route `color`/`textColor` through RouteData → BusRoute → every route response, dropped per field when malformed and never failing the load
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 18-06-PLAN.md — D-14 matrix: 200, both 429s, 503, 404 and SSE by allowed/disallowed/absent Origin, preflights that spend no token, and createCorsMiddleware unit tests
 **Notes**:
 - This phase merges the research's separate toolchain and CORS phases (coarse granularity). Both are server-only, both must land before any app code, and each change still gets its own commits.
 - The toolchain plans run first, so the CORS code is written on TypeScript 6 and in Biome 2 style.
