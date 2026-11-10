@@ -1,7 +1,7 @@
 ---
 phase: 17-monorepo-restructure
 verified: 2026-10-23T17:44:42Z
-status: human_needed
+status: passed
 score: 15/21 must-haves verified
 covered_files:
   - ".claude/CLAUDE.md"
@@ -220,33 +220,40 @@ No blockers.
 ### Human Verification Required
 
 #### 1. Server boot from apps/server
+
 **Test:** After item 3, run `bun run --cwd apps/server start-server`, then `bun run dev:server` from the root. Curl `/api/v1/health/live`, touch `apps/server/src/app.ts`, then press Ctrl-C.
 **Expected:** 200 from both. SQLite under `apps/server/data/` with no root `data/`. nodemon restarts on the touch. No nodemon, ts-node or listener left after Ctrl-C.
 **Why human:** The verifier may not start servers, and no test covers boot or signal cleanup.
 
 #### 2. Fresh Superset workspace
+
 **Test:** Create a workspace from this branch, let setup run, start the run command, hit health/live, then stop the run from Superset.
 **Expected:** Frozen install. `apps/server/.env` is written (no root env file). The run answers 200. The stop leaves no bun, nodemon or ts-node process and frees the port.
 **Why human:** This needs the real Superset runner.
 
 #### 3. One-time local env and data move
+
 **Test:** This worktree still has a root env file and no `apps/server/.env`. Move the env file (and any `data/`) into `apps/server/` here and in the main checkout.
 **Expected:** `bun run dev:server` boots, and favorites and recents survive.
 **Why human:** Secret file, and a user-owned data decision.
 
 #### 4. CI on the PR
+
 **Test:** Push and open the Phase 17 PR.
 **Expected:** All 4 jobs are green. Each "Verify Bun pin and clean install" step prints 1.3.14/1.3.14 with an empty status, and Codecov uploads `./apps/server/coverage/clover.xml`.
 **Why human:** CI has never run on this branch.
 
 #### 5. Merge with a merge commit (D-01)
+
 **Expected:** `0be937b` is reachable from main, and `--follow` history survives.
 **Why human:** A future action; judgment-tier prohibition.
 
 #### 6. The two flagged test-tier prohibitions
+
 **Expected:** Accept the grep and diff evidence in the Prohibitions table, or request enforcement tests.
 
 #### 7. The three backstop truths (19-21)
+
 **Expected:** Accept the circumstantial evidence, or request explicit tests (for example a shuffled Vitest run with `--sequence.shuffle`).
 
 ### Gaps Summary

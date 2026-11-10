@@ -87,7 +87,7 @@ See `.planning/milestones/v0.6-ROADMAP.md` for full phase details.
 
 **Phase shape:** The work runs in order: the repo layout first, then the server runtime and API contract, then the app. Every phase ends on a working product. Research suggested six phases. Under coarse granularity, its separate toolchain and CORS phases are merged into Phase 18 (see that phase's notes), which gives five.
 
-- [ ] **Phase 17: Monorepo Restructure** - The backend moves to `apps/server` with a pure `git mv` inside a Bun 1.3.14 workspace that has one lockfile. The server's tests, coverage, build and dev server stay green from the root and from `apps/server`
+- [x] **Phase 17: Monorepo Restructure** - The backend moves to `apps/server` with a pure `git mv` inside a Bun 1.3.14 workspace that has one lockfile. The server's tests, coverage, build and dev server stay green from the root and from `apps/server` (completed 2026-11-10)
 - [ ] **Phase 18: Server Toolchain & CORS** - The server runs on Node 24, tsx, TypeScript 6 and Biome 2.5 with no change in behavior. Browser code on an allowed origin can read every API response, including its retry timing
 - [ ] **Phase 19: App Foundation & Route List** - The Expo SDK 58 app launches on iOS, Android and web and shows every DASH route from the local server, with error states written for riders. It is linted, unit-tested at ≥80% coverage and checked in CI
 - [ ] **Phase 20: Stops & Arrivals over REST** - A rider goes from a route to its stops, one direction at a time, to that stop's upcoming arrivals for the route. This completes the core flow over REST
@@ -108,7 +108,7 @@ See `.planning/milestones/v0.6-ROADMAP.md` for full phase details.
   4. `bun.lock` is the only lockfile, and a root `bunfig.toml` pins the hoisted linker, exact version specifiers and the 7-day minimum release age. `bun install --frozen-lockfile` under Bun 1.3.14 (the `packageManager` pin) leaves the working tree clean, both locally and in every CI job.
   5. A fresh Superset worktree sets up and runs the server from `apps/server`. CLAUDE.md, AGENTS.md, README and the Codecov upload all use the new paths.
 
-**Plans**: 3/3 plans executed
+**Plans**: 3/3 plans complete
 
 Plans:
 **Wave 1**
@@ -236,7 +236,7 @@ Phases execute in numeric order: 17 → 18 → 19 → 20 → 21
 | 14. Health Checks & Rate Limiting | v0.6 | 3/3 | Complete | 2026-10-07 |
 | 15. Alert & Nearby Data Hygiene | v0.6 | 3/3 | Complete | 2026-10-07 |
 | 16. Concurrent SSE Stream Cap per IP | v0.6 | 1/1 | Complete | 2026-10-13 |
-| 17. Monorepo Restructure | v0.7 | 3/3 | In Progress | - |
+| 17. Monorepo Restructure | v0.7 | 3/3 | Complete    | 2026-11-10 |
 | 18. Server Toolchain & CORS | v0.7 | 0/TBD | Not started | - |
 | 19. App Foundation & Route List | v0.7 | 0/TBD | Not started | - |
 | 20. Stops & Arrivals over REST | v0.7 | 0/TBD | Not started | - |

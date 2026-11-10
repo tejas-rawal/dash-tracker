@@ -2,39 +2,39 @@
 gsd_state_version: "1.0"
 milestone: v0.7
 milestone_name: Frontend Foundation
-current_phase: 17
-current_phase_name: Monorepo Restructure
-status: verifying
-stopped_at: Completed 17-03-PLAN.md
-last_updated: "2026-10-23T17:32:18.434Z"
-last_activity: 2026-10-23
-last_activity_desc: Phase 17 execution started
-state_head: e0c8a572335cba7c1b1a626f00274a0015eb0f2e
+current_phase: 18
+current_phase_name: Server Toolchain & CORS
+status: planning
+stopped_at: Phase 17 complete, ready to plan Phase 18
+last_updated: "2026-11-10T16:51:18.558Z"
+last_activity: 2026-11-10
+last_activity_desc: Phase 17 complete, transitioned to Phase 18
+state_head: aa2cb9718dd96d610a905b04b8376d8b248266b7
 progress:
   total_phases: 5
-  completed_phases: 16
+  completed_phases: 1
   total_plans: 3
   completed_plans: 3
-  percent: 100
+  percent: 20
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-20)
+See: .planning/PROJECT.md (updated 2026-11-10)
 
 **Core value:** Riders can always see accurate, near-real-time arrival predictions for their stop.
-**Current focus:** Phase 17 — Monorepo Restructure
+**Current focus:** Phase 18 — Server Toolchain & CORS
 
 ## Current Position
 
-Phase: 17 (Monorepo Restructure) — EXECUTING
-Plan: 3 of 3
-Status: Phase complete — ready for verification
-Last activity: 2026-10-23 — Phase 17 execution started
+Phase: 18 — Server Toolchain & CORS
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-11-10 — Phase 17 complete, transitioned to Phase 18
 
-Progress (v0.7): [░░░░░░░░░░] 0%
+Progress (v0.7): [██░░░░░░░░] 20% (1/5 phases)
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Progress (v0.7): [░░░░░░░░░░] 0%
 | 14 | 3 | - | - |
 | 15 | 3 | - | - |
 | 16 | 1 | - | - |
+| 17 | 3 | - | - |
 
 **Recent Trend:**
 
@@ -131,7 +132,6 @@ None yet.
 - ⚠️ [Phase 19] Expo SDK 58 (RN 0.88.0 and every 58.0.x patch) is behind the 7-day release-age gate until about 2026-10-22 to 26. Install only once the newest `expo` patch's whole dependency closure has cleared it. If execution reaches Phase 19 earlier, wait. Don't drop to SDK 57, and don't use `minimumReleaseAgeExcludes`.
 - ⚠️ [Phase 19] Research before planning: the SDK 58 blank TypeScript template plus expo-router, jest-expo/Jest 30/RNTL 14 under the hoisted linker, which Biome 2 rules fire on Expo files, and whether `expo install` writes `~` despite `exact = true`. SDK 58 Expo Go isn't in the iOS App Store yet, so UAT runs on the iOS simulator, on Android or with a dev build.
 - ⚠️ [Phase 21] Spike before planning. On an Android debug build and the iOS simulator, confirm that `expo/fetch` delivers stream chunks as they arrive and that `abort()` frees the server's stream slot. If it fails, replan Phase 21; the REST flow from Phase 20 is unaffected.
-- ⚠️ [Phase 17] Ask the user whether to land the restructure as its own PR or to merge the milestone PR without squashing. A squash merge would lose the pure-rename commit that keeps `git log --follow` and blame intact.
 - ⚠️ [Phase 18 / Phase 20] Capture live DASH payloads before planning. Phase 18 needs to know whether `/routes?verbose=true` carries `color`/`textColor` (decides CORS-05). Phase 20 needs the default number of `/predictions?stop=` entries per destination.
 - ⚠️ [Phase 17 / Phase 19] MONO-01 (workspace with both apps) and TOOL-09 (TypeScript 6 in both workspaces) are mapped to Phases 17 and 18, where only `apps/server` exists. The mobile half of each is checked by Phase 19 success criterion 5.
 
@@ -146,12 +146,13 @@ None yet.
 - ⚠️ [Phase 12] `exitAfterLogFlush` in `processHandlers.ts` calls `logger.end()` and then waits for the flush; a log call in that window hits Winston's unhandled "write after end" error and the process exits 7 instead of 1, sometimes losing the crash reason (see `12-VERIFICATION.md`). Still non-zero, so a supervisor restarts it. Fix: attach an error listener before `logger.end()`, or skip `logger.end()` and wait only for stdout.
 - ⚠️ [Phase 10] CR-02's fix (dropping vehicles with malformed `loc.time` instead of crashing the request) has no committed regression test (info-level gap in `10-VERIFICATION.md`); recommend adding the 3 spot-check cases to `VehicleService.test.ts`.
 - ⚠️ [Phase 13] Code review (`13-REVIEW.md`) left 2 non-blocking warnings: numeric route/stop fields parsed with lenient `parseInt`/`parseFloat` and lat/lon not range-checked (WR-01); string fields unchecked, so a numeric `shortName` 404s on `/routes/:shortName` and a missing stop `name` is dropped (WR-02 — coerce, don't reject). Also open: no guard against overlapping `load()` calls (IN-03); permanent load failures log only at warn.
-- ⚠️ [Phase 13] `.claude/CLAUDE.md`/`AGENTS.md` endpoint list is incomplete (stops, favorites/recents, nearby, stream, vehicles missing). Phase 17 (MONO-04) rewrites their paths, which is a natural time to complete the list.
-- ⚠️ [Phase 14] Code review (`14-REVIEW.md`), all non-blocking and adjudicated in `14-VERIFICATION.md`: CR-01 (accepted per D-08) — once stale, an instance stays 503 for up to ~1h after DASH recovers; WR-01 — `trust proxy = 0` silences express-rate-limit's XFF warning (map 0 → `false`); WR-03 — fixed 5-min grace breaks the 3-failure guarantee when `DASH_API_TIMEOUT_MS` > ~100s; WR-04 — `rateLimit.test.ts` reads `TRUST_PROXY_HOPS` from the local `.env` (pin it in `test/setup.ts`). WR-04 matters in Phase 17, where `.env` moves to `apps/server`.
+- ⚠️ [Phase 14] Code review (`14-REVIEW.md`), all non-blocking and adjudicated in `14-VERIFICATION.md`: CR-01 (accepted per D-08) — once stale, an instance stays 503 for up to ~1h after DASH recovers; WR-01 — `trust proxy = 0` silences express-rate-limit's XFF warning (map 0 → `false`); WR-03 — fixed 5-min grace breaks the 3-failure guarantee when `DASH_API_TIMEOUT_MS` > ~100s; (WR-04 fixed in Phase 17: `src/test/setup.ts` pins `TRUST_PROXY_HOPS=0`.)
 - ⚠️ [Phase 15] Code review (`15-REVIEW.md`), all non-blocking and adjudicated in `15-VERIFICATION.md`: WR-01 — an open start is ignored when merging alert periods, so a currently active alert can be hidden (real bug, needs its own fix); WR-04 — `Math.min`/`Math.max` spread can throw `RangeError` on a huge alert; WR-02 — date parsing depends on server TZ; WR-03 — alert text fields have no runtime type check; IN-05 — an alert whose ids are all non-strings is kept but shown nowhere.
 - ⚠️ [Phase 15] `upstreamRateLimit.test.ts` ("allows the 59th and 60th requests and rejects the 61st and 62nd") hit its 5 s timeout once under full-suite coverage load; passes alone and on re-run. Raise that test's timeout if it recurs (watch for it in Phase 17's root-run coverage gate).
 - ⚠️ [Phase 16] Before the first production deploy, work through `.planning/DEPLOY-CHECKLIST.md`: with `TRUST_PROXY_HOPS` left at 0 behind a proxy, the whole service shares 5 streams and one 60/min bucket. Pairs with Phase 14 WR-01.
 - [Phase 13-05] Bun 1.0.31 `bunx` does not forward SIGTERM/SIGINT to its child, so signalling a `bunx tsx` wrapper orphans the server; smokes ran `./node_modules/.bin/tsx` directly. Phase 17 (Bun 1.3.14) and Phase 18 (`tsx` replaces ts-node) change both sides of this, so re-check signal forwarding then.
+- ⚠️ [Phase 17 UAT] `apps/server/src/api/routes/healthRoutes.test.ts` is order-dependent within the file (fails under `--sequence.shuffle.tests`; the `BusDataRepository` singleton is never reset). Pre-existing since v0.6; backlog 999.1.
+- [Phase 17 UAT] In a hand run, SIGHUP to `cd apps/server && exec bun run dev-server` left bun/nodemon/ts-node running; SIGTERM, SIGINT and Superset's own terminal dispose all stop it cleanly. Re-check when Phase 18 swaps ts-node for `tsx`.
 - [Phase 17-02] streamConcurrencyCap.test.ts 'never claims a slot for a connect the shared bucket rejects' hung past its 15 s timeout in 1 of 8 root coverage runs (pre-existing; connectStream in src/test/streamClient.ts swallows pre-response socket errors). See 17 deferred-items.md; fix in Phase 18 or a quick task.
 
 ### Quick Tasks Completed
@@ -179,11 +180,11 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-23T17:32:18.401Z
-Stopped at: Completed 17-03-PLAN.md
+Last session: 2026-11-10T17:00:00Z
+Stopped at: Phase 17 complete, ready to plan Phase 18
 Resume file: None
 
 ## Operator Next Steps
 
-- Discuss Phase 17 with /gsd-discuss-phase 17, or plan it directly with /gsd-plan-phase 17
-- Decide the merge policy for the restructure (its own PR, or a non-squash milestone merge) before Phase 17 executes
+- Discuss Phase 18 with /gsd-discuss-phase 18, or plan it directly with /gsd-plan-phase 18
+- Capture live DASH payloads before planning Phase 18 (route `color`/`textColor` decides CORS-05)

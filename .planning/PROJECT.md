@@ -251,7 +251,10 @@ v0.6 REQ-IDs are archived in `.planning/milestones/v0.6-REQUIREMENTS.md`.
 | Upstream alert lists (`activePeriods`, `informedEntities`) are typed `unknown` on the model; only `parseAlert` reads them | The compiler then refuses any unchecked read of upstream structure | ✓ Shipped Phase 15 |
 | The nearby entry guard requires non-empty string names/ids, a finite `stopCode` and non-empty destination `directionId`/`headsign`; no trimming | A rider must never see a stop with no name or a destination with no headsign (v0.5 WR-01) | ✓ Shipped Phase 15 — whitespace-only names still pass (D-11) |
 | Cap concurrent `/predictions/stream` connections at 5 per client IP (IPv6 /56), keyed like the shared 60/min bucket and checked after it | Held-open streams bypassed the per-request bucket and could multiply DASH polls; 5 fits a rider app with a few stops open, and riders behind one shared address sharing 5 is an accepted trade-off (AR-16-02) | ✓ Shipped Phase 16 — live UAT against DASH passed; production proxy-hop check moved to the deploy checklist |
-| Ship the v0.7 monorepo restructure (Phase 17) as its own PR, merged with a merge commit | A squash merge would collapse the rename-only `git mv` commit into the config changes and break `git log --follow`/blame for every moved server file | — Pending |
+| Ship the v0.7 monorepo restructure (Phase 17) as its own PR, merged with a merge commit | A squash merge would collapse the rename-only `git mv` commit into the config changes and break `git log --follow`/blame for every moved server file | ✓ Shipped Phase 17 — PR #17 merged as merge commit `caffee2`; `0be937b` is reachable from `main` and `--follow` reaches `b904b99` |
+| Pin Bun 1.3.14 in the root `packageManager` and gate installs with `bunfig.toml` (hoisted linker, exact specifiers, 7-day `minimumReleaseAge`); `bun.lock` is the only lockfile and every CI and Superset install is frozen | One Bun version everywhere and a supply-chain delay on new publishes; the hoisted linker is pinned because a regenerated lockfile would silently switch to isolated installs | ✓ Shipped Phase 17 — all 4 CI jobs verify the pin and a clean tree |
+| Type-check tests through a separate `tsconfig.typecheck.json` instead of widening `tsconfig.json` | `build` keeps excluding tests from `dist/` while `typecheck` covers every `*.test.ts` | ✓ Shipped Phase 17 |
+| Automated runners start the server with `cd apps/server && exec bun run dev-server`; the root `dev:server` is for humans | `bun run --filter` drops SIGTERM and orphans nodemon; `exec` lets SIGTERM/SIGINT reach bun directly | ✓ Shipped Phase 17 — a real Superset workspace stops with no orphans (UAT 2) |
 
 ## Evolution
 
@@ -271,4 +274,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-20 after starting v0.7 milestone*
+*Last updated: 2026-11-10 after Phase 17*
