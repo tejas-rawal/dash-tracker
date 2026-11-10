@@ -4,7 +4,7 @@ dash-tracker is a Node.js/Express REST API that proxies and structures data from
 
 ## Commands
 
-- **Install:** `bun install --frozen-lockfile` at the repo root, with Bun 1.3.14 from the root `packageManager` (proto resolves it locally, setup-bun in CI). The text `bun.lock` is the only lockfile, and the root `bunfig.toml` enforces the hoisted linker, exact specifiers and a 7-day minimum release age. To add a dependency, run `bun add <package>@<version>` with an exact version inside the workspace directory that uses it (for example `apps/server`).
+- **Install:** `bun install --frozen-lockfile` at the repo root, with Bun 1.3.14 from the root `packageManager` (proto resolves it locally, setup-bun in CI). The text `bun.lock` is the only lockfile, and the root `bunfig.toml` enforces the hoisted linker, exact specifiers and a 7-day minimum release age. To add a dependency, run `bun add <package>@<version>` with an exact version inside the workspace directory that uses it (for example `apps/server`). Node comes from `.node-version` (proto resolves it locally, setup-node in CI), and the root `trustedDependencies` lists the only packages whose install scripts may run, so `bun pm untrusted` must stay empty.
 - **Dev server:** `bun run dev:server` from the root. It runs the `dev-server` script in `apps/server` (nodemon + ts-node, auto-restart on change); stop it with Ctrl-C.
 - **Build:** `bun run build` fans out to every workspace; in `apps/server` it runs `rm -rf dist && tsc` and writes `apps/server/dist/`.
 - **Start without building:** `bun run --cwd apps/server start-server` (ts-node).
@@ -17,7 +17,7 @@ dash-tracker is a Node.js/Express REST API that proxies and structures data from
 
 ## Technology Stack
 
-- TypeScript 5.7.3, Node 20 (`.node-version`), Bun 1.3.14 (root `packageManager`) as package manager, workspace manager and script runner; hoisted linker; the text `bun.lock` is the only lockfile
+- TypeScript 5.7.3, Node 24.22.2 LTS (`.node-version`; every CI job sets it up with actions/setup-node before the install), Bun 1.3.14 (root `packageManager`) as package manager, workspace manager and script runner; hoisted linker; the text `bun.lock` is the only lockfile
 - Monorepo: root `package.json` `workspaces: ["apps/*"]`; the API is `apps/server` (`@dash-tracker/server`); root `test`, `test:coverage`, `build` and `typecheck` fan out with `bun run --filter './apps/*'`; root `lint` and `format` run Biome once
 - Express 4.21.2, Zod 3.25.76 (env/data validation), Axios 1.7.9 (DASH API client), Winston 3.17.0 (logging)
 - Biome 1.9.4 — sole lint + format tool (root `biome.json`; 120 char width, 4-space indent, `noDefaultExport` off); Prettier fully removed

@@ -16,23 +16,64 @@ jobs:
     steps:
       - name: Checkout Git repository
         uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: package.json
       - name: Install dependencies with Bun
         run: bun install --frozen-lockfile
-      - name: Verify Bun pin and clean install
+      - name: Verify Bun and Node pins, trust list and clean install
         run: |
           expected=$(node -p "require('./package.json').packageManager.split('@')[1]")
           actual=$(bun --version)
           echo "packageManager Bun: $expected, installed Bun: $actual"
           if [ "$actual" != "$expected" ]; then exit 1; fi
+          expected_node="v$(cat .node-version)"
+          actual_node=$(node --version)
+          echo ".node-version Node: $expected_node, installed Node: $actual_node"
+          if [ "$actual_node" != "$expected_node" ]; then exit 1; fi
+          untrusted=$(bun pm untrusted 2>&1)
+          echo "$untrusted"
+          if ! echo "$untrusted" | grep -qF "Found 0 untrusted dependencies with scripts"; then exit 1; fi
           status=$(git status --porcelain)
           echo "$status"
           if [ -n "$status" ]; then exit 1; fi
       - name: Build
         run: bun run build
+      - name: Boot smoke test
+        env:
+          DASH_API_BASE_URL: http://127.0.0.1:9
+          DASH_API_AGENCY: smoke
+          DASH_API_KEY: smoke
+          PORT: "3000"
+          DB_PATH: ${{ runner.temp }}/smoke/dash-tracker.sqlite
+        run: |
+          node apps/server/dist/app.js > "$RUNNER_TEMP/server.log" 2>&1 &
+          pid=$!
+          healthy=""
+          for _ in $(seq 1 30); do
+            if curl -fsS "http://127.0.0.1:${PORT}/api/v1/health/live"; then
+              echo
+              healthy=1
+              break
+            fi
+            sleep 1
+          done
+          if [ -z "$healthy" ]; then
+            echo "health/live never answered"
+            cat "$RUNNER_TEMP/server.log"
+            exit 1
+          fi
+          kill -TERM "$pid"
+          code=0
+          wait "$pid" || code=$?
+          cat "$RUNNER_TEMP/server.log"
+          echo "server exit status: $code"
+          if [ "$code" -ne 0 ]; then exit 1; fi
   lint:
     name: Lint
 
@@ -42,18 +83,29 @@ jobs:
     steps:
       - name: Checkout Git repository
         uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: package.json
       - name: Install dependencies with Bun
         run: bun install --frozen-lockfile
-      - name: Verify Bun pin and clean install
+      - name: Verify Bun and Node pins, trust list and clean install
         run: |
           expected=$(node -p "require('./package.json').packageManager.split('@')[1]")
           actual=$(bun --version)
           echo "packageManager Bun: $expected, installed Bun: $actual"
           if [ "$actual" != "$expected" ]; then exit 1; fi
+          expected_node="v$(cat .node-version)"
+          actual_node=$(node --version)
+          echo ".node-version Node: $expected_node, installed Node: $actual_node"
+          if [ "$actual_node" != "$expected_node" ]; then exit 1; fi
+          untrusted=$(bun pm untrusted 2>&1)
+          echo "$untrusted"
+          if ! echo "$untrusted" | grep -qF "Found 0 untrusted dependencies with scripts"; then exit 1; fi
           status=$(git status --porcelain)
           echo "$status"
           if [ -n "$status" ]; then exit 1; fi
@@ -68,18 +120,29 @@ jobs:
     steps:
       - name: Checkout Git repository
         uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: package.json
       - name: Install dependencies with Bun
         run: bun install --frozen-lockfile
-      - name: Verify Bun pin and clean install
+      - name: Verify Bun and Node pins, trust list and clean install
         run: |
           expected=$(node -p "require('./package.json').packageManager.split('@')[1]")
           actual=$(bun --version)
           echo "packageManager Bun: $expected, installed Bun: $actual"
           if [ "$actual" != "$expected" ]; then exit 1; fi
+          expected_node="v$(cat .node-version)"
+          actual_node=$(node --version)
+          echo ".node-version Node: $expected_node, installed Node: $actual_node"
+          if [ "$actual_node" != "$expected_node" ]; then exit 1; fi
+          untrusted=$(bun pm untrusted 2>&1)
+          echo "$untrusted"
+          if ! echo "$untrusted" | grep -qF "Found 0 untrusted dependencies with scripts"; then exit 1; fi
           status=$(git status --porcelain)
           echo "$status"
           if [ -n "$status" ]; then exit 1; fi
@@ -94,18 +157,29 @@ jobs:
     steps:
       - name: Checkout Git repository
         uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: package.json
       - name: Install dependencies with Bun
         run: bun install --frozen-lockfile
-      - name: Verify Bun pin and clean install
+      - name: Verify Bun and Node pins, trust list and clean install
         run: |
           expected=$(node -p "require('./package.json').packageManager.split('@')[1]")
           actual=$(bun --version)
           echo "packageManager Bun: $expected, installed Bun: $actual"
           if [ "$actual" != "$expected" ]; then exit 1; fi
+          expected_node="v$(cat .node-version)"
+          actual_node=$(node --version)
+          echo ".node-version Node: $expected_node, installed Node: $actual_node"
+          if [ "$actual_node" != "$expected_node" ]; then exit 1; fi
+          untrusted=$(bun pm untrusted 2>&1)
+          echo "$untrusted"
+          if ! echo "$untrusted" | grep -qF "Found 0 untrusted dependencies with scripts"; then exit 1; fi
           status=$(git status --porcelain)
           echo "$status"
           if [ -n "$status" ]; then exit 1; fi
