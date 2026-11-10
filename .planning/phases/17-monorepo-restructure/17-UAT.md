@@ -3,7 +3,7 @@ status: complete
 phase: 17-monorepo-restructure
 source: [17-VERIFICATION.md]
 started: 2026-10-23T17:46:48Z
-updated: 2026-11-05T18:13:05.030Z
+updated: 2026-11-10T16:51:00.391Z
 ---
 
 ## Current Test
@@ -19,8 +19,8 @@ note: "Run by Claude at user's request after moving the root env file into apps/
 
 ### 2. Fresh Superset workspace: setup, run, stop
 expected: frozen install; apps/server/.env written, no root env file; run serves 200; stop leaves no bun/nodemon/ts-node and frees the port
-result: skipped
-reason: "User skipped for now. Real Superset runner not exercised (CLI session expired). Hand-run of the config.json setup/run in a throwaway worktree: frozen install ok, apps/server/.env written with no root env file, live 200, SIGTERM and SIGINT leave no orphans and free the port; SIGHUP leaves bun run, nodemon and ts-node running on port 3000 (likely the bun run wrapper) - matters if Superset's stop closes the terminal"
+result: pass
+note: "Verified by Claude 2026-11-10 in a real Superset workspace (uat-17-superset, created with superset ws create --local from main @ caffee2). Workspace Setup terminal: bun install --frozen-lockfile installed 343 packages, setup script created apps/server/.env, no root env file, clean git status. Run command (cd apps/server && exec bun run dev-server) in a Superset terminal: health/live 200 after 4s. superset terminals close disposed the terminal: no bun/nodemon/ts-node left and port 3000 free. The earlier hand-run SIGHUP orphan does not reproduce through Superset's terminal dispose."
 
 ### 3. One-time move of the local env file and data/ into apps/server (this worktree and the main checkout)
 expected: After the move, `bun run dev:server` boots, and existing favorites and recents are still there.
@@ -49,10 +49,10 @@ note: "Truth 20 checked directly: vitest --sequence.shuffle.files with seeds 123
 ## Summary
 
 total: 7
-passed: 6
+passed: 7
 issues: 0
 pending: 0
-skipped: 1
+skipped: 0
 blocked: 0
 
 ## Gaps
