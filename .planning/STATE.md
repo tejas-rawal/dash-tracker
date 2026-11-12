@@ -5,17 +5,17 @@ milestone_name: Frontend Foundation
 current_phase: 18
 current_phase_name: Server Toolchain & CORS
 status: executing
-stopped_at: Phase 18 context gathered
-last_updated: "2026-11-10T20:16:18.593Z"
-last_activity: 2026-11-10
-last_activity_desc: Phase 17 complete, transitioned to Phase 18
-state_head: 6315e4363c8e3d5c7c47399e96e340242d78bf86
+stopped_at: Completed 18-01-PLAN.md
+last_updated: "2026-11-12T18:25:19.371Z"
+last_activity: 2026-11-12
+last_activity_desc: 18-01 complete
+state_head: 6776a4cbc94174e931f84612df7cfb13c005e93f
 progress:
   total_phases: 5
   completed_phases: 17
   total_plans: 9
-  completed_plans: 3
-  percent: 33
+  completed_plans: 4
+  percent: 44
 ---
 
 # Project State
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-11-10)
 
 ## Current Position
 
-Phase: 18 (Server Toolchain & CORS) — READY TO EXECUTE
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-11-10 — Phase 17 complete, transitioned to Phase 18
+Phase: 18 (Server Toolchain & CORS) — EXECUTING
+Plan: 2 of 6
+Status: Executing Phase 18
+Last activity: 2026-11-12 — 18-01 complete (Node 24 pin, trust list, CI Node setup; legitimacy approved)
 
 Progress (v0.7): [██░░░░░░░░] 20% (1/5 phases)
 
@@ -100,6 +100,7 @@ Progress (v0.7): [██░░░░░░░░] 20% (1/5 phases)
 | Phase 17 P01 | 3h 2m | 3 tasks | 5 files |
 | Phase 17 P02 | 8min | 3 tasks | 127 files |
 | Phase 17 P03 | 4min | 3 tasks | 6 files |
+| Phase 18 P01 | 3 min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -120,6 +121,10 @@ Recent decisions affecting v0.7:
 - [Phase 17]: typecheck uses apps/server/tsconfig.typecheck.json (extends tsconfig.json, noEmit, tests included) so build keeps test files out of dist
 - [Phase 17]: streamConcurrencyCap 'never claims a slot' hang under coverage load deferred: pre-existing, fix lives in src/test/streamClient.ts outside 17-02's allowed test files
 - [Phase 17]: Superset run is cd apps/server && exec bun run dev-server; exec lets bun receive SIGTERM/SIGINT under any /bin/sh, proven by a fresh-worktree simulation with no orphans
+- [Phase 18]: Node pinned to 24.22.2 LTS (ABI 137) in .node-version; every CI job sets it up with actions/setup-node@v7 before bun install
+- [Phase 18]: trustedDependencies = [@biomejs/biome, better-sqlite3, esbuild]; it replaces Bun's default list and bun pm untrusted must stay empty
+- [Phase 18]: Biome 1.9.4 lint baseline for 18-03: 36 warnings, 0 errors
+- [Phase 18]: User approved @types/node@24.19.2 and @biomejs/biome@2.5.15 (SUS too-new) for plans 18-02 and 18-03
 
 ### Pending Todos
 
@@ -180,9 +185,9 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-10T16:54:49.438Z
-Stopped at: Phase 18 context gathered
-Resume file: .planning/phases/18-server-toolchain-cors/18-CONTEXT.md
+Last session: 2026-11-12T18:25:19.299Z
+Stopped at: Completed 18-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 

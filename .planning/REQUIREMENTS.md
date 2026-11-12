@@ -25,8 +25,8 @@ Requirements for this milestone. Each maps to exactly one roadmap phase. Researc
 ### Toolchain
 
 - [x] **TOOL-05**: `packageManager` is `bun@1.3.14`, and local installs and every CI job use exactly that Bun version.
-- [ ] **TOOL-06**: `.node-version` pins a Node 24 LTS release, and every CI job sets up Node from it before `bun install`.
-- [ ] **TOOL-07**: better-sqlite3 builds and loads on Node 24 after a clean install, and is declared explicitly in `trustedDependencies` (`bun pm untrusted` is empty).
+- [x] **TOOL-06**: `.node-version` pins a Node 24 LTS release, and every CI job sets up Node from it before `bun install`.
+- [x] **TOOL-07**: better-sqlite3 builds and loads on Node 24 after a clean install, and is declared explicitly in `trustedDependencies` (`bun pm untrusted` is empty).
 - [ ] **TOOL-08**: The server runs under `tsx` (`tsx watch` for the dev server), and `ts-node` and `nodemon` are removed.
 - [ ] **TOOL-09**: Both workspaces use TypeScript 6. The server extends `@tsconfig/node24` and still emits CommonJS to `dist/`, and each workspace's tsconfig has an explicit `types` list, so hoisted `@types` packages don't leak between apps.
 - [ ] **TOOL-10**: Biome 2.5 is the only lint/format tool. The `biome migrate` commit and the reformat commit are separate, the reformat commit is listed in `.git-blame-ignore-revs`, and `lint:fix` uses a non-deprecated flag.
@@ -119,8 +119,8 @@ Which phases cover which requirements. Filled in by the roadmap.
 | MONO-04 | Phase 17 | Complete |
 | MONO-05 | Phase 17 | Complete |
 | TOOL-05 | Phase 17 | Complete |
-| TOOL-06 | Phase 18 | Pending |
-| TOOL-07 | Phase 18 | Pending |
+| TOOL-06 | Phase 18 | Complete |
+| TOOL-07 | Phase 18 | Complete |
 | TOOL-08 | Phase 18 | Pending |
 | TOOL-09 | Phase 18 | Pending |
 | TOOL-10 | Phase 18 | Pending |
