@@ -4,6 +4,19 @@ import { z } from "zod";
 // Load environment variables from .env file
 dotenv.config();
 
+// An entry must be exactly what a browser sends in Origin: an http(s) URL that is its own origin. Comparing against
+// URL.origin rejects a path, trailing slash, query, fragment, credentials, explicit default port, uppercase host,
+// `*` and `null`, so a typo fails startup instead of silently never matching (Phase 18 D-15).
+function isExactOrigin(entry: string): boolean {
+    let url: URL;
+    try {
+        url = new URL(entry);
+    } catch {
+        return false;
+    }
+    return (url.protocol === "http:" || url.protocol === "https:") && url.origin === entry;
+}
+
 const environmentSchema = z.object({
     // biome-ignore lint/style/useNamingConvention: env vars use SCREAMING_SNAKE_CASE by convention
     DASH_API_BASE_URL: z.string().min(1, "DASH_API_BASE_URL must not be empty"),
@@ -39,6 +52,13 @@ const environmentSchema = z.object({
                 .split(",")
                 .map((entry: string): string => entry.trim())
                 .filter((entry: string): boolean => entry.length > 0),
+        )
+        .pipe(
+            z.array(
+                z.string().refine(isExactOrigin, (entry: string): { message: string } => ({
+                    message: `entry '${entry}' must be an exact http(s) origin such as http://localhost:8081 (no path, trailing slash, query, credentials or *)`,
+                })),
+            ),
         ),
 });
 
