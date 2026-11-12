@@ -29,7 +29,7 @@ Requirements for this milestone. Each maps to exactly one roadmap phase. Researc
 - [x] **TOOL-07**: better-sqlite3 builds and loads on Node 24 after a clean install, and is declared explicitly in `trustedDependencies` (`bun pm untrusted` is empty).
 - [x] **TOOL-08**: The server runs under `tsx` (`tsx watch` for the dev server), and `ts-node` and `nodemon` are removed.
 - [x] **TOOL-09**: Both workspaces use TypeScript 6. The server extends `@tsconfig/node24` and still emits CommonJS to `dist/`, and each workspace's tsconfig has an explicit `types` list, so hoisted `@types` packages don't leak between apps.
-- [ ] **TOOL-10**: Biome 2.5 is the only lint/format tool. The `biome migrate` commit and the reformat commit are separate, the reformat commit is listed in `.git-blame-ignore-revs`, and `lint:fix` uses a non-deprecated flag.
+- [x] **TOOL-10**: Biome 2.5 is the only lint/format tool. The `biome migrate` commit and the reformat commit are separate, the reformat commit is listed in `.git-blame-ignore-revs`, and `lint:fix` uses a non-deprecated flag.
 - [x] **TOOL-11**: `@vitest/coverage-v8` matches the installed vitest version (3.2.6).
 
 ### CORS
@@ -123,7 +123,7 @@ Which phases cover which requirements. Filled in by the roadmap.
 | TOOL-07 | Phase 18 | Complete |
 | TOOL-08 | Phase 18 | Complete |
 | TOOL-09 | Phase 18 | Complete |
-| TOOL-10 | Phase 18 | Pending |
+| TOOL-10 | Phase 18 | Complete |
 | TOOL-11 | Phase 17 | Complete |
 | CORS-01 | Phase 18 | Pending |
 | CORS-02 | Phase 18 | Pending |

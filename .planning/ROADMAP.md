@@ -139,7 +139,7 @@ Plans:
   4. With `CORS_ALLOWED_ORIGINS=http://localhost:8081`, browser code on that origin can read the 200, both 429s (shared bucket and stream cap), the 503, the 404 and the SSE stream, and it can read `Retry-After`. Its preflight never spends a rate-limit token. With the variable unset, no browser origin can read responses. A value containing `*`, a path, a trailing slash or a malformed origin stops the server at startup.
   5. Requests without an `Origin` header (native apps, curl) behave exactly as before. Route responses carry DASH's `color`/`textColor` if the live routes payload has them. If it doesn't, CORS-05 is closed as not applicable, with the captured payload as evidence.
 
-**Plans**: 2/6 plans executed
+**Plans**: 3/6 plans executed
 
 Plans:
 **Wave 1**
@@ -149,7 +149,7 @@ Plans:
 - [x] 18-02-PLAN.md — tsx replaces ts-node/nodemon (signals re-checked), @types to devDependencies, TypeScript 6.0.3 on @tsconfig/node24 with CommonJS emit (commonjs + bundler) and explicit `types: ["node"]`
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 18-03-PLAN.md — Biome 2.5.15: new-rule fix, migrate commit with the 1.9.4 style rules named one by one, tool-only reformat commit, .git-blame-ignore-revs, `lint:fix` = `--write --unsafe`, same 36 warnings
+- [x] 18-03-PLAN.md — Biome 2.5.15: new-rule fix, migrate commit with the 1.9.4 style rules named one by one, tool-only reformat commit, .git-blame-ignore-revs, `lint:fix` = `--write --unsafe`, same 36 warnings
 
 **Wave 4** *(blocked on Wave 3 completion)*
 - [ ] 18-04-PLAN.md — createApp() extraction, then `cors` with an exact-origin callback from Zod-validated CORS_ALLOWED_ORIGINS, mounted after trust proxy; malformed origins stop startup; docs
@@ -255,7 +255,7 @@ Phases execute in numeric order: 17 → 18 → 19 → 20 → 21
 | 15. Alert & Nearby Data Hygiene | v0.6 | 3/3 | Complete | 2026-10-07 |
 | 16. Concurrent SSE Stream Cap per IP | v0.6 | 1/1 | Complete | 2026-10-13 |
 | 17. Monorepo Restructure | v0.7 | 3/3 | Complete    | 2026-11-10 |
-| 18. Server Toolchain & CORS | v0.7 | 2/6 | In Progress | - |
+| 18. Server Toolchain & CORS | v0.7 | 3/6 | In Progress | - |
 | 19. App Foundation & Route List | v0.7 | 0/TBD | Not started | - |
 | 20. Stops & Arrivals over REST | v0.7 | 0/TBD | Not started | - |
 | 21. Live Arrivals over SSE | v0.7 | 0/TBD | Not started | - |

@@ -5,17 +5,17 @@ milestone_name: Frontend Foundation
 current_phase: 18
 current_phase_name: Server Toolchain & CORS
 status: executing
-stopped_at: Completed 18-02-PLAN.md
-last_updated: "2026-11-12T18:33:56.146Z"
+stopped_at: Completed 18-03-PLAN.md
+last_updated: "2026-11-12T18:41:07.814Z"
 last_activity: 2026-11-12
-last_activity_desc: 18-02 complete
-state_head: 437ab15420b3f1d3614846e0ee7ade1e2ce5ec9a
+last_activity_desc: 18-03 complete
+state_head: 0201983216ecd2b3d37a347267f854b7b1b0deca
 progress:
   total_phases: 5
   completed_phases: 17
   total_plans: 9
-  completed_plans: 5
-  percent: 56
+  completed_plans: 6
+  percent: 67
 ---
 
 # Project State
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-11-10)
 ## Current Position
 
 Phase: 18 (Server Toolchain & CORS) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
-Last activity: 2026-11-12 — 18-02 complete (tsx runtime, TypeScript 6.0.3 on @tsconfig/node24 with CommonJS emit)
+Last activity: 2026-11-12 — 18-03 complete (Biome 2.5.15 with the 1.9.4 style set named, tool-only reformat, .git-blame-ignore-revs)
 
 Progress (v0.7): [██░░░░░░░░] 20% (1/5 phases)
 
@@ -102,6 +102,7 @@ Progress (v0.7): [██░░░░░░░░] 20% (1/5 phases)
 | Phase 17 P03 | 4min | 3 tasks | 6 files |
 | Phase 18 P01 | 3 min | 3 tasks | 6 files |
 | Phase 18 P02 | 6 min | 2 tasks | 5 files |
+| Phase 18 P03 | 5min | 2 tasks | 26 files |
 
 ## Accumulated Context
 
@@ -129,6 +130,9 @@ Recent decisions affecting v0.7:
 - [Phase 18]: Server tsconfig extends @tsconfig/node24 and overrides module to commonjs and moduleResolution to bundler; nodenext would break typecheck on the extensionless dynamic imports in environment.test.ts
 - [Phase 18]: Explicit types ["node"] in apps/server/tsconfig.json keeps test-only @types out of the build; tsconfig.typecheck.json inherits it and needs no vitest/globals
 - [Phase 18]: dev-server is tsx watch src/app.ts; it restarts on changes to imported files only, so an edit to apps/server/.env needs a manual restart
+- [Phase 18]: 18-03: Biome 2.5.15 replaces 1.9.4; biome.json names each 1.9.4 style.all rule at its 1.9.4 severity (Biome 2 has no all); new Biome 2 style rules stay off; lint stays at the 36-warning baseline
+- [Phase 18]: 18-03: noUselessUndefinedInitialization fixed with a null sentinel (let unsubscribe: (() => void) | null = null) because a bare let trips a Biome 1.9.4 useConst false positive
+- [Phase 18]: 18-03: lint is red only at the migrate commit 597be9a (D-10 vs D-01, call out in PR); the Phase 18 PR must merge with a merge commit so .git-blame-ignore-revs keeps pointing at 86e09f1 (D-02)
 
 ### Pending Todos
 
@@ -189,8 +193,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-12T18:33:56.074Z
-Stopped at: Completed 18-02-PLAN.md
+Last session: 2026-11-12T18:41:07.733Z
+Stopped at: Completed 18-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
