@@ -15,7 +15,7 @@ dash-tracker is a Node.js/Express REST API that proxies and structures data from
 - **Build:** `bun run build` fans out to every workspace; in `apps/server` it runs `rm -rf dist && tsc` and writes `apps/server/dist/`.
 - **Start without building:** `bun run --cwd apps/server start-server` (tsx).
 - **Type-check:** `bun run typecheck` fans out to every workspace. In `apps/server` it runs `tsc -p tsconfig.typecheck.json`, which type-checks the server source and every `*.test.ts` without emitting; `build` compiles from `tsconfig.json`, which keeps tests out of `dist/`.
-- **Lint:** `bun run lint` (check) / `bun run lint:fix` (auto-fix unsafe issues). Biome runs once from the root and covers every workspace and the root files.
+- **Lint:** `bun run lint` (check) / `bun run lint:fix` (runs `biome check --write --unsafe .`, applying safe and unsafe fixes). Biome runs once from the root and covers every workspace and the root files.
 - **Format:** `bun run format` (check) / `bun run format:write` (write) — identical to lint commands; Biome is the sole tool and runs once from the root over every workspace.
 - **Test:** `bun run test` (vitest --run --typecheck) / `bun run test:coverage` (adds coverage; 80% threshold enforced; report in `apps/server/coverage/`) fan out to every workspace. Always use `bun run test`; `bun test` starts Bun's own test runner instead of Vitest.
 - **Run a single test file:** `bun run --filter @dash-tracker/server test -- src/api/models/BusRoute.test.ts` from the root, or `bun run test -- src/api/models/BusRoute.test.ts` inside `apps/server`.
@@ -36,7 +36,7 @@ dash-tracker is a Node.js/Express REST API that proxies and structures data from
 - TypeScript 6.0.3, Node 24.22.2 LTS (`.node-version`; every CI job sets it up with actions/setup-node before the install), Bun 1.3.14 (root `packageManager`) as package manager, workspace manager and script runner; hoisted linker; the text `bun.lock` is the only lockfile
 - Monorepo: root `package.json` `workspaces: ["apps/*"]`; the API is `apps/server` (`@dash-tracker/server`); root `test`, `test:coverage`, `build` and `typecheck` fan out with `bun run --filter './apps/*'`; root `lint` and `format` run Biome once
 - Express 4.21.2, Zod 3.25.76 (env/data validation), Axios 1.7.9 (DASH API client), Winston 3.17.0 (logging)
-- Biome 1.9.4 — sole lint + format tool (root `biome.json`; 120 char width, 4-space indent, `noDefaultExport` off); Prettier fully removed
+- Biome 2.5.15 — sole lint + format tool (root `biome.json`; 120 char width, 4-space indent, `noDefaultExport` off); Prettier fully removed; Biome 2 has no `"all"`, so `biome.json` names each style rule the project had under 1.9.4; `.git-blame-ignore-revs` lists the Biome 2 reformat (run `git config blame.ignoreRevsFile .git-blame-ignore-revs` once for local blame)
 - Vitest 3.2.6 with `@vitest/coverage-v8` 3.2.6 — tests co-located as `*.test.ts`; config at `apps/server/vitest.config.mts`
 - Build: `tsc` → `apps/server/dist/` (es2024 from @tsconfig/node24, CommonJS, strict mode; explicit types: ["node"])
 - Required env vars (Zod-validated at startup, crash on missing/invalid): `DASH_API_BASE_URL`, `DASH_API_AGENCY`, `DASH_API_KEY`; optional `PORT`, `DASH_API_TIMEOUT_MS`, `DB_PATH`, `TRUST_PROXY_HOPS` (trusted reverse-proxy hop count for the client IP, default 0); see `apps/server/.env.example`
