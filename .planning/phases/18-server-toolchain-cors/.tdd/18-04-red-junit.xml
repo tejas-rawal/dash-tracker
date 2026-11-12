@@ -1,0 +1,476 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="37" failures="12" errors="0" time="0.06586275">
+    <testsuite name="src/config/environment.test.ts" timestamp="2026-11-12T18:45:22.396Z" hostname="redacted" tests="37" failures="12" errors="0" skipped="0" time="0.06586275">
+        <testcase classname="src/config/environment.test.ts" name="DASH_API_TIMEOUT_MS &gt; defaults dashApi.timeoutMs to 10000 when DASH_API_TIMEOUT_MS is unset" time="0.014578042">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="DASH_API_TIMEOUT_MS &gt; reads DASH_API_TIMEOUT_MS as a whole number of milliseconds" time="0.001808875">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="DASH_API_TIMEOUT_MS &gt; fails startup when DASH_API_TIMEOUT_MS is &apos;non-numeric&apos;" time="0.002633833">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="DASH_API_TIMEOUT_MS &gt; fails startup when DASH_API_TIMEOUT_MS is &apos;zero&apos;" time="0.001578292">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="DASH_API_TIMEOUT_MS &gt; fails startup when DASH_API_TIMEOUT_MS is &apos;negative&apos;" time="0.001231792">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="DASH_API_TIMEOUT_MS &gt; fails startup when DASH_API_TIMEOUT_MS is &apos;fractional&apos;" time="0.001010542">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="DASH_API_TIMEOUT_MS &gt; fails startup when DASH_API_TIMEOUT_MS is &apos;empty&apos;" time="0.001236459">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="DASH_API_TIMEOUT_MS &gt; fails startup when DASH_API_TIMEOUT_MS is &apos;above the max timer delay&apos;" time="0.00136775">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="TRUST_PROXY_HOPS &gt; defaults server.trustProxyHops to 0 when TRUST_PROXY_HOPS is unset" time="0.001190833">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="TRUST_PROXY_HOPS &gt; reads TRUST_PROXY_HOPS=&apos;0&apos; as +0 trusted hops" time="0.00095075">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="TRUST_PROXY_HOPS &gt; reads TRUST_PROXY_HOPS=&apos;1&apos; as 1 trusted hops" time="0.001002042">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="TRUST_PROXY_HOPS &gt; reads TRUST_PROXY_HOPS=&apos;2&apos; as 2 trusted hops" time="0.000933416">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="TRUST_PROXY_HOPS &gt; fails startup when TRUST_PROXY_HOPS is &apos;empty&apos;" time="0.001131625">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="TRUST_PROXY_HOPS &gt; fails startup when TRUST_PROXY_HOPS is &apos;padded with a space&apos;" time="0.001271709">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="TRUST_PROXY_HOPS &gt; fails startup when TRUST_PROXY_HOPS is &apos;negative&apos;" time="0.001042792">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="TRUST_PROXY_HOPS &gt; fails startup when TRUST_PROXY_HOPS is &apos;fractional&apos;" time="0.000975292">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="TRUST_PROXY_HOPS &gt; fails startup when TRUST_PROXY_HOPS is &apos;non-numeric&apos;" time="0.000856417">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="TRUST_PROXY_HOPS &gt; fails startup when TRUST_PROXY_HOPS is &apos;a boolean word&apos;" time="0.000852916">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="CORS_ALLOWED_ORIGINS &gt; defaults cors.allowedOrigins to no origin when CORS_ALLOWED_ORIGINS is unset" time="0.001239791">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="CORS_ALLOWED_ORIGINS &gt; reads CORS_ALLOWED_ORIGINS given &apos;empty&apos;" time="0.000828666">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="CORS_ALLOWED_ORIGINS &gt; reads CORS_ALLOWED_ORIGINS given &apos;only commas and spaces&apos;" time="0.000857792">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="CORS_ALLOWED_ORIGINS &gt; reads CORS_ALLOWED_ORIGINS given &apos;a single origin&apos;" time="0.000844875">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="CORS_ALLOWED_ORIGINS &gt; reads CORS_ALLOWED_ORIGINS given &apos;a padded pair&apos;" time="0.000806709">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="CORS_ALLOWED_ORIGINS &gt; reads CORS_ALLOWED_ORIGINS given &apos;a non-default port&apos;" time="0.001287709">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="CORS_ALLOWED_ORIGINS &gt; reads CORS_ALLOWED_ORIGINS given &apos;a duplicate&apos;" time="0.00080375">
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="CORS_ALLOWED_ORIGINS &gt; fails startup naming the entry when CORS_ALLOWED_ORIGINS has &apos;a wildcard&apos;" time="0.007086">
+            <failure message="promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting" type="AssertionError">
+AssertionError: promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   &quot;message&quot;: &quot;rejected promise&quot;,
++ {
++   &quot;environment&quot;: {
++     &quot;cors&quot;: {
++       &quot;allowedOrigins&quot;: [
++         &quot;*&quot;,
++       ],
++     },
++     &quot;dashApi&quot;: {
++       &quot;agency&quot;: &quot;test-agency&quot;,
++       &quot;apiKey&quot;: &quot;test-api-key&quot;,
++       &quot;baseUrl&quot;: &quot;https://api.test.example.com&quot;,
++       &quot;timeoutMs&quot;: 200,
++     },
++     &quot;database&quot;: {
++       &quot;path&quot;: &quot;data/dash-tracker.sqlite&quot;,
++     },
++     &quot;server&quot;: {
++       &quot;port&quot;: 3000,
++       &quot;trustProxyHops&quot;: 0,
++     },
++   },
+  }
+
+ ❯ src/config/environment.test.ts:177:29
+            </failure>
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="CORS_ALLOWED_ORIGINS &gt; fails startup naming the entry when CORS_ALLOWED_ORIGINS has &apos;a trailing slash&apos;" time="0.0018145">
+            <failure message="promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting" type="AssertionError">
+AssertionError: promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   &quot;message&quot;: &quot;rejected promise&quot;,
++ {
++   &quot;environment&quot;: {
++     &quot;cors&quot;: {
++       &quot;allowedOrigins&quot;: [
++         &quot;http://localhost:8081/&quot;,
++       ],
++     },
++     &quot;dashApi&quot;: {
++       &quot;agency&quot;: &quot;test-agency&quot;,
++       &quot;apiKey&quot;: &quot;test-api-key&quot;,
++       &quot;baseUrl&quot;: &quot;https://api.test.example.com&quot;,
++       &quot;timeoutMs&quot;: 200,
++     },
++     &quot;database&quot;: {
++       &quot;path&quot;: &quot;data/dash-tracker.sqlite&quot;,
++     },
++     &quot;server&quot;: {
++       &quot;port&quot;: 3000,
++       &quot;trustProxyHops&quot;: 0,
++     },
++   },
+  }
+
+ ❯ src/config/environment.test.ts:177:29
+            </failure>
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="CORS_ALLOWED_ORIGINS &gt; fails startup naming the entry when CORS_ALLOWED_ORIGINS has &apos;a path&apos;" time="0.001434334">
+            <failure message="promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting" type="AssertionError">
+AssertionError: promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   &quot;message&quot;: &quot;rejected promise&quot;,
++ {
++   &quot;environment&quot;: {
++     &quot;cors&quot;: {
++       &quot;allowedOrigins&quot;: [
++         &quot;http://x.example/path&quot;,
++       ],
++     },
++     &quot;dashApi&quot;: {
++       &quot;agency&quot;: &quot;test-agency&quot;,
++       &quot;apiKey&quot;: &quot;test-api-key&quot;,
++       &quot;baseUrl&quot;: &quot;https://api.test.example.com&quot;,
++       &quot;timeoutMs&quot;: 200,
++     },
++     &quot;database&quot;: {
++       &quot;path&quot;: &quot;data/dash-tracker.sqlite&quot;,
++     },
++     &quot;server&quot;: {
++       &quot;port&quot;: 3000,
++       &quot;trustProxyHops&quot;: 0,
++     },
++   },
+  }
+
+ ❯ src/config/environment.test.ts:177:29
+            </failure>
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="CORS_ALLOWED_ORIGINS &gt; fails startup naming the entry when CORS_ALLOWED_ORIGINS has &apos;a query&apos;" time="0.001384583">
+            <failure message="promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting" type="AssertionError">
+AssertionError: promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   &quot;message&quot;: &quot;rejected promise&quot;,
++ {
++   &quot;environment&quot;: {
++     &quot;cors&quot;: {
++       &quot;allowedOrigins&quot;: [
++         &quot;http://x.example?q=1&quot;,
++       ],
++     },
++     &quot;dashApi&quot;: {
++       &quot;agency&quot;: &quot;test-agency&quot;,
++       &quot;apiKey&quot;: &quot;test-api-key&quot;,
++       &quot;baseUrl&quot;: &quot;https://api.test.example.com&quot;,
++       &quot;timeoutMs&quot;: 200,
++     },
++     &quot;database&quot;: {
++       &quot;path&quot;: &quot;data/dash-tracker.sqlite&quot;,
++     },
++     &quot;server&quot;: {
++       &quot;port&quot;: 3000,
++       &quot;trustProxyHops&quot;: 0,
++     },
++   },
+  }
+
+ ❯ src/config/environment.test.ts:177:29
+            </failure>
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="CORS_ALLOWED_ORIGINS &gt; fails startup naming the entry when CORS_ALLOWED_ORIGINS has &apos;a fragment&apos;" time="0.001314833">
+            <failure message="promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting" type="AssertionError">
+AssertionError: promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   &quot;message&quot;: &quot;rejected promise&quot;,
++ {
++   &quot;environment&quot;: {
++     &quot;cors&quot;: {
++       &quot;allowedOrigins&quot;: [
++         &quot;http://x.example#top&quot;,
++       ],
++     },
++     &quot;dashApi&quot;: {
++       &quot;agency&quot;: &quot;test-agency&quot;,
++       &quot;apiKey&quot;: &quot;test-api-key&quot;,
++       &quot;baseUrl&quot;: &quot;https://api.test.example.com&quot;,
++       &quot;timeoutMs&quot;: 200,
++     },
++     &quot;database&quot;: {
++       &quot;path&quot;: &quot;data/dash-tracker.sqlite&quot;,
++     },
++     &quot;server&quot;: {
++       &quot;port&quot;: 3000,
++       &quot;trustProxyHops&quot;: 0,
++     },
++   },
+  }
+
+ ❯ src/config/environment.test.ts:177:29
+            </failure>
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="CORS_ALLOWED_ORIGINS &gt; fails startup naming the entry when CORS_ALLOWED_ORIGINS has &apos;credentials&apos;" time="0.001469667">
+            <failure message="promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting" type="AssertionError">
+AssertionError: promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   &quot;message&quot;: &quot;rejected promise&quot;,
++ {
++   &quot;environment&quot;: {
++     &quot;cors&quot;: {
++       &quot;allowedOrigins&quot;: [
++         &quot;http://u:p@x.example&quot;,
++       ],
++     },
++     &quot;dashApi&quot;: {
++       &quot;agency&quot;: &quot;test-agency&quot;,
++       &quot;apiKey&quot;: &quot;test-api-key&quot;,
++       &quot;baseUrl&quot;: &quot;https://api.test.example.com&quot;,
++       &quot;timeoutMs&quot;: 200,
++     },
++     &quot;database&quot;: {
++       &quot;path&quot;: &quot;data/dash-tracker.sqlite&quot;,
++     },
++     &quot;server&quot;: {
++       &quot;port&quot;: 3000,
++       &quot;trustProxyHops&quot;: 0,
++     },
++   },
+  }
+
+ ❯ src/config/environment.test.ts:177:29
+            </failure>
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="CORS_ALLOWED_ORIGINS &gt; fails startup naming the entry when CORS_ALLOWED_ORIGINS has &apos;a non-http scheme&apos;" time="0.001308708">
+            <failure message="promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting" type="AssertionError">
+AssertionError: promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   &quot;message&quot;: &quot;rejected promise&quot;,
++ {
++   &quot;environment&quot;: {
++     &quot;cors&quot;: {
++       &quot;allowedOrigins&quot;: [
++         &quot;ftp://x.example&quot;,
++       ],
++     },
++     &quot;dashApi&quot;: {
++       &quot;agency&quot;: &quot;test-agency&quot;,
++       &quot;apiKey&quot;: &quot;test-api-key&quot;,
++       &quot;baseUrl&quot;: &quot;https://api.test.example.com&quot;,
++       &quot;timeoutMs&quot;: 200,
++     },
++     &quot;database&quot;: {
++       &quot;path&quot;: &quot;data/dash-tracker.sqlite&quot;,
++     },
++     &quot;server&quot;: {
++       &quot;port&quot;: 3000,
++       &quot;trustProxyHops&quot;: 0,
++     },
++   },
+  }
+
+ ❯ src/config/environment.test.ts:177:29
+            </failure>
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="CORS_ALLOWED_ORIGINS &gt; fails startup naming the entry when CORS_ALLOWED_ORIGINS has &apos;a bare host&apos;" time="0.001317625">
+            <failure message="promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting" type="AssertionError">
+AssertionError: promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   &quot;message&quot;: &quot;rejected promise&quot;,
++ {
++   &quot;environment&quot;: {
++     &quot;cors&quot;: {
++       &quot;allowedOrigins&quot;: [
++         &quot;x.example&quot;,
++       ],
++     },
++     &quot;dashApi&quot;: {
++       &quot;agency&quot;: &quot;test-agency&quot;,
++       &quot;apiKey&quot;: &quot;test-api-key&quot;,
++       &quot;baseUrl&quot;: &quot;https://api.test.example.com&quot;,
++       &quot;timeoutMs&quot;: 200,
++     },
++     &quot;database&quot;: {
++       &quot;path&quot;: &quot;data/dash-tracker.sqlite&quot;,
++     },
++     &quot;server&quot;: {
++       &quot;port&quot;: 3000,
++       &quot;trustProxyHops&quot;: 0,
++     },
++   },
+  }
+
+ ❯ src/config/environment.test.ts:177:29
+            </failure>
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="CORS_ALLOWED_ORIGINS &gt; fails startup naming the entry when CORS_ALLOWED_ORIGINS has &apos;the literal null&apos;" time="0.001126292">
+            <failure message="promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting" type="AssertionError">
+AssertionError: promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   &quot;message&quot;: &quot;rejected promise&quot;,
++ {
++   &quot;environment&quot;: {
++     &quot;cors&quot;: {
++       &quot;allowedOrigins&quot;: [
++         &quot;null&quot;,
++       ],
++     },
++     &quot;dashApi&quot;: {
++       &quot;agency&quot;: &quot;test-agency&quot;,
++       &quot;apiKey&quot;: &quot;test-api-key&quot;,
++       &quot;baseUrl&quot;: &quot;https://api.test.example.com&quot;,
++       &quot;timeoutMs&quot;: 200,
++     },
++     &quot;database&quot;: {
++       &quot;path&quot;: &quot;data/dash-tracker.sqlite&quot;,
++     },
++     &quot;server&quot;: {
++       &quot;port&quot;: 3000,
++       &quot;trustProxyHops&quot;: 0,
++     },
++   },
+  }
+
+ ❯ src/config/environment.test.ts:177:29
+            </failure>
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="CORS_ALLOWED_ORIGINS &gt; fails startup naming the entry when CORS_ALLOWED_ORIGINS has &apos;an explicit default port&apos;" time="0.001295166">
+            <failure message="promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting" type="AssertionError">
+AssertionError: promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   &quot;message&quot;: &quot;rejected promise&quot;,
++ {
++   &quot;environment&quot;: {
++     &quot;cors&quot;: {
++       &quot;allowedOrigins&quot;: [
++         &quot;http://localhost:80&quot;,
++       ],
++     },
++     &quot;dashApi&quot;: {
++       &quot;agency&quot;: &quot;test-agency&quot;,
++       &quot;apiKey&quot;: &quot;test-api-key&quot;,
++       &quot;baseUrl&quot;: &quot;https://api.test.example.com&quot;,
++       &quot;timeoutMs&quot;: 200,
++     },
++     &quot;database&quot;: {
++       &quot;path&quot;: &quot;data/dash-tracker.sqlite&quot;,
++     },
++     &quot;server&quot;: {
++       &quot;port&quot;: 3000,
++       &quot;trustProxyHops&quot;: 0,
++     },
++   },
+  }
+
+ ❯ src/config/environment.test.ts:177:29
+            </failure>
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="CORS_ALLOWED_ORIGINS &gt; fails startup naming the entry when CORS_ALLOWED_ORIGINS has &apos;an uppercase host&apos;" time="0.001452958">
+            <failure message="promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting" type="AssertionError">
+AssertionError: promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   &quot;message&quot;: &quot;rejected promise&quot;,
++ {
++   &quot;environment&quot;: {
++     &quot;cors&quot;: {
++       &quot;allowedOrigins&quot;: [
++         &quot;http://LOCALHOST:8081&quot;,
++       ],
++     },
++     &quot;dashApi&quot;: {
++       &quot;agency&quot;: &quot;test-agency&quot;,
++       &quot;apiKey&quot;: &quot;test-api-key&quot;,
++       &quot;baseUrl&quot;: &quot;https://api.test.example.com&quot;,
++       &quot;timeoutMs&quot;: 200,
++     },
++     &quot;database&quot;: {
++       &quot;path&quot;: &quot;data/dash-tracker.sqlite&quot;,
++     },
++     &quot;server&quot;: {
++       &quot;port&quot;: 3000,
++       &quot;trustProxyHops&quot;: 0,
++     },
++   },
+  }
+
+ ❯ src/config/environment.test.ts:177:29
+            </failure>
+        </testcase>
+        <testcase classname="src/config/environment.test.ts" name="CORS_ALLOWED_ORIGINS &gt; fails startup naming the entry when CORS_ALLOWED_ORIGINS has &apos;one bad entry among good ones&apos;" time="0.001550875">
+            <failure message="promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting" type="AssertionError">
+AssertionError: promise resolved &quot;{ environment: { …(4) }, …(1) }&quot; instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   &quot;message&quot;: &quot;rejected promise&quot;,
++ {
++   &quot;environment&quot;: {
++     &quot;cors&quot;: {
++       &quot;allowedOrigins&quot;: [
++         &quot;http://localhost:8081&quot;,
++         &quot;*&quot;,
++       ],
++     },
++     &quot;dashApi&quot;: {
++       &quot;agency&quot;: &quot;test-agency&quot;,
++       &quot;apiKey&quot;: &quot;test-api-key&quot;,
++       &quot;baseUrl&quot;: &quot;https://api.test.example.com&quot;,
++       &quot;timeoutMs&quot;: 200,
++     },
++     &quot;database&quot;: {
++       &quot;path&quot;: &quot;data/dash-tracker.sqlite&quot;,
++     },
++     &quot;server&quot;: {
++       &quot;port&quot;: 3000,
++       &quot;trustProxyHops&quot;: 0,
++     },
++   },
+  }
+
+ ❯ src/config/environment.test.ts:177:29
+            </failure>
+        </testcase>
+    </testsuite>
+</testsuites>
