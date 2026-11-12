@@ -5,17 +5,17 @@ milestone_name: Frontend Foundation
 current_phase: 18
 current_phase_name: Server Toolchain & CORS
 status: executing
-stopped_at: Completed 18-01-PLAN.md
-last_updated: "2026-11-12T18:25:19.371Z"
+stopped_at: Completed 18-02-PLAN.md
+last_updated: "2026-11-12T18:33:56.146Z"
 last_activity: 2026-11-12
-last_activity_desc: 18-01 complete
-state_head: 6776a4cbc94174e931f84612df7cfb13c005e93f
+last_activity_desc: 18-02 complete
+state_head: 437ab15420b3f1d3614846e0ee7ade1e2ce5ec9a
 progress:
   total_phases: 5
   completed_phases: 17
   total_plans: 9
-  completed_plans: 4
-  percent: 44
+  completed_plans: 5
+  percent: 56
 ---
 
 # Project State
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-11-10)
 ## Current Position
 
 Phase: 18 (Server Toolchain & CORS) — EXECUTING
-Plan: 2 of 6
-Status: Executing Phase 18
-Last activity: 2026-11-12 — 18-01 complete (Node 24 pin, trust list, CI Node setup; legitimacy approved)
+Plan: 3 of 6
+Status: Ready to execute
+Last activity: 2026-11-12 — 18-02 complete (tsx runtime, TypeScript 6.0.3 on @tsconfig/node24 with CommonJS emit)
 
 Progress (v0.7): [██░░░░░░░░] 20% (1/5 phases)
 
@@ -101,6 +101,7 @@ Progress (v0.7): [██░░░░░░░░] 20% (1/5 phases)
 | Phase 17 P02 | 8min | 3 tasks | 127 files |
 | Phase 17 P03 | 4min | 3 tasks | 6 files |
 | Phase 18 P01 | 3 min | 3 tasks | 6 files |
+| Phase 18 P02 | 6 min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -125,6 +126,9 @@ Recent decisions affecting v0.7:
 - [Phase 18]: trustedDependencies = [@biomejs/biome, better-sqlite3, esbuild]; it replaces Bun's default list and bun pm untrusted must stay empty
 - [Phase 18]: Biome 1.9.4 lint baseline for 18-03: 36 warnings, 0 errors
 - [Phase 18]: User approved @types/node@24.19.2 and @biomejs/biome@2.5.15 (SUS too-new) for plans 18-02 and 18-03
+- [Phase 18]: Server tsconfig extends @tsconfig/node24 and overrides module to commonjs and moduleResolution to bundler; nodenext would break typecheck on the extensionless dynamic imports in environment.test.ts
+- [Phase 18]: Explicit types ["node"] in apps/server/tsconfig.json keeps test-only @types out of the build; tsconfig.typecheck.json inherits it and needs no vitest/globals
+- [Phase 18]: dev-server is tsx watch src/app.ts; it restarts on changes to imported files only, so an edit to apps/server/.env needs a manual restart
 
 ### Pending Todos
 
@@ -185,8 +189,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-12T18:25:19.299Z
-Stopped at: Completed 18-01-PLAN.md
+Last session: 2026-11-12T18:33:56.074Z
+Stopped at: Completed 18-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

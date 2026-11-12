@@ -27,8 +27,8 @@ Requirements for this milestone. Each maps to exactly one roadmap phase. Researc
 - [x] **TOOL-05**: `packageManager` is `bun@1.3.14`, and local installs and every CI job use exactly that Bun version.
 - [x] **TOOL-06**: `.node-version` pins a Node 24 LTS release, and every CI job sets up Node from it before `bun install`.
 - [x] **TOOL-07**: better-sqlite3 builds and loads on Node 24 after a clean install, and is declared explicitly in `trustedDependencies` (`bun pm untrusted` is empty).
-- [ ] **TOOL-08**: The server runs under `tsx` (`tsx watch` for the dev server), and `ts-node` and `nodemon` are removed.
-- [ ] **TOOL-09**: Both workspaces use TypeScript 6. The server extends `@tsconfig/node24` and still emits CommonJS to `dist/`, and each workspace's tsconfig has an explicit `types` list, so hoisted `@types` packages don't leak between apps.
+- [x] **TOOL-08**: The server runs under `tsx` (`tsx watch` for the dev server), and `ts-node` and `nodemon` are removed.
+- [x] **TOOL-09**: Both workspaces use TypeScript 6. The server extends `@tsconfig/node24` and still emits CommonJS to `dist/`, and each workspace's tsconfig has an explicit `types` list, so hoisted `@types` packages don't leak between apps.
 - [ ] **TOOL-10**: Biome 2.5 is the only lint/format tool. The `biome migrate` commit and the reformat commit are separate, the reformat commit is listed in `.git-blame-ignore-revs`, and `lint:fix` uses a non-deprecated flag.
 - [x] **TOOL-11**: `@vitest/coverage-v8` matches the installed vitest version (3.2.6).
 
@@ -121,8 +121,8 @@ Which phases cover which requirements. Filled in by the roadmap.
 | TOOL-05 | Phase 17 | Complete |
 | TOOL-06 | Phase 18 | Complete |
 | TOOL-07 | Phase 18 | Complete |
-| TOOL-08 | Phase 18 | Pending |
-| TOOL-09 | Phase 18 | Pending |
+| TOOL-08 | Phase 18 | Complete |
+| TOOL-09 | Phase 18 | Complete |
 | TOOL-10 | Phase 18 | Pending |
 | TOOL-11 | Phase 17 | Complete |
 | CORS-01 | Phase 18 | Pending |
