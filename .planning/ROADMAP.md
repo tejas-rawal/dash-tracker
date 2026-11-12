@@ -139,7 +139,7 @@ Plans:
   4. With `CORS_ALLOWED_ORIGINS=http://localhost:8081`, browser code on that origin can read the 200, both 429s (shared bucket and stream cap), the 503, the 404 and the SSE stream, and it can read `Retry-After`. Its preflight never spends a rate-limit token. With the variable unset, no browser origin can read responses. A value containing `*`, a path, a trailing slash or a malformed origin stops the server at startup.
   5. Requests without an `Origin` header (native apps, curl) behave exactly as before. Route responses carry DASH's `color`/`textColor` if the live routes payload has them. If it doesn't, CORS-05 is closed as not applicable, with the captured payload as evidence.
 
-**Plans**: 4/6 plans executed
+**Plans**: 5/6 plans executed
 
 Plans:
 **Wave 1**
@@ -153,7 +153,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 - [x] 18-04-PLAN.md — createApp() extraction, then `cors` with an exact-origin callback from Zod-validated CORS_ALLOWED_ORIGINS, mounted after trust proxy; malformed origins stop startup; docs
-- [ ] 18-05-PLAN.md — DASH route `color`/`textColor` through RouteData → BusRoute → every route response, dropped per field when malformed and never failing the load
+- [x] 18-05-PLAN.md — DASH route `color`/`textColor` through RouteData → BusRoute → every route response, dropped per field when malformed and never failing the load
 
 **Wave 5** *(blocked on Wave 4 completion)*
 - [ ] 18-06-PLAN.md — D-14 matrix: 200, both 429s, 503, 404 and SSE by allowed/disallowed/absent Origin, preflights that spend no token, and createCorsMiddleware unit tests
@@ -255,7 +255,7 @@ Phases execute in numeric order: 17 → 18 → 19 → 20 → 21
 | 15. Alert & Nearby Data Hygiene | v0.6 | 3/3 | Complete | 2026-10-07 |
 | 16. Concurrent SSE Stream Cap per IP | v0.6 | 1/1 | Complete | 2026-10-13 |
 | 17. Monorepo Restructure | v0.7 | 3/3 | Complete    | 2026-11-10 |
-| 18. Server Toolchain & CORS | v0.7 | 4/6 | In Progress | - |
+| 18. Server Toolchain & CORS | v0.7 | 5/6 | In Progress | - |
 | 19. App Foundation & Route List | v0.7 | 0/TBD | Not started | - |
 | 20. Stops & Arrivals over REST | v0.7 | 0/TBD | Not started | - |
 | 21. Live Arrivals over SSE | v0.7 | 0/TBD | Not started | - |

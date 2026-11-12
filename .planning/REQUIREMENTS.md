@@ -38,7 +38,7 @@ Requirements for this milestone. Each maps to exactly one roadmap phase. Researc
 - [ ] **CORS-02**: A request from an allowed origin gets CORS headers on every response. That includes 200, both 429s (shared bucket and stream cap), 503, 404 and the SSE stream. Preflight requests are answered without spending rate-limit tokens.
 - [ ] **CORS-03**: `Retry-After` is exposed to browser code (`Access-Control-Expose-Headers`), so the web app can read retry timing on 429/503.
 - [ ] **CORS-04**: Requests without an `Origin` header (native apps, curl) behave exactly as before.
-- [ ] **CORS-05**: Conditional on the live DASH routes payload carrying `color`/`textColor`: route responses include them. If the payload doesn't carry them, this requirement is closed as not applicable, with evidence.
+- [x] **CORS-05**: Conditional on the live DASH routes payload carrying `color`/`textColor`: route responses include them. If the payload doesn't carry them, this requirement is closed as not applicable, with evidence.
 
 ### App Foundation
 
@@ -129,7 +129,7 @@ Which phases cover which requirements. Filled in by the roadmap.
 | CORS-02 | Phase 18 | Pending |
 | CORS-03 | Phase 18 | Pending |
 | CORS-04 | Phase 18 | Pending |
-| CORS-05 | Phase 18 | Pending |
+| CORS-05 | Phase 18 | Complete |
 | APP-01 | Phase 19 | Pending |
 | APP-02 | Phase 19 | Pending |
 | APP-03 | Phase 19 | Pending |

@@ -5,17 +5,17 @@ milestone_name: Frontend Foundation
 current_phase: 18
 current_phase_name: Server Toolchain & CORS
 status: executing
-stopped_at: Completed 18-04-PLAN.md
-last_updated: "2026-11-12T18:48:02.080Z"
+stopped_at: Completed 18-05-PLAN.md
+last_updated: "2026-11-12T18:52:44.395Z"
 last_activity: 2026-11-12
-last_activity_desc: 18-04 complete
-state_head: 91b982f068d82e3bc1024b91f5b69a005a2b4b9f
+last_activity_desc: 18-05 complete
+state_head: cffd11c78832f7cb575f4f2fb559caba09a6f540
 progress:
   total_phases: 5
   completed_phases: 17
   total_plans: 9
-  completed_plans: 7
-  percent: 78
+  completed_plans: 8
+  percent: 89
 ---
 
 # Project State
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-11-10)
 ## Current Position
 
 Phase: 18 (Server Toolchain & CORS) — EXECUTING
-Plan: 5 of 6
+Plan: 6 of 6
 Status: Ready to execute
-Last activity: 2026-11-12 — 18-04 complete (createApp() extraction, cors 2.8.6 with an exact-origin callback from Zod-validated CORS_ALLOWED_ORIGINS, malformed origins stop startup)
+Last activity: 2026-11-12 — 18-05 complete (DASH route color/textColor carried into route responses through a never-throwing 6-hex-digit filter; malformed values drop per field)
 
 Progress (v0.7): [██░░░░░░░░] 20% (1/5 phases)
 
@@ -104,6 +104,7 @@ Progress (v0.7): [██░░░░░░░░] 20% (1/5 phases)
 | Phase 18 P02 | 6 min | 2 tasks | 5 files |
 | Phase 18 P03 | 5min | 2 tasks | 26 files |
 | Phase 18 P04 | 5 min | 2 tasks | 13 files |
+| Phase 18 P05 | 3 min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -137,6 +138,7 @@ Recent decisions affecting v0.7:
 - [Phase 18]: 18-04: createApp() in apps/server/src/createApp.ts is the one app wiring for app.ts and the tests; src/test/app.ts stays a thin default export
 - [Phase 18]: 18-04: cors origin is a callback over a Set answering false off-list, not the array form, so requests without an allowed Origin are untouched (CORS-04)
 - [Phase 18]: 18-04: CORS_ALLOWED_ORIGINS entries must equal their own URL.origin (http/https); a bad entry fails startup naming CORS_ALLOWED_ORIGINS.<i> and the entry
+- [Phase 18]: 18-05: route colors pass through parseHexColor (exactly 6 hex digits, never throws); the exact DASH string is kept, anything else omits only that field and never rejects load()
 
 ### Pending Todos
 
@@ -197,8 +199,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-12T18:48:02.013Z
-Stopped at: Completed 18-04-PLAN.md
+Last session: 2026-11-12T18:52:44.306Z
+Stopped at: Completed 18-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
