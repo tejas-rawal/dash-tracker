@@ -1,7 +1,7 @@
 {
     "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
     "files": {
-        "ignore": ["node_modules", "dist", "coverage", ".planning", ".gsd"]
+        "includes": ["**", "!**/node_modules", "!**/dist", "!**/coverage", "!**/.planning", "!**/.gsd"]
     },
     "formatter": {
         "formatWithErrors": true,
@@ -22,17 +22,63 @@
     },
     "linter": {
         "rules": {
-            "recommended": true,
-            "nursery": {
-                "all": false
+            "preset": "recommended",
+            "complexity": {
+                "noArguments": "error",
+                "noCommaOperator": "error",
+                "useNumericLiterals": "error",
+                "useWhile": "error"
+            },
+            "performance": {
+                "noNamespaceImport": "warn"
             },
             "style": {
-                "all": true,
+                "noDefaultExport": "off",
+                "noDoneCallback": "warn",
+                "noImplicitBoolean": "warn",
+                "noInferrableTypes": "error",
+                "noNamespace": "warn",
+                "noNegationElse": "warn",
+                "noNonNullAssertion": "error",
+                "noParameterAssign": "error",
                 "noParameterProperties": "off",
-                "noDefaultExport": "off"
+                "noRestrictedGlobals": "warn",
+                "noShoutyConstants": "warn",
+                "noUnusedTemplateLiteral": "error",
+                "noUselessElse": "error",
+                "noYodaExpression": "warn",
+                "useAsConstAssertion": "error",
+                "useBlockStatements": "warn",
+                "useCollapsedElseIf": "warn",
+                "useConsistentArrayType": "warn",
+                "useConsistentBuiltinInstantiation": "warn",
+                "useConst": "error",
+                "useDefaultParameterLast": "error",
+                "useDefaultSwitchClause": "warn",
+                "useEnumInitializers": "error",
+                "useExplicitLengthCheck": "warn",
+                "useExponentiationOperator": "error",
+                "useExportType": "error",
+                "useFilenamingConvention": "warn",
+                "useForOf": "warn",
+                "useFragmentSyntax": "warn",
+                "useImportType": "error",
+                "useLiteralEnumMembers": "error",
+                "useNamingConvention": "warn",
+                "useNodeAssertStrict": "warn",
+                "useNodejsImportProtocol": "error",
+                "useNumberNamespace": "error",
+                "useSelfClosingElements": "error",
+                "useShorthandAssign": "warn",
+                "useShorthandFunctionType": "error",
+                "useSingleVarDeclarator": "error",
+                "useTemplate": "error",
+                "useThrowNewError": "warn",
+                "useThrowOnlyError": "warn"
             },
             "suspicious": {
-                "noExplicitAny": "info"
+                "noExplicitAny": "info",
+                "noVar": "error"
             }
         }
     }
