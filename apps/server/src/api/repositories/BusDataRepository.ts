@@ -10,6 +10,9 @@ interface RouteData {
     shortName?: string;
     name?: string;
     type: RouteType;
+    // Coerced, not trusted, like id: only an exact 6-hex-digit string survives parseHexColor.
+    color?: unknown;
+    textColor?: unknown;
     directions?: DirectionData[];
 }
 
@@ -47,6 +50,17 @@ function requireId(value: unknown, entity: "route" | "direction" | "stop"): stri
         return value;
     }
     throw new Error(`Invalid ${entity} id: '${String(value)}'`);
+}
+
+// Colors are optional display data, so unlike requireId this never throws: a bad value drops only
+// that field and must not reject the atomic load (D-17; Phase 13 WR-02 coerce, don't reject; Phase 15
+// one bad field must not freeze updates). A valid value is kept exactly as sent, with no `#` added and
+// no case change (D-16).
+function parseHexColor(value: unknown): string | undefined {
+    if (typeof value === "string" && /^[0-9a-fA-F]{6}$/.test(value)) {
+        return value;
+    }
+    return undefined;
 }
 
 export interface BusDataLoadState {
@@ -210,6 +224,8 @@ export class BusDataRepository {
             shortName: routeData.shortName || "",
             name: routeData.name || "",
             type: routeData.type,
+            color: parseHexColor(routeData.color),
+            textColor: parseHexColor(routeData.textColor),
             directions,
         });
     }
