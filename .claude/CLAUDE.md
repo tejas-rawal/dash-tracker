@@ -33,12 +33,12 @@ dash-tracker is a Node.js/Express REST API that proxies and structures data from
 
 ## Technology Stack
 
-- TypeScript 5.7.3, Node 24.22.2 LTS (`.node-version`; every CI job sets it up with actions/setup-node before the install), Bun 1.3.14 (root `packageManager`) as package manager, workspace manager and script runner; hoisted linker; the text `bun.lock` is the only lockfile
+- TypeScript 6.0.3, Node 24.22.2 LTS (`.node-version`; every CI job sets it up with actions/setup-node before the install), Bun 1.3.14 (root `packageManager`) as package manager, workspace manager and script runner; hoisted linker; the text `bun.lock` is the only lockfile
 - Monorepo: root `package.json` `workspaces: ["apps/*"]`; the API is `apps/server` (`@dash-tracker/server`); root `test`, `test:coverage`, `build` and `typecheck` fan out with `bun run --filter './apps/*'`; root `lint` and `format` run Biome once
 - Express 4.21.2, Zod 3.25.76 (env/data validation), Axios 1.7.9 (DASH API client), Winston 3.17.0 (logging)
 - Biome 1.9.4 — sole lint + format tool (root `biome.json`; 120 char width, 4-space indent, `noDefaultExport` off); Prettier fully removed
 - Vitest 3.2.6 with `@vitest/coverage-v8` 3.2.6 — tests co-located as `*.test.ts`; config at `apps/server/vitest.config.mts`
-- Build: `tsc` → `apps/server/dist/` (ES2020, CommonJS, strict mode)
+- Build: `tsc` → `apps/server/dist/` (es2024 from @tsconfig/node24, CommonJS, strict mode; explicit types: ["node"])
 - Required env vars (Zod-validated at startup, crash on missing/invalid): `DASH_API_BASE_URL`, `DASH_API_AGENCY`, `DASH_API_KEY`; optional `PORT`, `DASH_API_TIMEOUT_MS`, `DB_PATH`, `TRUST_PROXY_HOPS` (trusted reverse-proxy hop count for the client IP, default 0); see `apps/server/.env.example`
 <!-- GSD:stack-end -->
 
