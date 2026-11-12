@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BusDataLoadState } from "../repositories";
 import { REFRESH_INTERVAL_MS } from "./BusDataRefreshService";
-import { STALE_AFTER_MS, createHealthService } from "./HealthService";
+import { createHealthService, STALE_AFTER_MS } from "./HealthService";
 
 const NOW = new Date("2026-10-06T12:00:00.000Z");
 

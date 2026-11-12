@@ -9,7 +9,7 @@ import { logger } from "../../config";
 import { NotFoundError, UpstreamApiError } from "../errors";
 import type { StopPredictionsResponse } from "../models/Prediction";
 import type { PredictionService } from "../services/PredictionService";
-import { type StreamSubscriber, createPredictionStreamService } from "../services/PredictionStreamService";
+import { createPredictionStreamService, type StreamSubscriber } from "../services/PredictionStreamService";
 import { createPredictionStreamController } from "./PredictionStreamController";
 
 const makeMockRes = () => {

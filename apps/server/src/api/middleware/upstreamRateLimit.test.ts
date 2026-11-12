@@ -1,7 +1,7 @@
 import type { Server } from "node:http";
 import express from "express";
 import request from "supertest";
-import { type MockInstance, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 import { logger } from "../../config";
 import { createUpstreamRateLimiter } from "./upstreamRateLimit";
 

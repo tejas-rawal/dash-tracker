@@ -1,12 +1,12 @@
 import type { ClientRequest, IncomingHttpHeaders, Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import express from "express";
 import type { Request, RequestHandler, Response } from "express";
+import express from "express";
 import { ipKeyGenerator } from "express-rate-limit";
 import request from "supertest";
-import { type MockInstance, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 import { logger } from "../../config";
-import { type OpenedStream, connectStream } from "../../test/streamClient";
+import { connectStream, type OpenedStream } from "../../test/streamClient";
 import { createStreamConcurrencyCap } from "./streamConcurrencyCap";
 import { createUpstreamRateLimiter } from "./upstreamRateLimit";
 

@@ -2,8 +2,13 @@
     "name": "dash-tracker",
     "private": true,
     "packageManager": "bun@1.3.14",
-    "workspaces": ["apps/*"],
-    "trustedDependencies": ["better-sqlite3", "esbuild"],
+    "workspaces": [
+        "apps/*"
+    ],
+    "trustedDependencies": [
+        "better-sqlite3",
+        "esbuild"
+    ],
     "scripts": {
         "lint": "biome check .",
         "lint:fix": "biome check --write --unsafe .",

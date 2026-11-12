@@ -1,5 +1,5 @@
-import http from "node:http";
 import type { ClientRequest, IncomingHttpHeaders, Server } from "node:http";
+import http from "node:http";
 
 export interface OpenedStream {
     status: number;

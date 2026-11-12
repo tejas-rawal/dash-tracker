@@ -15,7 +15,11 @@
         "url": "https://github.com/tejas-rawal/dash-tracker/issues"
     },
     "description": "DASH bus tracker app",
-    "keywords": ["dash", "bus", "tracker"],
+    "keywords": [
+        "dash",
+        "bus",
+        "tracker"
+    ],
     "license": "Apache-2.0",
     "private": true,
     "scripts": {

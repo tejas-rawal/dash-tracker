@@ -1,6 +1,6 @@
 import type { IncomingHttpHeaders, Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import { type MockInstance, afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 import { logger } from "../../config";
 import { type OpenedStream, openStream, trackOpenResponses } from "../../test/streamClient";
 import { DataNotReadyError, NotFoundError, UpstreamApiError } from "../errors";

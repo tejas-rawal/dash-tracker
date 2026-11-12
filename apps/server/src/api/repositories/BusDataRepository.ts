@@ -199,7 +199,11 @@ export class BusDataRepository {
         id,
         routeData,
         directions,
-    }: { id: string; routeData: RouteData; directions: RouteDirection[] }): BusRoute {
+    }: {
+        id: string;
+        routeData: RouteData;
+        directions: RouteDirection[];
+    }): BusRoute {
         return new BusRoute({
             id,
             longName: routeData.longName || "",
@@ -244,7 +248,11 @@ export class BusDataRepository {
         id,
         directionData,
         stops,
-    }: { id: string; directionData: DirectionData; stops: BusStop[] }): RouteDirection {
+    }: {
+        id: string;
+        directionData: DirectionData;
+        stops: BusStop[];
+    }): RouteDirection {
         return new RouteDirection({
             id,
             title: directionData.title,

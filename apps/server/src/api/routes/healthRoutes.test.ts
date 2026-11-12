@@ -1,6 +1,6 @@
 import type { Server } from "node:http";
 import request from "supertest";
-import { type MockInstance, afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 import { axios } from "../../config";
 import app from "../../test/app";
 import { BusDataRepository } from "../repositories";
