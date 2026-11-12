@@ -5,9 +5,9 @@ dash-tracker is a Node.js/Express REST API that proxies and structures data from
 ## Commands
 
 - **Install:** `bun install --frozen-lockfile` at the repo root, with Bun 1.3.14 from the root `packageManager` (proto resolves it locally, setup-bun in CI). The text `bun.lock` is the only lockfile, and the root `bunfig.toml` enforces the hoisted linker, exact specifiers and a 7-day minimum release age. To add a dependency, run `bun add <package>@<version>` with an exact version inside the workspace directory that uses it (for example `apps/server`). Node comes from `.node-version` (proto resolves it locally, setup-node in CI), and the root `trustedDependencies` lists the only packages whose install scripts may run, so `bun pm untrusted` must stay empty.
-- **Dev server:** `bun run dev:server` from the root. It runs the `dev-server` script in `apps/server` (nodemon + ts-node, auto-restart on change); stop it with Ctrl-C.
+- **Dev server:** `bun run dev:server` from the root. It runs the `dev-server` script in `apps/server` (tsx watch, restarts when a file it imports changes); stop it with Ctrl-C.
 - **Build:** `bun run build` fans out to every workspace; in `apps/server` it runs `rm -rf dist && tsc` and writes `apps/server/dist/`.
-- **Start without building:** `bun run --cwd apps/server start-server` (ts-node).
+- **Start without building:** `bun run --cwd apps/server start-server` (tsx).
 - **Type-check:** `bun run typecheck` fans out to every workspace. In `apps/server` it runs `tsc -p tsconfig.typecheck.json`, which type-checks the server source and every `*.test.ts` without emitting; `build` compiles from `tsconfig.json`, which keeps tests out of `dist/`.
 - **Lint:** `bun run lint` (check) / `bun run lint:fix` (auto-fix unsafe issues). Biome runs once from the root and covers every workspace and the root files.
 - **Format:** `bun run format` (check) / `bun run format:write` (write) — identical to lint commands; Biome is the sole tool and runs once from the root over every workspace.
