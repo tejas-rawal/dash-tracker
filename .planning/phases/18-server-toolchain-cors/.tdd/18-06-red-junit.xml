@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="28" failures="14" errors="0" time="0.21287975">
+    <testsuite name="src/api/middleware/cors.test.ts" timestamp="2026-11-12T18:56:38.568Z" hostname="redacted" tests="5" failures="3" errors="0" skipped="0" time="0.052521583">
+        <testcase classname="src/api/middleware/cors.test.ts" name="createCorsMiddleware &gt; allows exactly a and b, echoing each byte for byte, with the list in order" time="0.024824583">
+            <failure message="expected [ &apos;http://a.example&apos;, …(6) ] to deeply equal [ &apos;http://a.example&apos;, …(6) ]" type="AssertionError">
+AssertionError: expected [ &apos;http://a.example&apos;, …(6) ] to deeply equal [ &apos;http://a.example&apos;, …(6) ]
+
+- Expected
++ Received
+
+  [
+    &quot;http://a.example&quot;,
+    &quot;http://b.example&quot;,
+-   undefined,
+-   undefined,
+-   undefined,
+-   undefined,
+-   undefined,
++   &quot;http://c.example&quot;,
++   &quot;HTTP://A.EXAMPLE&quot;,
++   &quot;http://A.example&quot;,
++   &quot;http://a.example/&quot;,
++   &quot;null&quot;,
+  ]
+
+ ❯ src/api/middleware/cors.test.ts:54:25
+            </failure>
+        </testcase>
+        <testcase classname="src/api/middleware/cors.test.ts" name="createCorsMiddleware &gt; allows exactly a and b, echoing each byte for byte, with the list reversed with a duplicate" time="0.008161">
+            <failure message="expected [ &apos;http://a.example&apos;, …(6) ] to deeply equal [ &apos;http://a.example&apos;, …(6) ]" type="AssertionError">
+AssertionError: expected [ &apos;http://a.example&apos;, …(6) ] to deeply equal [ &apos;http://a.example&apos;, …(6) ]
+
+- Expected
++ Received
+
+  [
+    &quot;http://a.example&quot;,
+    &quot;http://b.example&quot;,
+-   undefined,
+-   undefined,
+-   undefined,
+-   undefined,
+-   undefined,
++   &quot;http://c.example&quot;,
++   &quot;HTTP://A.EXAMPLE&quot;,
++   &quot;http://A.example&quot;,
++   &quot;http://a.example/&quot;,
++   &quot;null&quot;,
+  ]
+
+ ❯ src/api/middleware/cors.test.ts:54:25
+            </failure>
+        </testcase>
+        <testcase classname="src/api/middleware/cors.test.ts" name="createCorsMiddleware &gt; gives the same answer for every probe whatever the entry order and duplicates (edge CORS-01/ordering)" time="0.0108685">
+        </testcase>
+        <testcase classname="src/api/middleware/cors.test.ts" name="createCorsMiddleware &gt; allows no origin at all for an empty list, and never answers *" time="0.006338167">
+            <failure message="expected [ &apos;http://a.example&apos;, …(6) ] to deeply equal [ undefined, undefined, …(5) ]" type="AssertionError">
+AssertionError: expected [ &apos;http://a.example&apos;, …(6) ] to deeply equal [ undefined, undefined, …(5) ]
+
+- Expected
++ Received
+
+  [
+-   undefined,
+-   undefined,
+-   undefined,
+-   undefined,
+-   undefined,
+-   undefined,
+-   undefined,
++   &quot;http://a.example&quot;,
++   &quot;http://b.example&quot;,
++   &quot;http://c.example&quot;,
++   &quot;HTTP://A.EXAMPLE&quot;,
++   &quot;http://A.example&quot;,
++   &quot;http://a.example/&quot;,
++   &quot;null&quot;,
+  ]
+
+ ❯ src/api/middleware/cors.test.ts:82:25
+            </failure>
+        </testcase>
+        <testcase classname="src/api/middleware/cors.test.ts" name="createCorsMiddleware &gt; leaves a request with no Origin untouched" time="0.001628834">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/api/routes/cors.test.ts" timestamp="2026-11-12T18:56:38.572Z" hostname="redacted" tests="23" failures="11" errors="0" skipped="0" time="0.160358167">
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; 200, 503 and 404 by origin (D-14) &gt; 200 from /health/live from the allowed origin carries the origin and exposes Retry-After, and is otherwise unchanged" time="0.014772208">
+        </testcase>
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; 200, 503 and 404 by origin (D-14) &gt; 503 from /routes/all before any load from the allowed origin carries the origin and exposes Retry-After, and is otherwise unchanged" time="0.0040945">
+        </testcase>
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; 200, 503 and 404 by origin (D-14) &gt; Express 404 from the allowed origin carries the origin and exposes Retry-After, and is otherwise unchanged" time="0.004319292">
+        </testcase>
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; 200, 503 and 404 by origin (D-14) &gt; 200 from /health/live from a disallowed origin carries no CORS header" time="0.005337833">
+            <failure message="expected [ &apos;access-control-allow-origin&apos;, …(1) ] to deeply equal []" type="AssertionError">
+AssertionError: expected [ &apos;access-control-allow-origin&apos;, …(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   &quot;access-control-allow-origin&quot;,
++   &quot;access-control-expose-headers&quot;,
++ ]
+
+ ❯ expectNoCors src/api/routes/cors.test.ts:85:43
+ ❯ src/api/routes/cors.test.ts:148:13
+            </failure>
+        </testcase>
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; 200, 503 and 404 by origin (D-14) &gt; 200 from /health/live from no Origin carries no CORS header" time="0.0019195">
+        </testcase>
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; 200, 503 and 404 by origin (D-14) &gt; 503 from /routes/all before any load from a disallowed origin carries no CORS header" time="0.002118709">
+            <failure message="expected [ &apos;access-control-allow-origin&apos;, …(1) ] to deeply equal []" type="AssertionError">
+AssertionError: expected [ &apos;access-control-allow-origin&apos;, …(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   &quot;access-control-allow-origin&quot;,
++   &quot;access-control-expose-headers&quot;,
++ ]
+
+ ❯ expectNoCors src/api/routes/cors.test.ts:85:43
+ ❯ src/api/routes/cors.test.ts:148:13
+            </failure>
+        </testcase>
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; 200, 503 and 404 by origin (D-14) &gt; 503 from /routes/all before any load from no Origin carries no CORS header" time="0.001792833">
+        </testcase>
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; 200, 503 and 404 by origin (D-14) &gt; Express 404 from a disallowed origin carries no CORS header" time="0.001623292">
+            <failure message="expected [ &apos;access-control-allow-origin&apos;, …(1) ] to deeply equal []" type="AssertionError">
+AssertionError: expected [ &apos;access-control-allow-origin&apos;, …(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   &quot;access-control-allow-origin&quot;,
++   &quot;access-control-expose-headers&quot;,
++ ]
+
+ ❯ expectNoCors src/api/routes/cors.test.ts:85:43
+ ❯ src/api/routes/cors.test.ts:148:13
+            </failure>
+        </testcase>
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; 200, 503 and 404 by origin (D-14) &gt; Express 404 from no Origin carries no CORS header" time="0.001302333">
+        </testcase>
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; 200, 503 and 404 by origin (D-14) &gt; 200 from /health/live answers a disallowed origin with the same status and body as a request with no Origin" time="0.002799291">
+        </testcase>
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; 200, 503 and 404 by origin (D-14) &gt; 503 from /routes/all before any load answers a disallowed origin with the same status and body as a request with no Origin" time="0.002819667">
+        </testcase>
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; 200, 503 and 404 by origin (D-14) &gt; Express 404 answers a disallowed origin with the same status and body as a request with no Origin" time="0.002370125">
+        </testcase>
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; the shared-bucket 429 (D-14, edge CORS-02/boundary) &gt; the 60th request from the allowed origin passes with CORS, and the 61st is a 429 the browser can read" time="0.078556375">
+            <failure message="expected [ &apos;access-control-allow-origin&apos;, …(1) ] to deeply equal []" type="AssertionError">
+AssertionError: expected [ &apos;access-control-allow-origin&apos;, …(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   &quot;access-control-allow-origin&quot;,
++   &quot;access-control-expose-headers&quot;,
++ ]
+
+ ❯ expectNoCors src/api/routes/cors.test.ts:85:43
+ ❯ src/api/routes/cors.test.ts:193:17
+            </failure>
+        </testcase>
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; preflights (D-13) &gt; an allowed preflight is answered 204 with X-Device-Id allowed and spends no rate-limit token" time="0.004690958">
+        </testcase>
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; preflights (D-13) &gt; a disallowed preflight behaves exactly like an OPTIONS with no Origin and spends no token" time="0.005415667">
+            <failure message="expected 204 to be 200 // Object.is equality" type="AssertionError">
+AssertionError: expected 204 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 204
+
+ ❯ src/api/routes/cors.test.ts:237:41
+            </failure>
+        </testcase>
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; preflights (D-13) &gt; an allowed preflight to /api/v1/favorites is answered 204 before requireDeviceId, which still answers 400 without an Origin" time="0.002588">
+        </testcase>
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; origin precision (edge CORS-02/precision) &gt; never allows Origin: null" time="0.00376275">
+            <failure message="expected [ &apos;access-control-allow-origin&apos;, …(1) ] to deeply equal []" type="AssertionError">
+AssertionError: expected [ &apos;access-control-allow-origin&apos;, …(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   &quot;access-control-allow-origin&quot;,
++   &quot;access-control-expose-headers&quot;,
++ ]
+
+ ❯ expectNoCors src/api/routes/cors.test.ts:85:43
+ ❯ src/api/routes/cors.test.ts:287:13
+            </failure>
+        </testcase>
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; origin precision (edge CORS-02/precision) &gt; does not allow an origin that differs from the allowlist entry by a trailing slash" time="0.001499625">
+            <failure message="expected [ &apos;access-control-allow-origin&apos;, …(1) ] to deeply equal []" type="AssertionError">
+AssertionError: expected [ &apos;access-control-allow-origin&apos;, …(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   &quot;access-control-allow-origin&quot;,
++   &quot;access-control-expose-headers&quot;,
++ ]
+
+ ❯ expectNoCors src/api/routes/cors.test.ts:85:43
+ ❯ src/api/routes/cors.test.ts:303:13
+            </failure>
+        </testcase>
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; origin precision (edge CORS-02/precision) &gt; does not allow an origin that differs from the allowlist entry by another port" time="0.001439667">
+            <failure message="expected [ &apos;access-control-allow-origin&apos;, …(1) ] to deeply equal []" type="AssertionError">
+AssertionError: expected [ &apos;access-control-allow-origin&apos;, …(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   &quot;access-control-allow-origin&quot;,
++   &quot;access-control-expose-headers&quot;,
++ ]
+
+ ❯ expectNoCors src/api/routes/cors.test.ts:85:43
+ ❯ src/api/routes/cors.test.ts:303:13
+            </failure>
+        </testcase>
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; origin precision (edge CORS-02/precision) &gt; does not allow an origin that differs from the allowlist entry by https instead of http" time="0.001472167">
+            <failure message="expected [ &apos;access-control-allow-origin&apos;, …(1) ] to deeply equal []" type="AssertionError">
+AssertionError: expected [ &apos;access-control-allow-origin&apos;, …(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   &quot;access-control-allow-origin&quot;,
++   &quot;access-control-expose-headers&quot;,
++ ]
+
+ ❯ expectNoCors src/api/routes/cors.test.ts:85:43
+ ❯ src/api/routes/cors.test.ts:303:13
+            </failure>
+        </testcase>
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; origin precision (edge CORS-02/precision) &gt; does not allow an origin that differs from the allowlist entry by an uppercase host" time="0.001553042">
+            <failure message="expected [ &apos;access-control-allow-origin&apos;, …(1) ] to deeply equal []" type="AssertionError">
+AssertionError: expected [ &apos;access-control-allow-origin&apos;, …(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   &quot;access-control-allow-origin&quot;,
++   &quot;access-control-expose-headers&quot;,
++ ]
+
+ ❯ expectNoCors src/api/routes/cors.test.ts:85:43
+ ❯ src/api/routes/cors.test.ts:303:13
+            </failure>
+        </testcase>
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; concurrency and repeats &gt; parallel requests from the allowed origin, a disallowed origin and no Origin each get only their own result" time="0.00905375">
+            <failure message="expected [ &apos;access-control-allow-origin&apos;, …(1) ] to deeply equal []" type="AssertionError">
+AssertionError: expected [ &apos;access-control-allow-origin&apos;, …(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   &quot;access-control-allow-origin&quot;,
++   &quot;access-control-expose-headers&quot;,
++ ]
+
+ ❯ expectNoCors src/api/routes/cors.test.ts:85:43
+ ❯ src/api/routes/cors.test.ts:322:21
+ ❯ src/api/routes/cors.test.ts:316:23
+            </failure>
+        </testcase>
+        <testcase classname="src/api/routes/cors.test.ts" name="CORS on responses from createApp() &gt; concurrency and repeats &gt; repeated allowed-origin requests expose the identical header list, with Retry-After exactly once" time="0.0026875">
+        </testcase>
+    </testsuite>
+</testsuites>
