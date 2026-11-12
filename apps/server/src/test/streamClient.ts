@@ -19,11 +19,21 @@ function countOccurrences(text: string, fragment: string): number {
     return text.split(fragment).length - 1;
 }
 
-export function connectStream(options: { port: number; path: string; clientIp?: string }): StreamConnection {
-    const { port, path, clientIp } = options;
+export interface StreamOptions {
+    port: number;
+    path: string;
+    clientIp?: string;
+    origin?: string;
+}
+
+export function connectStream(options: StreamOptions): StreamConnection {
+    const { port, path, clientIp, origin } = options;
     const headers: Record<string, string> = {};
     if (clientIp !== undefined) {
         headers["X-Forwarded-For"] = clientIp;
+    }
+    if (origin !== undefined) {
+        headers.origin = origin;
     }
 
     let resolveOpened: (stream: OpenedStream) => void = () => {};
@@ -59,7 +69,7 @@ export function connectStream(options: { port: number; path: string; clientIp?: 
     return { request, opened };
 }
 
-export function openStream(options: { port: number; path: string; clientIp?: string }): Promise<OpenedStream> {
+export function openStream(options: StreamOptions): Promise<OpenedStream> {
     return connectStream(options).opened;
 }
 
