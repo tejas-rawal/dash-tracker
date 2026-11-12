@@ -28,6 +28,18 @@ const environmentSchema = z.object({
         .regex(/^\d+$/, "TRUST_PROXY_HOPS must be a non-negative integer")
         .default("0")
         .transform(Number),
+    // Comma-separated browser origins allowed to read API responses. The empty default means no browser origin may;
+    // that is not a fallback, because native apps and curl send no Origin and are unaffected (Phase 18 D-15).
+    // biome-ignore lint/style/useNamingConvention: env vars use SCREAMING_SNAKE_CASE by convention
+    CORS_ALLOWED_ORIGINS: z
+        .string()
+        .default("")
+        .transform((value: string): string[] =>
+            value
+                .split(",")
+                .map((entry: string): string => entry.trim())
+                .filter((entry: string): boolean => entry.length > 0),
+        ),
 });
 
 const parsed = environmentSchema.safeParse(process.env);
@@ -52,5 +64,8 @@ export const environment = {
     },
     database: {
         path: parsed.data.DB_PATH,
+    },
+    cors: {
+        allowedOrigins: parsed.data.CORS_ALLOWED_ORIGINS,
     },
 };

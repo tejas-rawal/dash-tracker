@@ -1,4 +1,5 @@
 import express, { type Express } from "express";
+import { createCorsMiddleware } from "./api/middleware/cors";
 import router from "./api/routes";
 import { environment } from "./config";
 
@@ -9,6 +10,9 @@ export function createApp(): Express {
     // Never `true`, which trusts every hop and lets any client pick its own key. Works alike behind any LB or PaaS
     // (D-17, D-18).
     app.set("trust proxy", environment.server.trustProxyHops);
+    // Ahead of the JSON body parser and every router, so CORS runs before the per-route upstreamRateLimiter and
+    // streamConcurrencyCap: an allowed preflight is answered before any rate-limit token is spent (Phase 18 D-13).
+    app.use(createCorsMiddleware(environment.cors.allowedOrigins));
 
     // Middleware to parse JSON
     app.use(express.json());
