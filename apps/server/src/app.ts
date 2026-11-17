@@ -1,30 +1,15 @@
-import express from "express";
 import { BusDataRepository, FavoritesRecentsRepository, ServiceAlertRepository } from "./api/repositories";
-import router from "./api/routes";
 import { createBusDataRefreshService } from "./api/services/BusDataRefreshService";
 import { createServiceAlertPollService } from "./api/services/ServiceAlertPollService";
 import { createServiceAlertService } from "./api/services/ServiceAlertService";
 import { environment, logger, registerProcessErrorHandlers } from "./config";
+import { createApp } from "./createApp";
 
 // Registered before anything else starts, so rejections during boot are caught too.
 registerProcessErrorHandlers();
 
-const app = express();
+const app = createApp();
 const port = environment.server.port;
-// An integer hop count, so req.ip (and with it the rate-limit key) is the client address the trusted proxies saw.
-// Never `true`, which trusts every hop and lets any client pick its own key. Works alike behind any LB or PaaS
-// (D-17, D-18).
-app.set("trust proxy", environment.server.trustProxyHops);
-
-// Middleware to parse JSON
-app.use(express.json());
-
-app.get("/", (_req, res) => {
-    res.jsonp({ message: "Hello World" });
-});
-
-// V1 API
-app.use("/api/v1", router);
 
 const SHUTDOWN_GRACE_MS = 10_000;
 

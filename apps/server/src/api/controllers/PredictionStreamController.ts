@@ -22,7 +22,7 @@ export function createPredictionStreamController(streamService: PredictionStream
         };
 
         let finished = false;
-        let unsubscribe: (() => void) | undefined = undefined;
+        let unsubscribe: (() => void) | null = null;
         let cleanedUp = false;
 
         // One cleanup path for both client disconnect and response socket errors. The guard makes an

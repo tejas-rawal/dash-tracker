@@ -1,0 +1,18 @@
+# Live DASH routes payload — captured 2026-11-10 for CORS-05
+# Request: GET {DASH_API_BASE_URL}/info/{DASH_API_AGENCY}/routes?verbose=true (same call as BusDataRepository.load)
+# Only ids, shortNames and color fields printed; API key never printed.
+
+status 200 routes 12
+route keys: color, directions, extent, id, longName, name, shapes, shortName, textColor, type
+{"id":"30","shortName":"30","color":"006899","textColor":"ffffff"}
+{"id":"31","shortName":"31","color":"ff0000","textColor":"ffffff"}
+{"id":"32","shortName":"32","color":"7fcdbf","textColor":"000000"}
+{"id":"33","shortName":"33","color":"009bce","textColor":"ffffff"}
+{"id":"34","shortName":"34","color":"5fa1e1","textColor":"000000"}
+{"id":"35","shortName":"35","color":"f37332","textColor":"ffffff"}
+{"id":"36A","shortName":"36A","color":"b45184","textColor":"ffffff"}
+{"id":"36B","shortName":"36B","color":"eda0d3","textColor":"ffffff"}
+{"id":"102","shortName":"102","color":"03924d","textColor":"ffffff"}
+{"id":"103","shortName":"103","color":"00958a","textColor":"ffffff"}
+{"id":"104","shortName":"104","color":"70bf49","textColor":"ffffff"}
+{"id":"KST","shortName":"KST","color":"8e252c","textColor":"ffffff"}

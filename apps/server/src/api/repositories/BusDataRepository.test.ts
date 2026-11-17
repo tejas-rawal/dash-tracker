@@ -38,13 +38,19 @@ const makeApiDirection = (id: string, stops: ReturnType<typeof makeApiStop>[] = 
     headSigns: ["Downtown"],
 });
 
-const makeApiRoute = (id: string, shortName: string, directions: ReturnType<typeof makeApiDirection>[] = []) => ({
+const makeApiRoute = (
+    id: string,
+    shortName: string,
+    directions: ReturnType<typeof makeApiDirection>[] = [],
+    overrides: Record<string, unknown> = {},
+) => ({
     id,
     shortName,
     longName: `Route ${shortName} Long`,
     name: `Route ${shortName}`,
     type: RouteType.Bus,
     directions,
+    ...overrides,
 });
 
 const makeApiResponse = (routes: unknown[]) => ({
@@ -960,6 +966,99 @@ describe("BusDataRepository", () => {
             // Assert
             await expect(result).resolves.toEqual({ routeCount: 1, stopCount: 1 });
             expect(repo.getStopById("s1")?.code).toBe(101);
+        });
+    });
+
+    // Colors are optional display data (D-17): a bad value drops that one field and never rejects the load.
+    describe("load: route colors are optional display data", () => {
+        const route30Colors = { color: "006899", textColor: "ffffff" };
+
+        it("loads a valid color pair exactly as DASH sent it", async () => {
+            // Arrange
+            mockAxiosGet.mockResolvedValueOnce(makeApiResponse([makeApiRoute("r1", "1A", [], route30Colors)]));
+
+            // Act
+            const result = repo.load();
+
+            // Assert
+            await expect(result).resolves.toEqual({ routeCount: 1, stopCount: 0 });
+            expect(repo.getRouteById("r1")?.color).toBe("006899");
+            expect(repo.getRouteById("r1")?.textColor).toBe("ffffff");
+        });
+
+        it("keeps an uppercase 6-hex-digit color unchanged", async () => {
+            // Arrange
+            mockAxiosGet.mockResolvedValueOnce(
+                makeApiResponse([makeApiRoute("r1", "1A", [], { ...route30Colors, color: "00689A" })]),
+            );
+
+            // Act
+            const result = repo.load();
+
+            // Assert
+            await expect(result).resolves.toEqual({ routeCount: 1, stopCount: 0 });
+            expect(repo.getRouteById("r1")?.color).toBe("00689A");
+        });
+
+        it.each([
+            { label: "absent", route: omitKeys(makeApiRoute("r1", "1A", [], route30Colors), "color") },
+            { label: "null", route: makeApiRoute("r1", "1A", [], { ...route30Colors, color: null }) },
+            { label: "an empty string", route: makeApiRoute("r1", "1A", [], { ...route30Colors, color: "" }) },
+            { label: "#-prefixed", route: makeApiRoute("r1", "1A", [], { ...route30Colors, color: "#006899" }) },
+            { label: "5 hex digits", route: makeApiRoute("r1", "1A", [], { ...route30Colors, color: "06899" }) },
+            { label: "7 hex digits", route: makeApiRoute("r1", "1A", [], { ...route30Colors, color: "0068999" }) },
+            { label: "not hex", route: makeApiRoute("r1", "1A", [], { ...route30Colors, color: "GGGGGG" }) },
+            { label: "space-padded", route: makeApiRoute("r1", "1A", [], { ...route30Colors, color: " 006899" }) },
+            { label: "a number", route: makeApiRoute("r1", "1A", [], { ...route30Colors, color: 123 }) },
+            { label: "a boolean", route: makeApiRoute("r1", "1A", [], { ...route30Colors, color: true }) },
+            { label: "an object", route: makeApiRoute("r1", "1A", [], { ...route30Colors, color: {} }) },
+        ])("drops a color that is $label and keeps textColor", async ({ route }) => {
+            // Arrange
+            mockAxiosGet.mockResolvedValueOnce(makeApiResponse([route]));
+
+            // Act
+            const result = repo.load();
+
+            // Assert
+            await expect(result).resolves.toEqual({ routeCount: 1, stopCount: 0 });
+            expect(repo.getRouteById("r1")?.color).toBeUndefined();
+            expect(repo.getRouteById("r1")?.textColor).toBe("ffffff");
+        });
+
+        it("keeps a valid color when only textColor is malformed", async () => {
+            // Arrange
+            mockAxiosGet.mockResolvedValueOnce(
+                makeApiResponse([makeApiRoute("r1", "1A", [], { ...route30Colors, textColor: "#ffffff" })]),
+            );
+
+            // Act
+            const result = repo.load();
+
+            // Assert
+            await expect(result).resolves.toEqual({ routeCount: 1, stopCount: 0 });
+            expect(repo.getRouteById("r1")?.color).toBe("006899");
+            expect(repo.getRouteById("r1")?.textColor).toBeUndefined();
+        });
+
+        it("serves every route when one route's color is malformed and records no load error", async () => {
+            // Arrange
+            mockAxiosGet.mockResolvedValueOnce(
+                makeApiResponse([
+                    makeApiRoute("r1", "1A", [], { ...route30Colors, color: "#006899" }),
+                    makeApiRoute("r2", "2B", [], { color: "eda0d3", textColor: "000000" }),
+                ]),
+            );
+
+            // Act
+            const result = repo.load();
+
+            // Assert
+            await expect(result).resolves.toEqual({ routeCount: 2, stopCount: 0 });
+            expect(repo.getAllRoutes().map((route) => route.id)).toEqual(["r1", "r2"]);
+            expect(repo.getRouteById("r1")?.color).toBeUndefined();
+            expect(repo.getRouteById("r2")?.color).toBe("eda0d3");
+            expect(repo.getRouteById("r2")?.textColor).toBe("000000");
+            expect(repo.getLoadState().lastError).toBeUndefined();
         });
     });
 

@@ -38,6 +38,59 @@ describe("BusRoute", () => {
         });
     });
 
+    // JSON drops undefined properties, so a route without DASH colors serializes without the keys.
+    describe("JSON serialization of route colors", () => {
+        it("includes color and textColor when they are set", () => {
+            // Arrange
+            const route = makeRoute({ color: "006899", textColor: "ffffff" });
+
+            // Act
+            const json = JSON.parse(JSON.stringify(route));
+
+            // Assert
+            expect(json.color).toBe("006899");
+            expect(json.textColor).toBe("ffffff");
+        });
+
+        it("omits color and textColor when they are not set", () => {
+            // Arrange
+            const route = makeRoute();
+
+            // Act
+            const json = JSON.parse(JSON.stringify(route));
+
+            // Assert
+            expect(json).not.toHaveProperty("color");
+            expect(json).not.toHaveProperty("textColor");
+        });
+
+        it("includes the colors in the { ...route, alerts } copy that /routes/:shortName serves", () => {
+            // Arrange
+            const route = makeRoute({ color: "006899", textColor: "ffffff" });
+
+            // Act
+            const json = JSON.parse(JSON.stringify({ ...route, alerts: [] }));
+
+            // Assert
+            expect(json.color).toBe("006899");
+            expect(json.textColor).toBe("ffffff");
+            expect(json.alerts).toEqual([]);
+        });
+
+        it("omits the colors from the { ...route, alerts } copy when they are not set", () => {
+            // Arrange
+            const route = makeRoute();
+
+            // Act
+            const json = JSON.parse(JSON.stringify({ ...route, alerts: [] }));
+
+            // Assert
+            expect(json).not.toHaveProperty("color");
+            expect(json).not.toHaveProperty("textColor");
+            expect(json.alerts).toEqual([]);
+        });
+    });
+
     describe("getAllStops", () => {
         it("returns all unique stops across all directions", () => {
             // Arrange

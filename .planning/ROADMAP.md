@@ -87,8 +87,8 @@ See `.planning/milestones/v0.6-ROADMAP.md` for full phase details.
 
 **Phase shape:** The work runs in order: the repo layout first, then the server runtime and API contract, then the app. Every phase ends on a working product. Research suggested six phases. Under coarse granularity, its separate toolchain and CORS phases are merged into Phase 18 (see that phase's notes), which gives five.
 
-- [ ] **Phase 17: Monorepo Restructure** - The backend moves to `apps/server` with a pure `git mv` inside a Bun 1.3.14 workspace that has one lockfile. The server's tests, coverage, build and dev server stay green from the root and from `apps/server`
-- [ ] **Phase 18: Server Toolchain & CORS** - The server runs on Node 24, tsx, TypeScript 6 and Biome 2.5 with no change in behavior. Browser code on an allowed origin can read every API response, including its retry timing
+- [x] **Phase 17: Monorepo Restructure** - The backend moves to `apps/server` with a pure `git mv` inside a Bun 1.3.14 workspace that has one lockfile. The server's tests, coverage, build and dev server stay green from the root and from `apps/server` (completed 2026-11-10)
+- [x] **Phase 18: Server Toolchain & CORS** - The server runs on Node 24, tsx, TypeScript 6 and Biome 2.5 with no change in behavior. Browser code on an allowed origin can read every API response, including its retry timing (completed 2026-11-17)
 - [ ] **Phase 19: App Foundation & Route List** - The Expo SDK 58 app launches on iOS, Android and web and shows every DASH route from the local server, with error states written for riders. It is linted, unit-tested at ≥80% coverage and checked in CI
 - [ ] **Phase 20: Stops & Arrivals over REST** - A rider goes from a route to its stops, one direction at a time, to that stop's upcoming arrivals for the route. This completes the core flow over REST
 - [ ] **Phase 21: Live Arrivals over SSE** - Arrivals update over the prediction stream while the screen is in view and show how fresh they are. Reconnects leak no streams and stay within the server's rate limit and stream cap
@@ -108,7 +108,7 @@ See `.planning/milestones/v0.6-ROADMAP.md` for full phase details.
   4. `bun.lock` is the only lockfile, and a root `bunfig.toml` pins the hoisted linker, exact version specifiers and the 7-day minimum release age. `bun install --frozen-lockfile` under Bun 1.3.14 (the `packageManager` pin) leaves the working tree clean, both locally and in every CI job.
   5. A fresh Superset worktree sets up and runs the server from `apps/server`. CLAUDE.md, AGENTS.md, README and the Codecov upload all use the new paths.
 
-**Plans**: 3/3 plans executed
+**Plans**: 3/3 plans complete
 
 Plans:
 **Wave 1**
@@ -139,7 +139,25 @@ Plans:
   4. With `CORS_ALLOWED_ORIGINS=http://localhost:8081`, browser code on that origin can read the 200, both 429s (shared bucket and stream cap), the 503, the 404 and the SSE stream, and it can read `Retry-After`. Its preflight never spends a rate-limit token. With the variable unset, no browser origin can read responses. A value containing `*`, a path, a trailing slash or a malformed origin stops the server at startup.
   5. Requests without an `Origin` header (native apps, curl) behave exactly as before. Route responses carry DASH's `color`/`textColor` if the live routes payload has them. If it doesn't, CORS-05 is closed as not applicable, with the captured payload as evidence.
 
-**Plans**: TBD
+**Plans**: 6/6 plans complete
+
+Plans:
+**Wave 1**
+- [x] 18-01-PLAN.md — Node 24.22.2 LTS pin, explicit trustedDependencies with `bun pm untrusted` empty, clean reinstall with better-sqlite3 on ABI 137, CI setup-node before every install plus a dist boot smoke, and the legitimacy gate for @types/node and Biome 2.5.15
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [x] 18-02-PLAN.md — tsx replaces ts-node/nodemon (signals re-checked), @types to devDependencies, TypeScript 6.0.3 on @tsconfig/node24 with CommonJS emit (commonjs + bundler) and explicit `types: ["node"]`
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [x] 18-03-PLAN.md — Biome 2.5.15: new-rule fix, migrate commit with the 1.9.4 style rules named one by one, tool-only reformat commit, .git-blame-ignore-revs, `lint:fix` = `--write --unsafe`, same 36 warnings
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [x] 18-04-PLAN.md — createApp() extraction, then `cors` with an exact-origin callback from Zod-validated CORS_ALLOWED_ORIGINS, mounted after trust proxy; malformed origins stop startup; docs
+- [x] 18-05-PLAN.md — DASH route `color`/`textColor` through RouteData → BusRoute → every route response, dropped per field when malformed and never failing the load
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [x] 18-06-PLAN.md — D-14 matrix: 200, both 429s, 503, 404 and SSE by allowed/disallowed/absent Origin, preflights that spend no token, and createCorsMiddleware unit tests
+
 **Notes**:
 - This phase merges the research's separate toolchain and CORS phases (coarse granularity). Both are server-only, both must land before any app code, and each change still gets its own commits.
 - The toolchain plans run first, so the CORS code is written on TypeScript 6 and in Biome 2 style.
@@ -236,8 +254,8 @@ Phases execute in numeric order: 17 → 18 → 19 → 20 → 21
 | 14. Health Checks & Rate Limiting | v0.6 | 3/3 | Complete | 2026-10-07 |
 | 15. Alert & Nearby Data Hygiene | v0.6 | 3/3 | Complete | 2026-10-07 |
 | 16. Concurrent SSE Stream Cap per IP | v0.6 | 1/1 | Complete | 2026-10-13 |
-| 17. Monorepo Restructure | v0.7 | 3/3 | In Progress | - |
-| 18. Server Toolchain & CORS | v0.7 | 0/TBD | Not started | - |
+| 17. Monorepo Restructure | v0.7 | 3/3 | Complete    | 2026-11-10 |
+| 18. Server Toolchain & CORS | v0.7 | 6/6 | Complete    | 2026-11-17 |
 | 19. App Foundation & Route List | v0.7 | 0/TBD | Not started | - |
 | 20. Stops & Arrivals over REST | v0.7 | 0/TBD | Not started | - |
 | 21. Live Arrivals over SSE | v0.7 | 0/TBD | Not started | - |
@@ -245,3 +263,13 @@ Phases execute in numeric order: 17 → 18 → 19 → 20 → 21
 ---
 
 _Full phase details for shipped milestones archived to `.planning/milestones/v0.1-ROADMAP.md` through `.planning/milestones/v0.6-ROADMAP.md`._
+
+## Backlog
+
+### Phase 999.1: Follow-up — Phase 17 deferred UAT follow-up: Test 7 (BACKLOG)
+
+**Goal:** Resolve the UAT checkpoint deferred during Phase 17 verification
+**Source phase:** 17
+**Deferred at:** 2026-11-05 during /gsd-verify-work 17 session completion
+**Follow-ups:**
+- [ ] Test 7: apps/server/src/api/routes/healthRoutes.test.ts is order-dependent within the file: vitest --sequence.shuffle.tests (seeds 1234, 98765, 42) fails 1-2 'before the first successful route/stop load' tests because the BusDataRepository singleton is never reset between tests. Pre-existing since v0.6 (b904b99), not a Phase 17 regression; normal CI order passes. (deferred 2026-11-04)

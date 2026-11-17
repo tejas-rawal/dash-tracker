@@ -4,12 +4,12 @@ dash-tracker is a Node.js/Express REST API that proxies and structures data from
 
 ## Commands
 
-- **Install:** `bun install --frozen-lockfile` at the repo root, with Bun 1.3.14 from the root `packageManager` (proto resolves it locally, setup-bun in CI). The text `bun.lock` is the only lockfile, and the root `bunfig.toml` enforces the hoisted linker, exact specifiers and a 7-day minimum release age. To add a dependency, run `bun add <package>@<version>` with an exact version inside the workspace directory that uses it (for example `apps/server`).
-- **Dev server:** `bun run dev:server` from the root. It runs the `dev-server` script in `apps/server` (nodemon + ts-node, auto-restart on change); stop it with Ctrl-C.
+- **Install:** `bun install --frozen-lockfile` at the repo root, with Bun 1.3.14 from the root `packageManager` (proto resolves it locally, setup-bun in CI). The text `bun.lock` is the only lockfile, and the root `bunfig.toml` enforces the hoisted linker, exact specifiers and a 7-day minimum release age. To add a dependency, run `bun add <package>@<version>` with an exact version inside the workspace directory that uses it (for example `apps/server`). Node comes from `.node-version` (proto resolves it locally, setup-node in CI), and the root `trustedDependencies` lists the only packages whose install scripts may run, so `bun pm untrusted` must stay empty.
+- **Dev server:** `bun run dev:server` from the root. It runs the `dev-server` script in `apps/server` (tsx watch, restarts when a file it imports changes); stop it with Ctrl-C.
 - **Build:** `bun run build` fans out to every workspace; in `apps/server` it runs `rm -rf dist && tsc` and writes `apps/server/dist/`.
-- **Start without building:** `bun run --cwd apps/server start-server` (ts-node).
+- **Start without building:** `bun run --cwd apps/server start-server` (tsx).
 - **Type-check:** `bun run typecheck` fans out to every workspace. In `apps/server` it runs `tsc -p tsconfig.typecheck.json`, which type-checks the server source and every `*.test.ts` without emitting; `build` compiles from `tsconfig.json`, which keeps tests out of `dist/`.
-- **Lint:** `bun run lint` (check) / `bun run lint:fix` (auto-fix unsafe issues). Biome runs once from the root and covers every workspace and the root files.
+- **Lint:** `bun run lint` (check) / `bun run lint:fix` (runs `biome check --write --unsafe .`, applying safe and unsafe fixes). Biome runs once from the root and covers every workspace and the root files.
 - **Format:** `bun run format` (check) / `bun run format:write` (write) — identical to lint commands; Biome is the sole tool and runs once from the root over every workspace.
 - **Test:** `bun run test` (vitest --run --typecheck) / `bun run test:coverage` (adds coverage; 80% threshold enforced; report in `apps/server/coverage/`) fan out to every workspace. Always use `bun run test`; `bun test` starts Bun's own test runner instead of Vitest.
 - **Run a single test file:** `bun run --filter @dash-tracker/server test -- src/api/models/BusRoute.test.ts` from the root, or `bun run test -- src/api/models/BusRoute.test.ts` inside `apps/server`.
@@ -17,13 +17,13 @@ dash-tracker is a Node.js/Express REST API that proxies and structures data from
 
 ## Technology Stack
 
-- TypeScript 5.7.3, Node 20 (`.node-version`), Bun 1.3.14 (root `packageManager`) as package manager, workspace manager and script runner; hoisted linker; the text `bun.lock` is the only lockfile
+- TypeScript 6.0.3, Node 24.22.2 LTS (`.node-version`; every CI job sets it up with actions/setup-node before the install), Bun 1.3.14 (root `packageManager`) as package manager, workspace manager and script runner; hoisted linker; the text `bun.lock` is the only lockfile
 - Monorepo: root `package.json` `workspaces: ["apps/*"]`; the API is `apps/server` (`@dash-tracker/server`); root `test`, `test:coverage`, `build` and `typecheck` fan out with `bun run --filter './apps/*'`; root `lint` and `format` run Biome once
 - Express 4.21.2, Zod 3.25.76 (env/data validation), Axios 1.7.9 (DASH API client), Winston 3.17.0 (logging)
-- Biome 1.9.4 — sole lint + format tool (root `biome.json`; 120 char width, 4-space indent, `noDefaultExport` off); Prettier fully removed
+- Biome 2.5.15 — sole lint + format tool (root `biome.json`; 120 char width, 4-space indent, `noDefaultExport` off); Prettier fully removed; Biome 2 has no `"all"`, so `biome.json` names each style rule the project had under 1.9.4; `.git-blame-ignore-revs` lists the Biome 2 reformat (run `git config blame.ignoreRevsFile .git-blame-ignore-revs` once for local blame)
 - Vitest 3.2.6 with `@vitest/coverage-v8` 3.2.6 — tests co-located as `*.test.ts`; config at `apps/server/vitest.config.mts`
-- Build: `tsc` → `apps/server/dist/` (ES2020, CommonJS, strict mode)
-- Required env vars (Zod-validated at startup, crash on missing/invalid): `DASH_API_BASE_URL`, `DASH_API_AGENCY`, `DASH_API_KEY`; optional `PORT`, `DASH_API_TIMEOUT_MS`, `DB_PATH`, `TRUST_PROXY_HOPS` (trusted reverse-proxy hop count for the client IP, default 0); see `apps/server/.env.example`
+- Build: `tsc` → `apps/server/dist/` (es2024 from @tsconfig/node24, CommonJS, strict mode; explicit types: ["node"])
+- Required env vars (Zod-validated at startup, crash on missing/invalid): `DASH_API_BASE_URL`, `DASH_API_AGENCY`, `DASH_API_KEY`; optional `PORT`, `DASH_API_TIMEOUT_MS`, `DB_PATH`, `TRUST_PROXY_HOPS` (trusted reverse-proxy hop count for the client IP, default 0), `CORS_ALLOWED_ORIGINS` (comma-separated exact browser origins allowed to read responses, default empty = none; a `*`, path, trailing slash or malformed entry fails startup); see `apps/server/.env.example`
 
 ## Conventions
 
@@ -54,6 +54,7 @@ Layered, strict top-down flow, no skipping: **Routes → Controllers → Service
 - Entry point `apps/server/src/app.ts`: registers process error handlers → opens SQLite (fatal on failure) → listens → starts the route/stop loader and the alert poll in the background, so DASH never blocks listen and data-dependent endpoints answer 503 until the first load; SIGTERM/SIGINT stop both loops before the server closes
 - Endpoints: `GET /api/v1/routes/all`, `GET /api/v1/routes/:shortName`, `GET /api/v1/routes/:shortName/stops`, `GET /api/v1/stops/nearby?lat&lng&radius&count`, `GET /api/v1/predictions?stop&route&number`, `GET /api/v1/predictions/nearby?lat&lng&radius&number`, `GET /api/v1/predictions/stream?stop` (SSE), `GET /api/v1/vehicles?route`, `GET /api/v1/favorites`, `POST /api/v1/favorites`, `DELETE /api/v1/favorites/:entityType/:entityId`, `GET /api/v1/recents`, `GET /api/v1/health/live`, `GET /api/v1/health/ready`. Favorites and recents require an `X-Device-Id` header; `GET /api/v1/predictions` also records a recent when `X-Device-Id` is sent
 - Rate limiting: one shared `express-rate-limit` bucket (`apps/server/src/api/middleware/upstreamRateLimit.ts`, 60 requests per minute per client IP) sits in front of the routes that call DASH live (`/predictions`, `/predictions/nearby`, `/predictions/stream`, `/vehicles`) and answers 429 `{ error, details }` with `Retry-After`; in-memory endpoints and the health probes are never limited, and the client IP honors `TRUST_PROXY_HOPS`; `/predictions/stream` also passes a per-IP concurrent-stream cap (`apps/server/src/api/middleware/streamConcurrencyCap.ts`, 5 open streams per client IP, checked after the bucket so every connect still spends it) that answers 429 `{ error, details }` with `Retry-After: 5`, never touches an open stream, and frees a slot when the stream's response closes
+- CORS: `createApp()` (`apps/server/src/createApp.ts`) builds the app for `app.ts` and the tests; the `cors` package (`apps/server/src/api/middleware/cors.ts`) runs right after `trust proxy` and before every router, only for origins in `CORS_ALLOWED_ORIGINS`; it exposes `Retry-After`, `RateLimit` and `RateLimit-Policy`, answers allowed preflights with 204 before any rate limit, and leaves requests without an allowed `Origin` untouched
 
 ## Engineering Principles
 

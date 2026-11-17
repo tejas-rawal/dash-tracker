@@ -1,15 +1,4 @@
-import express from "express";
-import router from "../api/routes";
-import { environment } from "../config";
+import { createApp } from "../createApp";
 
-const app = express();
-app.set("trust proxy", environment.server.trustProxyHops);
-app.use(express.json());
-
-app.get("/", (_req, res) => {
-    res.jsonp({ message: "Hello World" });
-});
-
-app.use("/api/v1", router);
-
+const app = createApp();
 export default app;

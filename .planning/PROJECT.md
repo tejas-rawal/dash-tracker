@@ -131,11 +131,11 @@ Riders can always see accurate, near-real-time arrival predictions for their sto
 - ✓ Nearby-prediction entries with missing or mistyped display fields (route/stop names and ids, `stopCode`, destination `directionId`/`headsign`) are dropped instead of served (NEAR-12) — v0.6 Phase 15
 - ✓ One client IP holds at most 5 open `/predictions/stream` connections; the 6th gets 429 + `Retry-After: 5`, open streams are never touched, and a slot frees when a stream closes (Phase 14 review WR-02) — v0.6 Phase 16
 
+- ✓ Toolchain on Node 24 LTS (24.22.2) and a single Bun 1.3.14 (pin, one lockfile, frozen installs, CI sets up both and verifies them); server runs under tsx, compiles with TypeScript 6 on `@tsconfig/node24`, lints with Biome 2.5 — v0.7 Phases 17–18
+- ✓ Server sends CORS headers for configured exact origins (`CORS_ALLOWED_ORIGINS`, empty by default) on every response incl. 429/503/404/SSE, with `Retry-After` exposed; no-Origin requests unchanged; route responses carry DASH `color`/`textColor` — v0.7 Phase 18
 ### Active
 
 - [ ] Repo is a Bun-workspaces monorepo with the backend in `apps/server` and the Expo app in `apps/mobile`
-- [ ] Toolchain on Node 24 LTS and a single Bun 1.3.x version (pin, lockfile, CI)
-- [ ] Server sends CORS headers for configured origins so Expo web can call it
 - [ ] Rider can browse routes → stops → live arrivals (REST then SSE) on iOS, Android, and web
 - [ ] App code is Biome-linted, unit-tested at ≥80% coverage, and covered by CI
 
@@ -251,7 +251,14 @@ v0.6 REQ-IDs are archived in `.planning/milestones/v0.6-REQUIREMENTS.md`.
 | Upstream alert lists (`activePeriods`, `informedEntities`) are typed `unknown` on the model; only `parseAlert` reads them | The compiler then refuses any unchecked read of upstream structure | ✓ Shipped Phase 15 |
 | The nearby entry guard requires non-empty string names/ids, a finite `stopCode` and non-empty destination `directionId`/`headsign`; no trimming | A rider must never see a stop with no name or a destination with no headsign (v0.5 WR-01) | ✓ Shipped Phase 15 — whitespace-only names still pass (D-11) |
 | Cap concurrent `/predictions/stream` connections at 5 per client IP (IPv6 /56), keyed like the shared 60/min bucket and checked after it | Held-open streams bypassed the per-request bucket and could multiply DASH polls; 5 fits a rider app with a few stops open, and riders behind one shared address sharing 5 is an accepted trade-off (AR-16-02) | ✓ Shipped Phase 16 — live UAT against DASH passed; production proxy-hop check moved to the deploy checklist |
-| Ship the v0.7 monorepo restructure (Phase 17) as its own PR, merged with a merge commit | A squash merge would collapse the rename-only `git mv` commit into the config changes and break `git log --follow`/blame for every moved server file | — Pending |
+| Ship the v0.7 monorepo restructure (Phase 17) as its own PR, merged with a merge commit | A squash merge would collapse the rename-only `git mv` commit into the config changes and break `git log --follow`/blame for every moved server file | ✓ Shipped Phase 17 — PR #17 merged as merge commit `caffee2`; `0be937b` is reachable from `main` and `--follow` reaches `b904b99` |
+| CORS via the `cors` package with an exact-origin callback (not an origin array) mounted in a shared `createApp()` before every router | An array makes `cors` add `Vary`/expose headers to no-Origin responses and answer every OPTIONS itself, breaking CORS-04; a callback returning `false` leaves those requests untouched, and app-level mounting answers preflights before any rate limiter | ✓ Shipped Phase 18 — code review WR-01 (`Vary: Origin` only on allowed origins) left open as accepted risk AR-18-03 |
+| TypeScript 6 on `@tsconfig/node24` with `module: commonjs` + `moduleResolution: bundler` | The only override that kept CommonJS emit with zero errors: `node10` is deprecated (TS5107), `commonjs` with inherited `node16` fails (TS5110), `nodenext` breaks test imports | ✓ Shipped Phase 18 (review IN-01: the tsconfig comment's rationale is imprecise) |
+| Biome 2 migration restores the 1.9.4 `style` rules by name instead of `style.all` | `biome migrate` silently drops `style.all`; restoring by name kept the exact 36-warning lint surface | ✓ Shipped Phase 18 — migrate commit `597be9a` is lint-red by design |
+| Route colors are passed through exactly as DASH sends them (6 hex digits, no `#`), dropped per field when malformed | The live payload carries both on all 12 routes; display data must never fail the atomic load | ✓ Shipped Phase 18 |
+| Pin Bun 1.3.14 in the root `packageManager` and gate installs with `bunfig.toml` (hoisted linker, exact specifiers, 7-day `minimumReleaseAge`); `bun.lock` is the only lockfile and every CI and Superset install is frozen | One Bun version everywhere and a supply-chain delay on new publishes; the hoisted linker is pinned because a regenerated lockfile would silently switch to isolated installs | ✓ Shipped Phase 17 — all 4 CI jobs verify the pin and a clean tree |
+| Type-check tests through a separate `tsconfig.typecheck.json` instead of widening `tsconfig.json` | `build` keeps excluding tests from `dist/` while `typecheck` covers every `*.test.ts` | ✓ Shipped Phase 17 |
+| Automated runners start the server with `cd apps/server && exec bun run dev-server`; the root `dev:server` is for humans | `bun run --filter` drops SIGTERM and orphans nodemon; `exec` lets SIGTERM/SIGINT reach bun directly | ✓ Shipped Phase 17 — a real Superset workspace stops with no orphans (UAT 2) |
 
 ## Evolution
 
@@ -271,4 +278,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-20 after starting v0.7 milestone*
+*Last updated: 2026-11-17 after Phase 18*

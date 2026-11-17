@@ -17,7 +17,7 @@ This repository is a Bun-workspaces monorepo; the Express API lives in `apps/ser
 - `bun run typecheck` - type-check every workspace, tests included
 - `bun run lint` - run Biome once over the whole repository
 
-**Local config:** copy `apps/server/.env.example` to `apps/server/.env` and fill in the DASH values. The API keeps its SQLite database in `apps/server/data/`.
+**Local config:** copy `apps/server/.env.example` to `apps/server/.env` and fill in the DASH values. The API keeps its SQLite database in `apps/server/data/`. Set `CORS_ALLOWED_ORIGINS` (for example `http://localhost:8081` for Expo web) to let browser code read the API; unset means no browser origin can.
 
 One-time move: if you have an env file or a `data/` directory at the repo root from before the monorepo, move both into `apps/server` by hand; there is no migration script.
 

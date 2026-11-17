@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { NotFoundError } from "../errors";
 import { BusRoute, BusStop, RouteType } from "../models";
 import { RouteDirection } from "../models/RouteDirection";
-import { createStopService } from "./StopService";
 import { haversineDistanceMiles } from "./distance";
+import { createStopService } from "./StopService";
 
 const makeStop = (id = "stop-1") => new BusStop({ id, name: `Stop ${id}`, code: 101, lat: 38.8, lon: -77.1 });
 

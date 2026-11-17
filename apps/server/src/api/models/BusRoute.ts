@@ -14,6 +14,9 @@ export class BusRoute {
     shortName: string;
     name: string;
     type: RouteType;
+    // DASH's 6-hex-digit route colors without `#`, omitted when DASH has none (D-16, D-17).
+    color?: string;
+    textColor?: string;
     directions: RouteDirection[];
 
     constructor(data: {
@@ -22,6 +25,8 @@ export class BusRoute {
         shortName: string;
         name: string;
         type: RouteType;
+        color?: string;
+        textColor?: string;
         directions: RouteDirection[];
     }) {
         this.id = data.id;
@@ -29,6 +34,8 @@ export class BusRoute {
         this.shortName = data.shortName;
         this.name = data.name;
         this.type = data.type;
+        this.color = data.color;
+        this.textColor = data.textColor;
         this.directions = data.directions;
     }
 

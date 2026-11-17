@@ -1,18 +1,14 @@
 ---
-status: testing
+status: complete
 phase: 17-monorepo-restructure
 source: [17-VERIFICATION.md]
 started: 2026-10-23T17:46:48Z
-updated: 2026-11-04T12:30:00Z
+updated: 2026-11-10T16:51:00.391Z
 ---
 
 ## Current Test
 
-number: 5
-name: Merge the Phase 17 PR with a merge commit, never a squash (prohibition, D-01)
-expected: |
-  Rename commit 0be937b is reachable from main, and `git log --follow -- apps/server/src/app.ts` on main still lists b904b99
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -23,8 +19,8 @@ note: "Run by Claude at user's request after moving the root env file into apps/
 
 ### 2. Fresh Superset workspace: setup, run, stop
 expected: frozen install; apps/server/.env written, no root env file; run serves 200; stop leaves no bun/nodemon/ts-node and frees the port
-result: skipped
-reason: "User skipped for now. Real Superset runner not exercised (CLI session expired). Hand-run of the config.json setup/run in a throwaway worktree: frozen install ok, apps/server/.env written with no root env file, live 200, SIGTERM and SIGINT leave no orphans and free the port; SIGHUP leaves bun run, nodemon and ts-node running on port 3000 (likely the bun run wrapper) - matters if Superset's stop closes the terminal"
+result: pass
+note: "Verified by Claude 2026-11-10 in a real Superset workspace (uat-17-superset, created with superset ws create --local from main @ caffee2). Workspace Setup terminal: bun install --frozen-lockfile installed 343 packages, setup script created apps/server/.env, no root env file, clean git status. Run command (cd apps/server && exec bun run dev-server) in a Superset terminal: health/live 200 after 4s. superset terminals close disposed the terminal: no bun/nodemon/ts-node left and port 3000 free. The earlier hand-run SIGHUP orphan does not reproduce through Superset's terminal dispose."
 
 ### 3. One-time move of the local env file and data/ into apps/server (this worktree and the main checkout)
 expected: After the move, `bun run dev:server` boots, and existing favorites and recents are still there.
@@ -38,7 +34,8 @@ note: "Verified by Claude on PR #17, CI run 40558783754 (user re-enabled the man
 
 ### 5. Merge the Phase 17 PR with a merge commit, never a squash (prohibition, D-01)
 expected: Rename commit 0be937b is reachable from main, and `git log --follow -- apps/server/src/app.ts` on main still lists b904b99
-result: [pending]
+result: pass
+note: "Verified by Claude after merging PR #17 with gh pr merge --merge: main is merge commit caffee2 (parents b904b99, 1df28f2); git merge-base --is-ancestor 0be937b origin/main succeeds; git log --follow -- apps/server/src/app.ts on main lists 0be937b and b904b99 (14 commits)."
 
 ### 6. Review the two test-tier prohibitions (install gates and coverage gate not weakened)
 expected: Accept the grep and diff evidence in 17-VERIFICATION.md, or require a wired enforcement test
@@ -52,10 +49,10 @@ note: "Truth 20 checked directly: vitest --sequence.shuffle.files with seeds 123
 ## Summary
 
 total: 7
-passed: 5
+passed: 7
 issues: 0
-pending: 1
-skipped: 1
+pending: 0
+skipped: 0
 blocked: 0
 
 ## Gaps
