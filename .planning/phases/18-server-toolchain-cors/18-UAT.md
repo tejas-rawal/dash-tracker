@@ -1,18 +1,14 @@
 ---
-status: testing
+status: complete
 phase: 18-server-toolchain-cors
 source: [18-VERIFICATION.md]
 started: 2026-11-13T19:07:35Z
-updated: 2026-11-17T16:00:00Z
+updated: 2026-11-17T21:39:02.649Z
 ---
 
 ## Current Test
 
-number: 4
-name: First CI run of the updated workflow
-expected: |
-  Push the branch; all 4 GitHub Actions jobs pass; the verify step shows v24.22.2, Bun 1.3.14, 0 untrusted packages and a clean tree after a fresh frozen install; the Build job's boot smoke gets 200 and exits 0 on SIGTERM.
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -33,14 +29,15 @@ note: "Verified by Claude 2026-11-17 in a real Paradev (formerly Superset) works
 
 ### 4. First CI run of the updated workflow
 expected: Push the branch; all 4 GitHub Actions jobs pass; the verify step shows v24.22.2, Bun 1.3.14, 0 untrusted packages and a clean tree after a fresh frozen install; the Build job's boot smoke gets 200 and exits 0 on SIGTERM.
-result: [pending]
+result: pass
+note: "Verified by Claude 2026-11-17 on PR #18, CI run 44181827294 (pull_request, head b76b7b4, after scrubbing the machine hostname from the unpushed 18-04 TDD evidence by rewriting local history, then pushing). All 4 jobs success. setup-node@v7 resolved .node-version as 24.22.2 (node v24.22.2) in each job; each verify step printed 'packageManager Bun: 1.3.14, installed Bun: 1.3.14' and 'Found 0 untrusted dependencies with scripts.' and passed its Node-version and clean-tree checks after a fresh frozen install. Build job boot smoke: dist/app.js health/live {\"status\":\"ok\"}, graceful shutdown on SIGTERM, server exit status 0. Tests 922 passed; Codecov upload queued."
 
 ## Summary
 
 total: 4
-passed: 3
+passed: 4
 issues: 0
-pending: 1
+pending: 0
 skipped: 0
 blocked: 0
 
